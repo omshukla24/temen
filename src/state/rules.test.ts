@@ -1,4 +1,33 @@
-import { canSeeFull, placeKey } from './rules';
+import { canSeeFull, mergeCore, placeKey } from './rules';
+
+describe('recent cores', () => {
+  const core = (id: string, lat: number, lon: number, saved = false) => ({ id, lat, lon, saved });
+
+  it('replaces an older unsaved core of the same place with the new one', () => {
+    const list = [core('b', 17.419, 78.47), core('a', 12.9529, 80.2071)];
+    const r = mergeCore(list, core('c', 17.41901, 78.47002), 40);
+    expect(r.list.map((c) => c.id)).toEqual(['c', 'a']);
+    expect(r.dropped).toEqual(['b']);
+  });
+
+  it('keeps a saved core of the same place (its site kit hangs off its id)', () => {
+    const r = mergeCore([core('b', 17.419, 78.47, true)], core('c', 17.419, 78.47), 40);
+    expect(r.list.map((c) => c.id)).toEqual(['c', 'b']);
+    expect(r.dropped).toEqual([]);
+  });
+
+  it('keeps the saved flag when the same core is written again', () => {
+    const r = mergeCore([core('a', 1, 2, true)], core('a', 1, 2), 40);
+    expect(r.list).toEqual([core('a', 1, 2, true)]);
+  });
+
+  it('drops the oldest unsaved cores past the cap, never saved ones', () => {
+    const list = [core('b', 2, 2), core('s', 3, 3, true), core('a', 4, 4)];
+    const r = mergeCore(list, core('c', 1, 1), 2);
+    expect(r.list.map((c) => c.id)).toEqual(['c', 'b', 's']);
+    expect(r.dropped).toEqual(['a']);
+  });
+});
 
 describe('unlock rules', () => {
   it('keys a paid report to the place, ~11 m grid', () => {

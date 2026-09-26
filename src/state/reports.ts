@@ -2,6 +2,7 @@ import type { GroundReport } from 'ground-memory';
 
 import { KEYS, readJson, remove, writeJson } from '@/services/storage';
 
+import { mergeCore } from './rules';
 import { persisted, useStore } from './store';
 
 /** What the Home list needs, without loading every full report. */
@@ -49,18 +50,8 @@ export const reports = {
   put(report: GroundReport, trail: string[]) {
     writeJson(KEYS.report(report.id), { report, trail } satisfies StoredReport);
     index.set((list) => {
-      const prev = list.find((c) => c.id === report.id);
-      const next = [summaryOf(report, trail, prev?.saved ?? false), ...list.filter((c) => c.id !== report.id)];
-      // drop the oldest unsaved cores beyond the cap
-      const keep: CoreSummary[] = [];
-      let unsaved = 0;
-      for (const c of next) {
-        if (!c.saved && ++unsaved > MAX_RECENT) {
-          remove(KEYS.report(c.id));
-          continue;
-        }
-        keep.push(c);
-      }
+      const { list: keep, dropped } = mergeCore(list, summaryOf(report, trail, false), MAX_RECENT);
+      for (const id of dropped) remove(KEYS.report(id));
       return keep;
     });
   },
