@@ -44,7 +44,7 @@ export function Breadcrumb({
         </T>
       </View>
       {index ? (
-        <T kind="mono" color={tone === 'ink' ? color.inkMuted : 'rgba(242,237,228,0.7)'}>
+        <T kind="mono" color={tone === 'ink' ? color.inkMuted : 'rgba(242,237,228,0.7)'} style={styles.index}>
           {index}
         </T>
       ) : null}
@@ -56,5 +56,7 @@ export function Breadcrumb({
 const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.gutter - 8, paddingBottom: space.sm },
   back: { width: 44, height: 44, alignItems: 'center' },
-  trail: { flex: 1 },
+  trail: { flex: 1, minWidth: 0 },
+  // the trail gives way (ellipsis), the index never does
+  index: { flexShrink: 0 },
 });
