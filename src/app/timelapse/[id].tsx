@@ -45,18 +45,18 @@ export default function TimeMachine() {
 
   return (
     <Screen>
-      <Breadcrumb trail={['Ground', name ?? formatHemisphere(lat, lon, 3), t('check.timeMachine')]} index="TM" />
+      <Breadcrumb trail={[t('crumb.ground'), name ?? formatHemisphere(lat, lon, 3), t('check.timeMachine')]} index="TM" />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space.xxl, gap: space.lg }}>
         <View style={{ width, height: width, backgroundColor: color.ink }}>
           {failed ? (
             <View style={styles.failed}>
               <T kind="title" color={color.ground}>
-                The archive didn't answer
+                {t('tm.failTitle')}
               </T>
               <T kind="small" color={color.ground}>
-                The Timelapse player needs a connection. You can open it in the browser instead.
+                {t('tm.failBody')}
               </T>
-              <Button label="Open in browser" glyph="globe" variant="secondary" style={{ borderColor: color.ground }} onPress={() => WebBrowser.openBrowserAsync(timelapseViewerUrl(lat, lon))} />
+              <Button label={t('tm.openBrowser')} glyph="globe" variant="secondary" style={{ borderColor: color.ground }} onPress={() => WebBrowser.openBrowserAsync(timelapseViewerUrl(lat, lon))} />
             </View>
           ) : (
             <WebView
@@ -81,14 +81,16 @@ export default function TimeMachine() {
               mediaPlaybackRequiresUserAction={false}
               setSupportMultipleWindows={false}
               originWhitelist={['https://*']}
-              accessibilityLabel="Satellite time-lapse of this place, 1984 to 2022"
+              accessibilityLabel={t('tm.a11y')}
             />
           )}
         </View>
         <HairlineProgress progress={load} tint={color.laterite} />
 
         <View style={styles.pad}>
-          <T kind="mono">TIME MACHINE · {TIMELAPSE_YEARS.first}–{TIMELAPSE_YEARS.last}</T>
+          <T kind="mono">
+            {t('check.timeMachine').toUpperCase()} · {TIMELAPSE_YEARS.first}–{TIMELAPSE_YEARS.last}
+          </T>
           <Animated.View key={year} entering={FadeIn.duration(140)}>
             <T kind="displayXl" accessibilityLiveRegion="polite">
               {year}
@@ -98,16 +100,12 @@ export default function TimeMachine() {
         <YearDial year={year} onChange={setYear} onSettle={settle} from={TIMELAPSE_YEARS.first} to={TIMELAPSE_YEARS.last} />
         <View style={[styles.pad, { gap: space.sm }]}>
           <T kind="small">
-            {probe === null
-              ? 'Reading the player…'
-              : canSeek
-                ? 'The dial moves the player. Let go on a year to jump there.'
-                : "This player doesn't take a year from outside — scrub with its own controls; the dial marks the year you're reading."}
+            {probe === null ? t('tm.reading') : canSeek ? t('tm.canSeek') : t('tm.noSeek')}
           </T>
           <T kind="caption">
-            ¹ {TIMELAPSE_SOURCE.name} · {TIMELAPSE_SOURCE.years} · {TIMELAPSE_SOURCE.resolution} · {TIMELAPSE_SOURCE.licence}. Imagery is a yearly composite; it shows the land, not official boundaries.
+            ¹ {TIMELAPSE_SOURCE.name} · {TIMELAPSE_SOURCE.years} · {TIMELAPSE_SOURCE.resolution} · {TIMELAPSE_SOURCE.licence}. {t('tm.footnote')}
           </T>
-          <Button label="Open the full viewer" variant="quiet" glyph="globe" onPress={() => WebBrowser.openBrowserAsync(timelapseViewerUrl(lat, lon))} />
+          <Button label={t('tm.fullViewer')} variant="quiet" glyph="globe" onPress={() => WebBrowser.openBrowserAsync(timelapseViewerUrl(lat, lon))} />
         </View>
       </ScrollView>
     </Screen>

@@ -34,7 +34,7 @@ export default function Report() {
     if (!stored || !allowed) return;
     reportHtml(stored.report, stored.trail, loadKit(id))
       .then(setHtml)
-      .catch((e) => setErr(e instanceof Error ? e.message : 'Could not build the report'));
+      .catch((e) => setErr(e instanceof Error ? e.message : t('report.buildFail')));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, allowed]);
 
@@ -47,7 +47,7 @@ export default function Report() {
       haptic.success();
       await sharePdf(uri);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not make the PDF');
+      setErr(e instanceof Error ? e.message : t('report.pdfFail'));
       haptic.fail();
     } finally {
       setBusy(false);
@@ -57,9 +57,9 @@ export default function Report() {
   if (!stored) {
     return (
       <Screen>
-        <Breadcrumb trail={['Ground', t('check.report')]} />
+        <Breadcrumb trail={[t('crumb.ground'), t('check.report')]} />
         <T kind="body" style={{ padding: space.gutter }}>
-          This core is no longer on this phone.
+          {t('report.gone')}
         </T>
       </Screen>
     );
@@ -67,7 +67,7 @@ export default function Report() {
 
   return (
     <Screen>
-      <Breadcrumb trail={['Ground', stored.report.placeName ?? '', t('check.report')]} index="PDF" />
+      <Breadcrumb trail={[t('crumb.ground'), stored.report.placeName ?? '', t('check.report')]} index="PDF" />
       <View style={{ flex: 1, borderTopWidth: 1, borderTopColor: color.ink }}>
         {!allowed ? (
           <T kind="body" style={{ padding: space.gutter }}>
@@ -75,12 +75,12 @@ export default function Report() {
           </T>
         ) : html ? (
           <Animated.View entering={FadeIn} style={{ flex: 1 }}>
-            <WebView source={{ html }} originWhitelist={['*']} style={{ flex: 1, backgroundColor: color.ground }} accessibilityLabel="Report preview" />
+            <WebView source={{ html }} originWhitelist={['*']} style={{ flex: 1, backgroundColor: color.ground }} accessibilityLabel={t('report.preview')} />
           </Animated.View>
         ) : (
           <View style={styles.loading}>
             <T kind="mono" color={color.ink}>
-              SEALING THE REPORT
+              {t('report.sealing').toUpperCase()}
             </T>
             <HairlineProgress duration={2400} tint={color.laterite} />
           </View>
@@ -92,7 +92,7 @@ export default function Report() {
             {err}
           </T>
         ) : null}
-        <Button label={busy ? 'Sealing…' : 'Send the PDF'} sub="WhatsApp, mail or print" glyph="share" onPress={send} disabled={!html || busy} />
+        <Button label={busy ? t('report.sealingShort') : t('report.send')} sub={t('report.sendSub')} glyph="share" onPress={send} disabled={!html || busy} />
       </View>
     </Screen>
   );

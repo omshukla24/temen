@@ -55,7 +55,7 @@ export default function Pick() {
       </View>
 
       <View style={styles.top} pointerEvents="box-none">
-        <Breadcrumb trail={['Ground', 'Drop a pin']} index="00" />
+        <Breadcrumb trail={[t('crumb.ground'), t('home.pin')]} index="00" />
       </View>
 
       <View style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }]}>

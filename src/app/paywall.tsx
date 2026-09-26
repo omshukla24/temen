@@ -87,30 +87,37 @@ export default function Paywall() {
     setBusy(true);
     const r = await restore();
     setBusy(false);
-    if (!r.ok) setMsg(r.message ?? 'Nothing to restore.');
+    if (!r.ok) setMsg(r.message ?? t('paywall.nothing'));
     else if (r.pro) done();
-    else setMsg(r.credits ? `${r.credits} report${r.credits > 1 ? 's' : ''} restored. Use one on this place below.` : 'No purchases found for this store account.');
+    else setMsg(r.credits ? t('paywall.creditsRestored', { n: r.credits }) : t('paywall.noneFound'));
   };
 
   const o = typeof offer === 'object' ? offer : null;
   const rows: { key: Choice; label: string; sub: string; p: PurchasesPackage | null; unit: string; badge?: string | null }[] = [
-    { key: 'single', label: t('paywall.single'), sub: t('paywall.singleSub'), p: o?.single ?? null, unit: 'ONCE' },
+    { key: 'single', label: t('paywall.single'), sub: t('paywall.singleSub'), p: o?.single ?? null, unit: t('paywall.once') },
     {
       key: 'annual',
       label: t('paywall.annual'),
       sub: t('paywall.proSub'),
       p: o?.annual ?? null,
-      unit: '/ YEAR',
-      badge: o ? [saving(o.annual, o.monthly) ? `SAVE ${saving(o.annual, o.monthly)}%` : null, perMonth(o.annual) ? `${perMonth(o.annual)}/MO` : null].filter(Boolean).join(' · ') : null,
+      unit: t('paywall.perYear'),
+      badge: o
+        ? [
+            saving(o.annual, o.monthly) ? t('paywall.save', { n: saving(o.annual, o.monthly) ?? 0 }) : null,
+            perMonth(o.annual) ? `${perMonth(o.annual)}${t('paywall.mo')}` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        : null,
     },
-    { key: 'monthly', label: t('paywall.monthly'), sub: t('paywall.proSub'), p: o?.monthly ?? null, unit: '/ MONTH' },
+    { key: 'monthly', label: t('paywall.monthly'), sub: t('paywall.proSub'), p: o?.monthly ?? null, unit: t('paywall.perMonth') },
   ];
 
   return (
     <Screen>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + space.sm, paddingBottom: insets.bottom + space.xxl }]}>
         <View style={styles.top}>
-          <PressableScale accessibilityLabel="Close" onPress={() => router.back()} style={styles.close}>
+          <PressableScale accessibilityLabel={t('common.close')} onPress={() => router.back()} style={styles.close}>
             <Glyph name="close" />
           </PressableScale>
           <T kind="mono">SEAL · {place ?? 'PRO'}</T>
@@ -140,9 +147,9 @@ export default function Paywall() {
             <T kind="small">
               {offer === 'off'
                 ? 'This build has no RevenueCat key. Add EXPO_PUBLIC_RC_TEST_KEY to .env and rebuild to test purchases.'
-                : "The store didn't return any products. Check the offering in RevenueCat."}
+                : t('paywall.noProducts')}
             </T>
-            {offer === null ? <Button label="Open the store paywall" variant="secondary" onPress={openStockPaywall} /> : null}
+            {offer === null ? <Button label={t('paywall.stock')} variant="secondary" onPress={openStockPaywall} /> : null}
           </View>
         ) : (
           <Animated.View entering={FadeIn} accessibilityRole="radiogroup">
@@ -159,7 +166,7 @@ export default function Paywall() {
                     scaleTo={0.985}
                     accessibilityRole="radio"
                     accessibilityState={{ checked: choice === r.key, disabled: !r.p }}
-                    accessibilityLabel={`${r.label}, ${r.p?.product.priceString ?? 'unavailable'} ${r.unit.toLowerCase()}. ${r.sub}`}
+                    accessibilityLabel={`${r.label}, ${r.p?.product.priceString ?? t('paywall.unavailable')} ${r.unit.toLowerCase()}. ${r.sub}`}
                     style={styles.row}
                   >
                     <View style={styles.rowInner}>
@@ -198,7 +205,7 @@ export default function Paywall() {
         ) : null}
         {credits.length && place ? (
           <Button
-            label={`Use a restored report (${credits.length} left)`}
+            label={t('paywall.useCredit', { n: credits.length })}
             variant="secondary"
             glyph="check"
             style={{ marginTop: space.sm }}
@@ -216,8 +223,8 @@ export default function Paywall() {
           <T kind="caption">{t('paywall.free')}</T>
           <T kind="caption">{t('paywall.relief')}</T>
           <T kind="caption">
-            Subscriptions renew until you cancel in your store account.
-            {process.env.EXPO_PUBLIC_RC_STORE !== 'galaxy' ? ' This is a test build: purchases go through RevenueCat Test Store and no money moves.' : ''}
+            {t('paywall.renew')}
+            {process.env.EXPO_PUBLIC_RC_STORE !== 'galaxy' ? ` ${t('paywall.testBuild')}` : ''}
           </T>
         </View>
       </ScrollView>

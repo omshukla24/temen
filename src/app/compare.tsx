@@ -38,7 +38,7 @@ export default function Compare() {
 
   return (
     <Screen>
-      <Breadcrumb trail={['Ground', t('compare.title')]} index={`${picked.length}/${MAX}`} />
+      <Breadcrumb trail={[t('crumb.ground'), t('compare.title')]} index={`${picked.length}/${MAX}`} />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space.xxl, gap: space.lg }}>
         <View style={styles.pad}>
           <T kind="title">{t('compare.lede')}</T>
@@ -47,7 +47,7 @@ export default function Compare() {
         {!isPro ? (
           <View style={[styles.pad, { gap: space.sm }]}>
             <T kind="small">{t('compare.pro')}</T>
-            <Button label="See Pro" glyph="lock" onPress={() => router.push('/paywall')} />
+            <Button label={t('common.seePro')} glyph="lock" onPress={() => router.push('/paywall')} />
           </View>
         ) : full.length >= 2 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: space.gutter }}>
@@ -75,7 +75,7 @@ export default function Compare() {
                     const s = r.strata.find((x) => x.key === k);
                     const mark = marks[k] === r.id;
                     return (
-                      <View key={k} style={[styles.cell, { height: ROW_H }, mark && styles.marked]} accessibilityLabel={`${r.placeName}, ${k}: ${s?.reading ?? 'none'}. ${mark ? 'Most notable in this row.' : ''}`}>
+                      <View key={k} style={[styles.cell, { height: ROW_H }, mark && styles.marked]} accessibilityLabel={`${r.placeName}, ${k}: ${s?.reading ?? t('compare.none')}. ${mark ? t('compare.notable') : ''}`}>
                         <T kind="title" color={mark ? color.laterite : color.ink} numberOfLines={1}>
                           {s?.status === 'ok' ? s.reading : '—'}
                         </T>

@@ -36,24 +36,24 @@ export default function Settings() {
 
   return (
     <Screen>
-      <Breadcrumb trail={['Ground', t('settings.title')]} index="S" />
+      <Breadcrumb trail={[t('crumb.ground'), t('settings.title')]} index="S" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: insets.bottom + space.xxl, gap: space.lg }}>
         <View style={{ gap: space.xs }}>
           <T kind="mono" color={color.ink}>
-            01 · MEMBERSHIP
+            01 · {t('settings.membership').toUpperCase()}
           </T>
           <Hairline />
-          <T kind="title">{isPro ? 'Pro' : 'Free'}</T>
+          <T kind="title">{isPro ? 'Pro' : t('settings.free')}</T>
           <T kind="small">
-            {isPro ? 'Every place, compare, Monsoon Watch and offline cores.' : 'Quick checks, the Rising and the time machine are free.'}
-            {credits.length ? ` ${credits.length} restored report${credits.length > 1 ? 's' : ''} ready to use.` : ''}
+            {isPro ? t('settings.proBody') : t('settings.freeBody')}
+            {credits.length ? ` ${t('settings.credits', { n: credits.length })}` : ''}
           </T>
-          {!isPro ? <Button label="See Pro" glyph="lock" onPress={() => router.push('/paywall')} /> : null}
+          {!isPro ? <Button label={t('common.seePro')} glyph="lock" onPress={() => router.push('/paywall')} /> : null}
           <Button
             label={t('settings.customerCenter')}
             variant="secondary"
             onPress={async () => {
-              if (!(await openCustomerCenter())) setNote(`Store: ${storeMode()}. Add a RevenueCat key to manage purchases.`);
+              if (!(await openCustomerCenter())) setNote(t('settings.noStore', { mode: storeMode() }));
             }}
           />
           <Button
@@ -61,7 +61,15 @@ export default function Settings() {
             variant="quiet"
             onPress={async () => {
               const r = await restore();
-              setNote(r.ok ? (r.pro ? 'Pro restored.' : r.credits ? `${r.credits} report(s) restored.` : 'No purchases found.') : (r.message ?? null));
+              setNote(
+                r.ok
+                  ? r.pro
+                    ? t('settings.proRestored')
+                    : r.credits
+                      ? t('settings.creditsRestored', { n: r.credits })
+                      : t('settings.noneFound')
+                  : (r.message ?? null),
+              );
             }}
           />
           {note ? <T kind="small" color={color.laterite}>{note}</T> : null}
@@ -118,7 +126,7 @@ export default function Settings() {
             </PressableScale>
           ))}
           <T kind="caption">{MAP_ATTRIBUTION}</T>
-          <T kind="caption">Geocoding: Photon by komoot (OpenStreetMap data).</T>
+          <T kind="caption">{t('settings.geocoding')}</T>
         </View>
 
         <View style={{ gap: space.xs }}>
@@ -126,11 +134,8 @@ export default function Settings() {
             04 · {t('settings.about').toUpperCase()}
           </T>
           <Hairline />
-          <T kind="small">
-            Temen reads open satellite and survey records for a point on Earth. It never calls a place safe or unsafe, never claims official
-            boundaries and never predicts floods. The analysis is the open-source ground-memory library (MIT).
-          </T>
-          <Button label="Source code" variant="quiet" glyph="link" onPress={() => WebBrowser.openBrowserAsync('https://github.com/omshukla24/temen')} />
+          <T kind="small">{t('settings.aboutBody')}</T>
+          <Button label={t('settings.sourceCode')} variant="quiet" glyph="link" onPress={() => WebBrowser.openBrowserAsync('https://github.com/omshukla24/temen')} />
           {__DEV__ ? <Button label="Debug: Timelapse spike" variant="quiet" onPress={() => router.push('/debug')} /> : null}
         </View>
       </ScrollView>

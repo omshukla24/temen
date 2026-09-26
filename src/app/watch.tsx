@@ -42,13 +42,13 @@ export default function Watch() {
 
   return (
     <Screen>
-      <Breadcrumb trail={['Ground', t('watch.title')]} index="W" />
+      <Breadcrumb trail={[t('crumb.ground'), t('watch.title')]} index="W" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: insets.bottom + space.xxl, gap: space.lg }}>
         <T kind="title">{t('watch.lede')}</T>
         {!isPro ? (
           <View style={{ gap: space.sm }}>
             <T kind="small">{t('watch.pro')}</T>
-            <Button label="See Pro" glyph="lock" onPress={() => router.push('/paywall')} />
+            <Button label={t('common.seePro')} glyph="lock" onPress={() => router.push('/paywall')} />
           </View>
         ) : null}
 
@@ -66,7 +66,7 @@ export default function Watch() {
               const share = mm === null ? 0 : Math.min(1, mm / (RAIN_RULES.heavyMm * 1.5));
               return (
                 <Animated.View key={p.id} entering={FadeIn}>
-                  <PressableScale onPress={() => openSaved(p.id)} scaleTo={0.985} style={{ paddingVertical: space.md }} accessibilityLabel={`${p.name}. ${mm === null ? 'Not checked yet' : `${mm} millimetres in the next 24 hours`}`}>
+                  <PressableScale onPress={() => openSaved(p.id)} scaleTo={0.985} style={{ paddingVertical: space.md }} accessibilityLabel={`${p.name}. ${mm === null ? t('watch.notChecked') : t('watch.mmA11y', { n: Math.round(mm) })}`}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                       <Glyph name={heavy ? 'wave' : 'pin'} color={heavy ? color.laterite : color.inkMuted} />
                       <View style={{ flex: 1, gap: 2 }}>
@@ -81,7 +81,7 @@ export default function Watch() {
                         <T kind="title" color={heavy ? color.laterite : color.ink}>
                           {mm === null ? '—' : `${Math.round(mm)} mm`}
                         </T>
-                        <T kind="mono">NEXT 24 H</T>
+                        <T kind="mono">{t('watch.next24').toUpperCase()}</T>
                       </View>
                     </View>
                     {/* rain gauge: fills towards the IMD heavy line */}
@@ -117,7 +117,7 @@ export default function Watch() {
           />
         </View>
         <T kind="caption">
-          Tick marks the IMD "heavy" line: {RAIN_RULES.heavyMm} mm in a day. Background checks run when Android allows, at most hourly. ¹ {FORECAST_SOURCE.name} · {FORECAST_SOURCE.licence}. A forecast, not a flood prediction.
+          {t('watch.footnote', { mm: RAIN_RULES.heavyMm })} ¹ {FORECAST_SOURCE.name} · {FORECAST_SOURCE.licence}. {t('watch.notPrediction')}
         </T>
       </ScrollView>
     </Screen>

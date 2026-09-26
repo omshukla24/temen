@@ -50,4 +50,16 @@ export const LIBRARY_HI: Record<string, string> = {
     'पड़ोसियों और पास के दुकानदार से पूछें कि पिछली बड़ी बाढ़ में यह गली कैसी रही।',
   'Check the title deed and approved building plan against the survey number on the ground.':
     'टाइटल डीड और स्वीकृत नक्शे को ज़मीन के सर्वे नंबर से मिलाएँ।',
+  // Site-kit checklist (features/sitekit). The English stays the storage key.
+  'Water marks or salt lines on the compound wall': 'चारदीवारी पर पानी के निशान या नमक की लकीरें',
+  'The drain in front of the plot: open, covered or silted?': 'प्लॉट के सामने की नाली: खुली, ढकी या गाद से भरी?',
+  'Is the plot lower than the road?': 'क्या प्लॉट सड़क से नीचा है?',
+  'Ask two neighbours how deep water got in the worst rain': 'दो पड़ोसियों से पूछें कि सबसे तेज़ बारिश में पानी कितना भरा था',
+  "Match the deed's survey number to the plot on the ground": 'डीड का सर्वे नंबर ज़मीन पर प्लॉट से मिलाएँ',
+  'A lake bund, tank or marsh edge within sight': 'आस-पास दिखता झील का बाँध, तालाब या दलदल का किनारा',
+  'Soft black soil or construction debris underfoot': 'पैरों के नीचे नरम काली मिट्टी या मलबा',
+  'Walk 100 m each way: does the street slope towards this plot?': 'हर तरफ़ 100 मीटर चलें: क्या गली इस प्लॉट की ओर ढलती है?',
+  'Pace out the distance to the water’s edge': 'पानी के किनारे तक की दूरी कदमों से नापें',
+  'Cracks in walls, floors and the compound wall': 'दीवारों, फ़र्श और चारदीवारी में दरारें',
+  'Ask for the structural stability certificate': 'स्ट्रक्चरल स्टेबिलिटी सर्टिफ़िकेट माँगें',
 };

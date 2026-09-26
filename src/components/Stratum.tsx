@@ -66,7 +66,7 @@ export function StratumBand({
         onPress={sealed ? onUnlock : () => setOpen((o) => !o)}
         scaleTo={0.99}
         accessibilityLabel={label}
-        accessibilityHint={sealed ? 'Opens the unlock options' : 'Shows the numbers behind this reading'}
+        accessibilityHint={sealed ? t('stratum.hintSealed') : t('stratum.hint')}
         style={styles.body}
       >
         <View style={styles.head}>

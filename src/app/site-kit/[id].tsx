@@ -26,7 +26,7 @@ import { color, haptic, space } from '@/theme';
 export default function SiteKitScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { t } = useT();
+  const { t, tl } = useT();
   const stored = reports.get(id);
   const [kit, setKit] = useState<SiteKit>(() => loadKit(id));
   const [camOpen, setCamOpen] = useState(false);
@@ -73,7 +73,7 @@ export default function SiteKitScreen() {
 
   return (
     <Screen>
-      <Breadcrumb trail={['Ground', stored?.report.placeName ?? '', t('kit.title')]} index={`${done}/${items.length}`} />
+      <Breadcrumb trail={[t('crumb.ground'), stored?.report.placeName ?? '', t('kit.title')]} index={`${done}/${items.length}`} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: insets.bottom + space.xxl, gap: space.lg }}>
         <T kind="title">{t('kit.lede')}</T>
         <View>
@@ -89,7 +89,7 @@ export default function SiteKitScreen() {
                   }}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: on }}
-                  accessibilityLabel={item}
+                  accessibilityLabel={tl(item)}
                   scaleTo={0.985}
                   style={{ paddingVertical: space.md }}
                 >
@@ -98,7 +98,7 @@ export default function SiteKitScreen() {
                       {String(i + 1).padStart(2, '0')}
                     </T>
                     <T kind="body" style={{ flex: 1 }} color={on ? color.inkMuted : color.ink}>
-                      {item}
+                      {tl(item)}
                     </T>
                     <View style={[styles.box, on && styles.boxOn]}>{on ? <Glyph name="check" size={16} color={color.ground} weight={2} /> : null}</View>
                   </View>
@@ -116,12 +116,12 @@ export default function SiteKitScreen() {
           {kit.photos.length === 0 ? <T kind="small">{t('kit.noPhotos')}</T> : null}
           {kit.photos.map((p) => (
             <Animated.View key={p.uri} entering={ZoomIn.springify().damping(18)} style={styles.photo}>
-              <Image source={{ uri: p.uri }} style={styles.img} contentFit="cover" accessibilityLabel="Site photo" />
+              <Image source={{ uri: p.uri }} style={styles.img} contentFit="cover" accessibilityLabel={t('kit.photoA11y')} />
               <T kind="mono" style={{ fontSize: 8 }} numberOfLines={2}>
                 {p.lat != null && p.lon != null ? formatHemisphere(p.lat, p.lon, 5) : 'NO FIX'} · {p.at.slice(11, 16)}
               </T>
               <PressableScale
-                accessibilityLabel="Delete photo"
+                accessibilityLabel={t('kit.delete')}
                 style={styles.del}
                 onPress={() => {
                   try {
@@ -137,17 +137,17 @@ export default function SiteKitScreen() {
             </Animated.View>
           ))}
         </View>
-        <T kind="caption">Photos stay on this phone and go into the PDF report with their coordinates and time.</T>
+        <T kind="caption">{t('kit.stay')}</T>
       </ScrollView>
 
       <Modal visible={camOpen} animationType="slide" onRequestClose={() => setCamOpen(false)}>
         <View style={{ flex: 1, backgroundColor: color.ink }}>
           <CameraView ref={cam} style={{ flex: 1 }} facing="back" />
           <Animated.View entering={FadeIn} style={[styles.camBar, { paddingBottom: insets.bottom + space.lg }]}>
-            <PressableScale accessibilityLabel="Close camera" onPress={() => setCamOpen(false)} style={styles.camBtn}>
+            <PressableScale accessibilityLabel={t('kit.closeCam')} onPress={() => setCamOpen(false)} style={styles.camBtn}>
               <Glyph name="close" color={color.ground} />
             </PressableScale>
-            <PressableScale accessibilityLabel="Take photo" onPress={shoot} disabled={shooting} style={styles.shutter}>
+            <PressableScale accessibilityLabel={t('kit.shoot')} onPress={shoot} disabled={shooting} style={styles.shutter}>
               <View style={styles.shutterInner} />
             </PressableScale>
             <View style={styles.camBtn} />
