@@ -1,0 +1,239 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { PurchasesPackage } from 'react-native-purchases';
+
+import { Button } from '@/components/Button';
+import { Glyph } from '@/components/Glyph';
+import { Hairline } from '@/components/Hairline';
+import { PressableScale } from '@/components/PressableScale';
+import { Screen } from '@/components/Screen';
+import { T } from '@/components/T';
+import { useT } from '@/i18n';
+import { buy, initPurchases, loadOffer, openStockPaywall, restore, spendCredit, trackPaywall, type Offer } from '@/services/purchases';
+import { CoreCylinder } from '@/setpieces/CoreCylinder';
+import { useCredits } from '@/state/entitlements';
+import { reports } from '@/state/reports';
+import { color, haptic, motion, radius, space } from '@/theme';
+
+type Choice = 'single' | 'annual' | 'monthly';
+
+/** Monthly equivalent of an annual price, when the store gives numbers. */
+function perMonth(p: PurchasesPackage | null): string | null {
+  if (!p) return null;
+  const m = p.product.price / 12;
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: p.product.currencyCode, maximumFractionDigits: 0 }).format(m);
+  } catch {
+    return null;
+  }
+}
+
+function saving(annual: PurchasesPackage | null, monthly: PurchasesPackage | null): number | null {
+  if (!annual || !monthly || !monthly.product.price) return null;
+  return Math.round((1 - annual.product.price / (monthly.product.price * 12)) * 100);
+}
+
+export default function Paywall() {
+  const { place, teaser, id } = useLocalSearchParams<{ place?: string; teaser?: string; id?: string }>();
+  const insets = useSafeAreaInsets();
+  const { t } = useT();
+  const credits = useCredits();
+  const [offer, setOffer] = useState<Offer | null | 'loading' | 'off'>('loading');
+  const [choice, setChoice] = useState<Choice>(place ? 'single' : 'annual');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const stored = id ? reports.get(id) : null;
+  const bands =
+    stored?.report.strata.map((s, i) => ({ hatch: s.hatch, significance: s.significance, status: i >= 2 && s.key !== 'cantSee' ? 'error' : s.status })) ?? [];
+
+  useEffect(() => {
+    if (initPurchases() === 'off') {
+      setOffer('off');
+      return;
+    }
+    loadOffer()
+      .then((o) => {
+        setOffer(o);
+        if (o) trackPaywall(o.offering);
+        if (o && !o.single && choice === 'single') setChoice('annual');
+      })
+      .catch(() => setOffer(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const pkg = typeof offer === 'object' && offer ? offer[choice] : null;
+  const done = () => {
+    haptic.success();
+    setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/')), 650);
+  };
+
+  const purchase = async () => {
+    if (!pkg) return;
+    setBusy(true);
+    setMsg(null);
+    const r = await buy(pkg, choice === 'single' ? (place ?? null) : null);
+    setBusy(false);
+    if (r.ok) done();
+    else if (!r.cancelled) {
+      setMsg(r.message);
+      haptic.fail();
+    }
+  };
+
+  const onRestore = async () => {
+    setBusy(true);
+    const r = await restore();
+    setBusy(false);
+    if (!r.ok) setMsg(r.message ?? 'Nothing to restore.');
+    else if (r.pro) done();
+    else setMsg(r.credits ? `${r.credits} report${r.credits > 1 ? 's' : ''} restored. Use one on this place below.` : 'No purchases found for this store account.');
+  };
+
+  const o = typeof offer === 'object' ? offer : null;
+  const rows: { key: Choice; label: string; sub: string; p: PurchasesPackage | null; unit: string; badge?: string | null }[] = [
+    { key: 'single', label: t('paywall.single'), sub: t('paywall.singleSub'), p: o?.single ?? null, unit: 'ONCE' },
+    {
+      key: 'annual',
+      label: t('paywall.annual'),
+      sub: t('paywall.proSub'),
+      p: o?.annual ?? null,
+      unit: '/ YEAR',
+      badge: o ? [saving(o.annual, o.monthly) ? `SAVE ${saving(o.annual, o.monthly)}%` : null, perMonth(o.annual) ? `${perMonth(o.annual)}/MO` : null].filter(Boolean).join(' · ') : null,
+    },
+    { key: 'monthly', label: t('paywall.monthly'), sub: t('paywall.proSub'), p: o?.monthly ?? null, unit: '/ MONTH' },
+  ];
+
+  return (
+    <Screen>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + space.sm, paddingBottom: insets.bottom + space.xxl }]}>
+        <View style={styles.top}>
+          <PressableScale accessibilityLabel="Close" onPress={() => router.back()} style={styles.close}>
+            <Glyph name="close" />
+          </PressableScale>
+          <T kind="mono">SEAL · {place ?? 'PRO'}</T>
+        </View>
+
+        <View style={styles.hero}>
+          <View style={{ flex: 1, gap: space.sm }}>
+            <T kind="display">{t('paywall.title')}</T>
+            {teaser ? (
+              <Animated.View entering={FadeInDown.duration(motion.dur.ui)}>
+                <T kind="title" italic color={color.laterite}>
+                  {teaser}
+                </T>
+              </Animated.View>
+            ) : null}
+          </View>
+          {bands.length ? <CoreCylinder width={44} height={150} bands={bands} tilt={0.2} /> : null}
+        </View>
+
+        <Hairline strong />
+
+        {offer === 'loading' ? (
+          <ActivityIndicator color={color.laterite} style={{ marginVertical: space.xxl }} />
+        ) : offer === 'off' || offer === null ? (
+          <View style={{ gap: space.md, paddingVertical: space.lg }}>
+            <T kind="heading">{t('paywall.noStore')}</T>
+            <T kind="small">
+              {offer === 'off'
+                ? 'This build has no RevenueCat key. Add EXPO_PUBLIC_RC_TEST_KEY to .env and rebuild to test purchases.'
+                : "The store didn't return any products. Check the offering in RevenueCat."}
+            </T>
+            {offer === null ? <Button label="Open the store paywall" variant="secondary" onPress={openStockPaywall} /> : null}
+          </View>
+        ) : (
+          <Animated.View entering={FadeIn} accessibilityRole="radiogroup">
+            {rows
+              .filter((r) => r.p || r.key !== 'single' || !place)
+              .map((r) => (
+                <View key={r.key}>
+                  <PressableScale
+                    onPress={() => {
+                      haptic.tick();
+                      setChoice(r.key);
+                    }}
+                    disabled={!r.p}
+                    scaleTo={0.985}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: choice === r.key, disabled: !r.p }}
+                    accessibilityLabel={`${r.label}, ${r.p?.product.priceString ?? 'unavailable'} ${r.unit.toLowerCase()}. ${r.sub}`}
+                    style={styles.row}
+                  >
+                    <View style={styles.rowInner}>
+                      <View style={[styles.radio, choice === r.key && styles.radioOn]}>{choice === r.key ? <View style={styles.radioDot} /> : null}</View>
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <T kind="bodyMedium">{r.label}</T>
+                        <T kind="caption">{r.sub}</T>
+                        {r.badge ? (
+                          <View style={styles.badge}>
+                            <T kind="mono" color={color.ground} style={{ fontSize: 9 }}>
+                              {r.badge}
+                            </T>
+                          </View>
+                        ) : null}
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <T kind="title">{r.p?.product.priceString ?? '—'}</T>
+                        <T kind="mono">{r.unit}</T>
+                      </View>
+                    </View>
+                  </PressableScale>
+                  <Hairline />
+                </View>
+              ))}
+          </Animated.View>
+        )}
+
+        {o ? (
+          <Button
+            label={busy ? '…' : `${t('paywall.title')} · ${pkg?.product.priceString ?? ''}`}
+            glyph="lock"
+            onPress={purchase}
+            disabled={busy || !pkg}
+            style={{ marginTop: space.lg }}
+          />
+        ) : null}
+        {credits.length && place ? (
+          <Button
+            label={`Use a restored report (${credits.length} left)`}
+            variant="secondary"
+            glyph="check"
+            style={{ marginTop: space.sm }}
+            onPress={() => spendCredit(place) && done()}
+          />
+        ) : null}
+        {msg ? (
+          <T kind="small" color={color.laterite} style={{ marginTop: space.sm }} accessibilityLiveRegion="assertive">
+            {msg}
+          </T>
+        ) : null}
+        <Button label={t('paywall.restore')} variant="quiet" onPress={onRestore} disabled={busy} />
+
+        <View style={{ gap: space.xs, marginTop: space.md }}>
+          <T kind="caption">{t('paywall.free')}</T>
+          <T kind="caption">{t('paywall.relief')}</T>
+          <T kind="caption">
+            Subscriptions renew until you cancel in your store account.
+            {process.env.EXPO_PUBLIC_RC_STORE !== 'galaxy' ? ' This is a test build: purchases go through RevenueCat Test Store and no money moves.' : ''}
+          </T>
+        </View>
+      </ScrollView>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: { paddingHorizontal: space.gutter, gap: space.md },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  close: { width: 44, height: 44, alignItems: 'center' },
+  hero: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-end', marginTop: space.md },
+  row: { paddingVertical: space.md },
+  rowInner: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: color.ink, alignItems: 'center', justifyContent: 'center' },
+  radioOn: { borderColor: color.laterite },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: color.laterite },
+  badge: { alignSelf: 'flex-start', backgroundColor: color.laterite, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1, marginTop: 4 },
+});
