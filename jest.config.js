@@ -21,7 +21,7 @@ module.exports = {
         '^ground-memory/(.*)$': '<rootDir>/ground-memory/src/$1',
       },
       transformIgnorePatterns: [
-        `node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|react-native-svg|${esm})/)`,
+        `node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@shopify/react-native-skia|@maplibre/.*|${esm})`,
       ],
     },
   ],
