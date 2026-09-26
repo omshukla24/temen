@@ -1,15 +1,13 @@
 import type { TextStyle } from 'react-native';
 
-import {
-  HankenGrotesk_400Regular,
-  HankenGrotesk_500Medium,
-  HankenGrotesk_600SemiBold,
-} from '@expo-google-fonts/hanken-grotesk';
-import {
-  InstrumentSerif_400Regular,
-  InstrumentSerif_400Regular_Italic,
-} from '@expo-google-fonts/instrument-serif';
-import { MartianMono_300Light, MartianMono_400Regular } from '@expo-google-fonts/martian-mono';
+// Per-weight entry points: the package index would ship every weight in the APK.
+import { HankenGrotesk_400Regular } from '@expo-google-fonts/hanken-grotesk/400Regular';
+import { HankenGrotesk_500Medium } from '@expo-google-fonts/hanken-grotesk/500Medium';
+import { HankenGrotesk_600SemiBold } from '@expo-google-fonts/hanken-grotesk/600SemiBold';
+import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif/400Regular';
+import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument-serif/400Regular_Italic';
+import { MartianMono_300Light } from '@expo-google-fonts/martian-mono/300Light';
+import { MartianMono_400Regular } from '@expo-google-fonts/martian-mono/400Regular';
 
 import { color } from './tokens';
 
