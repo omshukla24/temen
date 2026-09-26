@@ -1,4 +1,37 @@
-import { canSeeFull, mergeCore, placeKey } from './rules';
+import { canSeeFull, mergeCore, placeKey, reconcileSingles } from './rules';
+
+describe('single-report purchases', () => {
+  const tx = (id: string, date: string, product = 'report_single') => ({ transactionIdentifier: id, productIdentifier: product, purchaseDate: date });
+
+  it('ties a new purchase to its place even when the store returns a different id', () => {
+    // Test Store: the purchase result id is not the id customerInfo lists
+    const r = reconcileSingles([tx('rc_1', '2026-09-26T10:00:00Z')], {}, { place: 'A', id: 'store_1' });
+    expect(r.unlocks).toEqual({ A: 'rc_1' });
+    expect(r.credits).toEqual([]);
+  });
+
+  it('uses the returned id when customerInfo lists it', () => {
+    const r = reconcileSingles([tx('t1', '2026-09-20T00:00:00Z'), tx('t2', '2026-09-26T00:00:00Z')], {}, { place: 'A', id: 't1' });
+    expect(r.unlocks).toEqual({ A: 't1' });
+    expect(r.credits).toEqual(['t2']);
+  });
+
+  it('heals a place holding an unknown id instead of minting a credit', () => {
+    const r = reconcileSingles([tx('rc_1', '2026-09-26T10:00:00Z')], { A: 'store_1' });
+    expect(r.unlocks).toEqual({ A: 'rc_1' });
+    expect(r.credits).toEqual([]);
+  });
+
+  it('leaves unassigned purchases as credits and ignores other products', () => {
+    const r = reconcileSingles([tx('t1', '2026-09-20T00:00:00Z'), tx('p1', '2026-09-21T00:00:00Z', 'pro_annual'), tx('t2', '2026-09-22T00:00:00Z')], { A: 't1' });
+    expect(r.unlocks).toEqual({ A: 't1' });
+    expect(r.credits).toEqual(['t2']);
+  });
+
+  it('keeps a place unlocked when the store lists nothing (offline or another account)', () => {
+    expect(reconcileSingles([], { A: 'x' })).toEqual({ unlocks: { A: 'x' }, credits: [] });
+  });
+});
 
 describe('recent cores', () => {
   const core = (id: string, lat: number, lon: number, saved = false) => ({ id, lat, lon, saved });

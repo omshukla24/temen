@@ -10,6 +10,7 @@ import { GALAXY_BILLING_MODE } from 'react-native-purchases-store-galaxy';
 import RevenueCatUI from 'react-native-purchases-ui';
 
 import { credits, pro, unlocks } from '@/state/entitlements';
+import { reconcileSingles } from '@/state/rules';
 
 export const ENTITLEMENT = 'pro';
 export const PRODUCT = { single: 'report_single', monthly: 'pro_monthly', annual: 'pro_annual' } as const;
@@ -45,15 +46,13 @@ export function initPurchases(): StoreMode {
 export const storeMode = () => mode;
 
 /** Entitlement state and single-report unlocks from RevenueCat's customer info. */
-export function apply(info: CustomerInfo) {
+export function apply(info: CustomerInfo, bought?: { place: string; id: string }) {
   const e = info.entitlements.active[ENTITLEMENT];
   pro.set({ active: !!e, expires: e?.expirationDate ?? null, product: e?.productIdentifier ?? null });
-  // Single reports: transactions this phone assigned stay assigned; the rest become credits.
-  const assigned = new Set(Object.values(unlocks.get()));
-  const spare = info.nonSubscriptionTransactions
-    .filter((t) => t.productIdentifier.startsWith(PRODUCT.single) && !assigned.has(t.transactionIdentifier))
-    .map((t) => t.transactionIdentifier);
-  credits.set(spare);
+  // Single reports: places keep what they paid for; the rest become credits.
+  const r = reconcileSingles(info.nonSubscriptionTransactions, unlocks.get(), bought, PRODUCT.single);
+  unlocks.set(r.unlocks);
+  credits.set(r.credits);
 }
 
 export interface Offer {
@@ -85,10 +84,8 @@ export type BuyResult = { ok: true } | { ok: false; cancelled: boolean; message:
 export async function buy(pkg: PurchasesPackage, place: string | null): Promise<BuyResult> {
   try {
     const r = await Purchases.purchasePackage(pkg);
-    if (place && pkg.product.identifier.startsWith(PRODUCT.single)) {
-      unlocks.set((m) => ({ ...m, [place]: r.transaction.transactionIdentifier }));
-    }
-    apply(r.customerInfo);
+    const single = !!place && pkg.product.identifier.startsWith(PRODUCT.single);
+    apply(r.customerInfo, single && place ? { place, id: r.transaction.transactionIdentifier } : undefined);
     return { ok: true };
   } catch (e) {
     const err = e as { code?: string; userCancelled?: boolean | null; message?: string };
