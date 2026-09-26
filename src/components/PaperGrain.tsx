@@ -11,13 +11,13 @@ export const PaperGrain = memo(function PaperGrain({ opacity = 0.03 }: { opacity
     <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
       <Fill>
         <Turbulence freqX={0.85} freqY={0.85} octaves={2} seed={7} />
-        {/* keep only luminance, tinted to ink, at low alpha */}
+        {/* ink-tinted noise; alpha = opacity · 2·luminance, so it averages `opacity` */}
         <ColorMatrix
           matrix={[
             0, 0, 0, 0, 0.11,
             0, 0, 0, 0, 0.106,
             0, 0, 0, 0, 0.098,
-            0.33, 0.33, 0.33, 0, opacity - 0.165,
+            (opacity * 2) / 3, (opacity * 2) / 3, (opacity * 2) / 3, 0, 0,
           ]}
         />
       </Fill>
