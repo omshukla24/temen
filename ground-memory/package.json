@@ -1,0 +1,23 @@
+{
+  "name": "ground-memory",
+  "version": "0.1.0",
+  "description": "What the ground remembers: 40 years of surface water, ground shape, rain, earthquakes and soil for any point on Earth, from open data.",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "d3-contour": "^4.0.2",
+    "open-location-code": "^1.0.3",
+    "upng-js": "^2.1.0"
+  },
+  "keywords": ["flood", "surface water", "JRC", "terrain", "geospatial", "due diligence"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/omshukla24/temen",
+    "directory": "ground-memory"
+  }
+}
