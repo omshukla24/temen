@@ -15,12 +15,20 @@
       "ground-memory/*": [
         "./ground-memory/src/*"
       ]
-    }
+    },
+    "types": [
+      "node",
+      "jest"
+    ]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "ground-memory/dist"
   ]
 }
