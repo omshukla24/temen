@@ -38,6 +38,23 @@ export function maskStats(mask: WaterMask): MaskStats {
 }
 
 /**
+ * Water in the 9×9 window at the mask centre — the same pixels the report reads.
+ * The HUD shows the lost share when any water is gone, else the share of water at all.
+ */
+export function centreShare(mask: WaterMask): { pct: number; gone: boolean } {
+  const c = Math.floor(mask.w / 2);
+  let lost = 0;
+  let any = 0;
+  for (let y = c - 4; y <= c + 4; y++)
+    for (let x = c - 4; x <= c + 4; x++) {
+      const k = mask.classes[y * mask.w + x];
+      if (isWaterIndex(k)) any++;
+      if (isLostIndex(k)) lost++;
+    }
+  return { pct: Math.round(((lost || any) / 81) * 100), gone: lost > 0 };
+}
+
+/**
  * Screen placement of the mask when the map camera sits on the pin at `zoom`.
  * MapLibre's world is 512·2^zoom points wide; JRC tiles are 256 px at z13,
  * so one satellite pixel spans 2^(zoom−12) points.

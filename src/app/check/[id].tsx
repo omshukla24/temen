@@ -6,7 +6,7 @@ import { RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } fro
 import Animated, { FadeIn, FadeInDown, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { formatHemisphere, formatMetres, isLostIndex, isWaterIndex, summarise, type GroundReport, type WaterMask } from 'ground-memory';
+import { formatHemisphere, formatMetres, summarise, type GroundReport } from 'ground-memory';
 
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { Button } from '@/components/Button';
@@ -24,6 +24,7 @@ import { useT } from '@/i18n';
 import { MAP_ATTRIBUTION, MAP_STYLE } from '@/services/map';
 import { CorePull } from '@/setpieces/corepull/CorePull';
 import { LiveContours } from '@/setpieces/contours/LiveContours';
+import { centreShare } from '@/setpieces/rising/mask';
 import { Rising } from '@/setpieces/rising/Rising';
 import { SurveySeal } from '@/setpieces/seal/SurveySeal';
 import { canSeeFull, placeKey, useIsPro, useUnlocks } from '@/state/entitlements';
@@ -34,22 +35,15 @@ import { color, haptic, motion, space } from '@/theme';
 const ZOOM = 15.5;
 const FREE_STRATA = 2; // water + ground are free; the rest is sealed without a report or Pro
 
-/** Lost share of the 9×9 window at the mask centre — the same pixels the report reads. */
-function centreLost(mask: WaterMask): number {
-  const c = Math.floor(mask.w / 2);
-  let lost = 0;
-  let any = 0;
-  for (let y = c - 4; y <= c + 4; y++)
-    for (let x = c - 4; x <= c + 4; x++) {
-      const k = mask.classes[y * mask.w + x];
-      if (isWaterIndex(k)) any++;
-      if (isLostIndex(k)) lost++;
-    }
-  return Math.round(((lost || any) / 81) * 100);
+type CheckParams = { id: string; lat?: string; lon?: string; label?: string; egg?: string };
+
+/** A new pin on an open check screen (a link or a second share) drills afresh. */
+export default function CheckRoute() {
+  const params = useLocalSearchParams<CheckParams>();
+  return <Check key={`${params.id}:${params.lat ?? ''}:${params.lon ?? ''}`} params={params} />;
 }
 
-export default function Check() {
-  const params = useLocalSearchParams<{ id: string; lat?: string; lon?: string; label?: string; egg?: string }>();
+function Check({ params }: { params: CheckParams }) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const reduced = useReducedMotion();
@@ -78,7 +72,7 @@ export default function Check() {
   const [stamp, setStamp] = useState(0);
   const [sealUp, setSealUp] = useState(false);
   const pulling = check.phase === 'done' && !pulled && (risen || !mask) && !reduced;
-  const lostPct = useMemo(() => (mask ? centreLost(mask) : 0), [mask]);
+  const share = useMemo(() => (mask ? centreShare(mask) : { pct: 0, gone: false }), [mask]);
 
   // The Rising: once the map and the mask are both in.
   useEffect(() => {
@@ -156,7 +150,7 @@ export default function Check() {
     } else haptic.tick();
   };
 
-  const trail = ['Ground', ...check.trail, report?.placeName ?? params.label ?? ''].filter(Boolean);
+  const trail = [t('crumb.ground'), ...check.trail, report?.placeName ?? params.label ?? ''].filter(Boolean);
   const bands = report?.strata.map((s) => ({ hatch: s.hatch, significance: s.significance, status: s.status })) ?? [];
   const actions: { key: string; glyph: GlyphName; label: string; onPress: () => void; lockedUntilFull?: boolean }[] = [
     { key: 'tm', glyph: 'clock', label: t('check.timeMachine'), onPress: () => router.push({ pathname: '/timelapse/[id]', params: { id: report?.id ?? 'new', lat: String(lat), lon: String(lon) } }) },
@@ -212,8 +206,8 @@ export default function Check() {
               </T>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm }}>
                 <ReadingCounter value={2024} from={1984} format="int" style={styles.hudNum} />
-                <ReadingCounter value={lostPct} format="pad3" suffix="%" style={styles.hudNum} />
-                <T kind="mono">{lostPct ? 'GONE' : 'WATER'}</T>
+                <ReadingCounter value={share.pct} format="pad3" suffix="%" style={styles.hudNum} />
+                <T kind="mono">{share.gone ? 'GONE' : 'WATER'}</T>
               </View>
             </View>
             <PressableScale onPress={toggleNow} style={styles.nowChip} accessibilityLabel={now ? 'Show all water seen since 1984' : 'Show only water that is there now'}>
@@ -223,7 +217,7 @@ export default function Check() {
             </PressableScale>
           </Animated.View>
         ) : null}
-        <T kind="mono" style={styles.mapAttr}>
+        <T kind="mono" style={styles.mapAttr} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
           {MAP_ATTRIBUTION}
         </T>
 
@@ -354,7 +348,7 @@ export default function Check() {
               <PressableScale key={a.key} onPress={a.onPress} style={styles.action} accessibilityLabel={a.label}>
                 <View style={{ alignItems: 'center', gap: 4 }}>
                   <Glyph name={a.lockedUntilFull && !full ? 'lock' : a.glyph} color={a.key === 'save' && saved ? color.laterite : color.ink} />
-                  <T kind="mono" color={color.ink} numberOfLines={1} style={{ fontSize: 9 }}>
+                  <T kind="mono" color={color.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={styles.actionLabel}>
                     {a.label.toUpperCase()}
                   </T>
                 </View>
@@ -384,7 +378,8 @@ const styles = StyleSheet.create({
   hudBox: { backgroundColor: 'rgba(242,237,228,0.9)', paddingHorizontal: 8, paddingVertical: 6, gap: 2 },
   hudNum: { fontFamily: 'MartianMono_400Regular', fontSize: 16, letterSpacing: 1, lineHeight: 22 },
   nowChip: { backgroundColor: color.ink, paddingHorizontal: space.md, borderRadius: 999, minHeight: 36 },
-  mapAttr: { position: 'absolute', right: 4, bottom: 2, fontSize: 7, opacity: 0.7 },
+  // mono tracking is absolute (sized for 10.5 pt), so small mono text sets its own
+  mapAttr: { position: 'absolute', left: space.sm, right: space.sm, bottom: 2, fontSize: 7, lineHeight: 10, letterSpacing: 0.4, textAlign: 'right', opacity: 0.7 },
   relief: { flexDirection: 'row', gap: space.md, alignItems: 'center', backgroundColor: color.lake, padding: space.md, borderRadius: 4 },
   question: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start', paddingVertical: space.xs },
   qNum: { width: 28, lineHeight: 36 },
@@ -400,5 +395,6 @@ const styles = StyleSheet.create({
     borderTopColor: color.ink,
     paddingTop: space.sm,
   },
-  action: { flex: 1, alignItems: 'center' },
+  action: { flex: 1, alignItems: 'center', paddingHorizontal: 2 },
+  actionLabel: { fontSize: 9, lineHeight: 14, letterSpacing: 0.9 },
 });
