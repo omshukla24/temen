@@ -37,7 +37,7 @@ async function main() {
         ? '0% — no water 1984–2024'
         : `${h.value}% ${h.label} (now ${pct(w.share.now)}%, gone ${pct(w.share.lost)}%)`;
     const ground = b.noData
-      ? 'no height data (new land)'
+      ? 'no height data (0 m sea fill)'
       : `${formatMetres(b.elevationM)} vs ${formatMetres(b.ringMedianM)}; lower than ${b.lowerThan}/16${b.isBowl ? ' → bowl' : ''}`;
     rows.push(
       `| ${s.name} (${s.lat}, ${s.lon}) | ${s.why} | ${water} | ${ground} | ${want.join(', ')} | ${got.every(Boolean) ? '✅ pass' : '❌ fail'} |`,

@@ -33,6 +33,14 @@ describe('bowlCheck', () => {
     expect(b.isBowl).toBe(false);
     expect(bowlHeadline(b).headline).toBe('No height data here');
   });
+
+  it('treats the sea-fill 0 m as missing, not as a height', async () => {
+    // Chennai One SEZ sits on former marsh the terrain model flattened to exactly 0 m
+    const b = await bowlCheck(12.9442, 80.2292, fixtureFetchTile);
+    expect(b.elevationM).toBe(0);
+    expect(b.noData).toBe(true);
+    expect(bowlHeadline(b).headline).toBe('No height data here');
+  });
 });
 
 describe('elevation', () => {

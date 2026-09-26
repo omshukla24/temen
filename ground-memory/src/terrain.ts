@@ -93,7 +93,8 @@ export interface BowlReading {
   noData: boolean;
 }
 
-export const BOWL_RULES = { depthM: 1.5, lowerThan: 12 } as const;
+/** A bowl: ≥ 1.5 m below the ring median and lower than ¾ of the ring (12 of 16). */
+export const BOWL_RULES = { depthM: 1.5, lowerShare: 0.75, minRingShare: 0.75 } as const;
 
 function median(xs: number[]): number {
   const s = [...xs].sort((a, b) => a - b);
@@ -119,21 +120,24 @@ export async function bowlCheck(
     return sample(region, gx, gy);
   };
   const elevationM = at({ lat, lon });
-  const ring = ringPts.map(at);
-  const ringMedianM = median(ring);
+  // Terrarium flattens the sea (and water it filled) to exactly 0 m; that is a
+  // missing height, not sea level, so leave those samples out of the comparison.
+  const ring = ringPts.map(at).filter((h) => h !== 0);
+  const ringMedianM = ring.length ? median(ring) : 0;
   const depthM = ringMedianM - elevationM;
   const lowerThan = ring.filter((h) => h > elevationM).length;
-  const noData = elevationM === 0 && ring.every((h) => h === 0);
+  const noData = elevationM === 0 || ring.length < n * BOWL_RULES.minRingShare;
+  const share = ring.length ? lowerThan / ring.length : 0;
   return {
     elevationM,
     ringMedianM,
     depthM,
     lowerThan,
-    ringCount: n,
+    ringCount: ring.length,
     ringM,
     ring,
-    isBowl: !noData && depthM >= BOWL_RULES.depthM && lowerThan >= BOWL_RULES.lowerThan,
-    reliefM: Math.max(...ring) - Math.min(...ring),
+    isBowl: !noData && depthM >= BOWL_RULES.depthM && share >= BOWL_RULES.lowerShare,
+    reliefM: ring.length ? Math.max(...ring) - Math.min(...ring) : 0,
     noData,
   };
 }
@@ -189,7 +193,7 @@ export function bowlHeadline(b: BowlReading): { headline: string; detail: string
     return {
       headline: 'No height data here',
       detail:
-        'The terrain model reads 0 m at this point and all around it. That happens at sea and on land made after the survey, so the shape of this ground is unknown.',
+        'The terrain model has no height here: it reads exactly 0 m, the value it gives the sea and water it flattened. That happens at sea, on filled wetland and on land made after the survey, so the shape of this ground is unknown.',
     };
   }
   const lower = `${b.lowerThan} of ${b.ringCount}`;
@@ -199,13 +203,14 @@ export function bowlHeadline(b: BowlReading): { headline: string; detail: string
       detail: `This point is ${formatMetres(b.depthM)} below the ground ${b.ringM} m around it and lower than ${lower} points on that ring. Rain runs towards it.`,
     };
   }
-  if (b.depthM >= 0.5 && b.lowerThan >= 10) {
+  const share = b.ringCount ? b.lowerThan / b.ringCount : 0;
+  if (b.depthM >= 0.5 && share >= 10 / 16) {
     return {
       headline: 'Slightly low ground',
       detail: `This point is ${formatMetres(b.depthM)} below the ground ${b.ringM} m around it, lower than ${lower} points on that ring.`,
     };
   }
-  if (b.depthM <= -1.5 && b.lowerThan <= 4) {
+  if (b.depthM <= -1.5 && share <= 4 / 16) {
     return {
       headline: 'Sits on a rise',
       detail: `This point is ${formatMetres(-b.depthM)} above the ground ${b.ringM} m around it. Water tends to run away from it.`,
