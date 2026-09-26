@@ -8,8 +8,10 @@ import * as path from 'path';
 
 import sites from '../test/golden-sites.json';
 import { FIXTURES, tileFixturePath } from '../test/fixture-fetch';
+import { forecastUrl } from '../src/forecast';
 import { quakeCountUrl, quakeTopUrl } from '../src/quakes';
 import { rainUrl } from '../src/rain';
+import { reliefUrl } from '../src/relief';
 import { soilUrl } from '../src/soil';
 import { bowlCheck, elevationGrid } from '../src/terrain';
 import { TileCache } from '../src/tiles';
@@ -69,6 +71,11 @@ async function main() {
     await saveJson(`quakes-top-${s.id}`, quakeTopUrl(s.lat, s.lon));
     await saveJson(`soil-${s.id}`, soilUrl(s.lat, s.lon));
   }
+  if (onlyTiles) return;
+  // Forecasts and flood lists change daily: one sample each, to test the parsers on real shapes.
+  const kuberan = sites.find((s) => s.id === 'kuberan-nagar')!;
+  await saveJson('forecast-kuberan-nagar', forecastUrl(kuberan.lat, kuberan.lon));
+  await saveJson('relief-sample', reliefUrl(new Date()));
 }
 
 main().catch((e) => {
