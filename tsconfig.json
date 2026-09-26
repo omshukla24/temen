@@ -29,6 +29,7 @@
   ],
   "exclude": [
     "node_modules",
-    "ground-memory/dist"
+    "ground-memory/dist",
+    "supabase/functions"
   ]
 }
