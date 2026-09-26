@@ -46,7 +46,7 @@ Thumbs.db
 .idea/
 .vscode/
 
-# agent files never belong in this repo
+# local tooling and notes
 CLAUDE.md
 AGENTS.md
 .claude/

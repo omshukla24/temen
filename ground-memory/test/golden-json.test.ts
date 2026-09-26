@@ -1,5 +1,5 @@
 /**
- * Checks recorded API responses (npm run fixtures) against what Cowork verified
+ * Checks recorded API responses (npm run fixtures) against values checked by hand
  * by hand. Skips cleanly until the fixtures exist.
  */
 import { jsonFixture } from './fixture-fetch';
