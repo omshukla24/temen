@@ -25,3 +25,18 @@ export const hit = { min: 44 } as const;
 export const hairline = 1;
 
 export type ColorToken = keyof typeof color;
+
+/** Band fills for each stratum type in the Core (derived from the palette only). */
+export const strata = {
+  water: color.lake,
+  lostWater: color.lakeMemory,
+  ground: color.silt,
+  rain: 'rgba(29,90,122,0.3)',
+  quakes: color.laterite,
+  soil: 'rgba(138,122,98,0.62)',
+  cantSee: 'transparent',
+  egg: color.crimsonEgg,
+  error: color.line,
+} as const;
+
+export type StrataKey = keyof typeof strata;
