@@ -1,12 +1,16 @@
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import { ShareIntentProvider } from 'expo-share-intent';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { ShareInHandler } from '@/features/ShareInHandler';
 import { color, fontAssets } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
+SplashScreen.setOptions({ duration: 260, fade: true });
 
 export default function RootLayout() {
   const [loaded, error] = useFonts(fontAssets);
@@ -18,15 +22,22 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <>
-      <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: color.ground },
-          animation: 'fade',
-        }}
-      />
-    </>
+    <ShareIntentProvider options={{ resetOnBackground: true }}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.ground }}>
+        <StatusBar style="dark" />
+        <ShareInHandler />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: color.ground },
+            animation: 'slide_from_right',
+            animationDuration: 260,
+          }}
+        >
+          <Stack.Screen name="index" options={{ animation: 'fade' }} />
+          <Stack.Screen name="paywall" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        </Stack>
+      </GestureHandlerRootView>
+    </ShareIntentProvider>
   );
 }
