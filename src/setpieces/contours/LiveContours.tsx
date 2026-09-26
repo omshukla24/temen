@@ -1,7 +1,7 @@
 import { Canvas, type Transforms3d } from '@shopify/react-native-skia';
 import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
-import { SensorType, useAnimatedSensor, useDerivedValue, useReducedMotion, withSpring } from 'react-native-reanimated';
+import { SensorType, useAnimatedReaction, useAnimatedSensor, useDerivedValue, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import type { ContourLine } from 'ground-memory';
 
@@ -17,13 +17,21 @@ export function LiveContours({ lines, width, height }: { lines: ContourLine[]; w
   const reduced = useReducedMotion();
   const paths = useMemo(() => buildContourPaths(lines, width + 24, height + 24), [lines, width, height]);
   const sensor = useAnimatedSensor(SensorType.ROTATION, { interval: 32 });
-  const transform = useDerivedValue<Transforms3d>(() => {
-    if (reduced) return [{ translateX: -12 }, { translateY: -12 }];
-    const { pitch, roll } = sensor.sensor.value;
-    const dx = Math.max(-1, Math.min(1, roll / 0.6)) * 10;
-    const dy = Math.max(-1, Math.min(1, pitch / 0.6)) * 10;
-    return [{ translateX: withSpring(-12 + dx, motion.spring.sheet) }, { translateY: withSpring(-12 + dy, motion.spring.sheet) }];
-  });
+  const dx = useSharedValue(0);
+  const dy = useSharedValue(0);
+  // quantise to half-points so a phone lying still does not redraw every sample
+  useAnimatedReaction(
+    () => {
+      const { pitch, roll } = sensor.sensor.value;
+      return [Math.round(Math.max(-1, Math.min(1, roll / 0.6)) * 20) / 2, Math.round(Math.max(-1, Math.min(1, pitch / 0.6)) * 20) / 2];
+    },
+    (next, prev) => {
+      if (reduced || (prev && next[0] === prev[0] && next[1] === prev[1])) return;
+      dx.value = withSpring(next[0], motion.spring.sheet);
+      dy.value = withSpring(next[1], motion.spring.sheet);
+    },
+  );
+  const transform = useDerivedValue<Transforms3d>(() => [{ translateX: -12 + dx.value }, { translateY: -12 + dy.value }]);
   return (
     <Canvas style={[StyleSheet.absoluteFill, { width, height }]} pointerEvents="none">
       <ContoursDrawing paths={paths} transform={transform} />
