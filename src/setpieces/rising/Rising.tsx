@@ -1,7 +1,7 @@
-import { AlphaType, Canvas, ColorType, Skia, useClock, type Uniforms } from '@shopify/react-native-skia';
+import { AlphaType, Canvas, ColorType, Skia, type Uniforms } from '@shopify/react-native-skia';
 import { useEffect, useMemo } from 'react';
 import { StyleSheet } from 'react-native';
-import { useAnimatedReaction, useDerivedValue, useSharedValue, type SharedValue } from 'react-native-reanimated';
+import { useDerivedValue, useFrameCallback, useSharedValue, type SharedValue } from 'react-native-reanimated';
 
 import { lonLatToGlobalPx, type WaterMask } from 'ground-memory';
 
@@ -61,23 +61,18 @@ export function Rising({
     return maskPlacement(mask, gx, gy, zoom, width, height);
   }, [mask, lat, lon, zoom, width, height]);
 
-  const clock = useClock();
-  const frozen = useSharedValue(0);
-  const isLive = useSharedValue(live ? 1 : 0);
+  // Our own clock: when the water goes still the callback stops, time stops
+  // changing, and Skia has nothing to redraw.
+  const time = useSharedValue(0);
+  const frame = useFrameCallback((f) => {
+    time.value += (f.timeSincePreviousFrame ?? 16) / 1000;
+  }, live);
   useEffect(() => {
-    isLive.value = live ? 1 : 0;
-  }, [live, isLive]);
-
-  // when the water goes still, keep the last frame's light instead of snapping
-  useAnimatedReaction(
-    () => isLive.value,
-    (now, prev) => {
-      if (prev === 1 && now === 0) frozen.value = clock.value / 1000;
-    },
-  );
+    frame.setActive(live);
+  }, [live, frame]);
 
   const uniforms = useDerivedValue<Uniforms>(() => {
-    const t = isLive.value ? clock.value / 1000 : frozen.value;
+    const t = time.value;
     return {
       origin: placement.origin,
       cell: placement.cell,
@@ -87,7 +82,7 @@ export function Rising({
       drain: drain.value,
       lake: LAKE,
       memory: MEMORY,
-      still: isLive.value ? 0 : 1,
+      still: 0,
     };
   });
 
