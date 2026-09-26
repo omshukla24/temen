@@ -1,5 +1,5 @@
 import { Canvas, type Transforms3d } from '@shopify/react-native-skia';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
@@ -56,8 +56,17 @@ export function YearDial({
   const start = useSharedValue(0);
   const detent = useSharedValue(year - from);
 
+  // The dial's own detents come back as `year` a frame or two late; moving to
+  // one of those would drag a flick back to a year it already passed.
+  const emitted = useRef<number | null>(null);
+  const emit = (y: number) => {
+    emitted.current = y;
+    onChange(y);
+  };
+
   // external changes (e.g. playback) move the dial without a gesture
   useEffect(() => {
+    if (year === emitted.current) return;
     const target = -(year - from) * sp;
     if (Math.abs(offset.value - target) > sp / 2) offset.value = reduced ? target : withSpring(target, { damping: 26, stiffness: 240 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,7 +79,7 @@ export function YearDial({
       if (prev !== null && clamped !== detent.value) {
         detent.value = clamped;
         scheduleOnRN(haptic.tick);
-        scheduleOnRN(onChange, from + clamped);
+        scheduleOnRN(emit, from + clamped);
       }
     },
   );
