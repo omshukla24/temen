@@ -7,6 +7,13 @@ export { canSeeFull, placeKey } from './rules';
 /** placeKey → store transaction id, for single-report unlocks. */
 export const unlocks = persisted<Record<string, string>>(KEYS.unlocks, {});
 
+/** Restored single reports not yet tied to a place on this phone. */
+export const credits = persisted<string[]>('credits', []);
+
+export function useCredits(): string[] {
+  return useStore(credits);
+}
+
 export const pro = memory<{ active: boolean; expires: string | null; product: string | null }>({
   active: false,
   expires: null,

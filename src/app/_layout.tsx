@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ShareInHandler } from '@/features/ShareInHandler';
+import { initPurchases } from '@/services/purchases';
 import { color, fontAssets } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -14,6 +15,10 @@ SplashScreen.setOptions({ duration: 260, fade: true });
 
 export default function RootLayout() {
   const [loaded, error] = useFonts(fontAssets);
+
+  useEffect(() => {
+    initPurchases();
+  }, []);
 
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync();
