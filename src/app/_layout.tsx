@@ -8,6 +8,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ShareInHandler } from '@/features/ShareInHandler';
 import { initPurchases } from '@/services/purchases';
+// defines the Monsoon Watch background task at startup, as TaskManager requires
+import '@/services/watch';
 import { color, fontAssets } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();

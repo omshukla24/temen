@@ -57,5 +57,22 @@
   "settings.sources": "Where the ground's memory comes from",
   "settings.about": "About Temen",
   "home.honesty": "Never says safe. Always shows sources.",
-  "pick.core": "Core here"
+  "pick.core": "Core here",
+  "watch.title": "Monsoon Watch",
+  "watch.lede": "Your saved places, checked against the next 24 hours of rain.",
+  "watch.empty": "Save a core to watch it. Tap Save on any check.",
+  "watch.check": "Check now",
+  "watch.heavy": "Heavy rain ahead",
+  "watch.calm": "No heavy rain in the next 24 h",
+  "watch.background": "Check in the background",
+  "watch.pro": "Monsoon Watch is part of Pro.",
+  "kit.title": "Site kit",
+  "kit.lede": "Things to look at when you stand on the plot. Photos keep where and when they were taken.",
+  "kit.photo": "Take a site photo",
+  "kit.noPhotos": "No photos yet.",
+  "kit.camera": "Camera access is needed for site photos.",
+  "compare.title": "Compare",
+  "compare.lede": "Up to five cores, strata side by side. The laterite mark shows the most notable reading in each row.",
+  "compare.pick": "Tap cores to add them",
+  "compare.pro": "Compare is part of Pro."
 }
