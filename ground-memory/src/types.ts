@@ -46,6 +46,14 @@ export type StratumKey =
 
 export type StratumStatus = 'ok' | 'error' | 'empty';
 
+/** Each stratum type has its own hatch in the Core (DESIGN.md). */
+export type Hatch = 'water' | 'lostWater' | 'ground' | 'rain' | 'quakes' | 'soil' | 'cantSee' | 'egg';
+
+export interface Fact {
+  label: string;
+  value: string;
+}
+
 export interface Stratum {
   index: number;
   key: StratumKey;
@@ -63,6 +71,10 @@ export interface Stratum {
   significance: number;
   status: StratumStatus;
   source: SourceRef;
+  hatch: Hatch;
+  /** A laterite flag shown on the band (e.g. the buffer rule). */
+  flag: string | null;
+  facts: Fact[];
 }
 
 export interface GroundFlags {
