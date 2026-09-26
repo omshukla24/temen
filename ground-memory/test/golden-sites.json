@@ -4,24 +4,33 @@
     "name": "Palm Jumeirah, Dubai",
     "lat": 25.1173,
     "lon": 55.1351,
-    "why": "Sea turned into land (built 2001–2006).",
-    "expect": { "waterKind": "lost", "lostPermanentMin": 0.8 }
+    "why": "Land reclaimed from the sea from 2001.",
+    "expect": {
+      "waterKind": "lost",
+      "lostPermanentMin": 0.8
+    }
   },
   {
     "id": "chennai-one-sez",
     "name": "Chennai One SEZ, Thoraipakkam",
     "lat": 12.9442,
     "lon": 80.2292,
-    "why": "Offices on former seasonal water by the Pallikaranai marsh.",
-    "expect": { "waterKind": "lost", "lostSeasonalMin": 0.6 }
+    "why": "Offices near the Pallikaranai marsh.",
+    "expect": {
+      "waterKind": "lost",
+      "lostSeasonalMin": 0.6
+    }
   },
   {
     "id": "kuberan-nagar",
     "name": "Kuberan Nagar, Madipakkam, Chennai",
     "lat": 12.95287,
     "lon": 80.20706,
-    "why": "Low-lying colony that flooded in 2015 and 2023.",
-    "expect": { "waterKind": "lost", "bowl": true }
+    "why": "Residential colony in low-lying south Chennai.",
+    "expect": {
+      "waterKind": "lost",
+      "bowl": true
+    }
   },
   {
     "id": "jaisalmer-fort",
@@ -29,14 +38,19 @@
     "lat": 26.9124,
     "lon": 70.9126,
     "why": "Hilltop fort in the Thar desert.",
-    "expect": { "waterKind": "none", "buffer": false }
+    "expect": {
+      "waterKind": "none",
+      "buffer": false
+    }
   },
   {
     "id": "hussain-sagar",
     "name": "Hussain Sagar, Hyderabad (on-water control)",
     "lat": 17.4239,
     "lon": 78.4738,
-    "why": "Centre of a lake built in 1563.",
-    "expect": { "waterKind": "onWater" }
+    "why": "Centre of a 16th-century lake.",
+    "expect": {
+      "waterKind": "onWater"
+    }
   }
 ]
