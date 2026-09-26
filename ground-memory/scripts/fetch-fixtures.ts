@@ -8,6 +8,9 @@ import * as path from 'path';
 
 import sites from '../test/golden-sites.json';
 import { FIXTURES, tileFixturePath } from '../test/fixture-fetch';
+import { quakeCountUrl, quakeTopUrl } from '../src/quakes';
+import { rainUrl } from '../src/rain';
+import { soilUrl } from '../src/soil';
 import { bowlCheck, elevationGrid } from '../src/terrain';
 import { TileCache } from '../src/tiles';
 import type { FetchTile } from '../src/types';
@@ -35,7 +38,23 @@ const recordingFetchTile: FetchTile = async (url) => {
   return buf;
 };
 
+async function saveJson(name: string, url: string) {
+  const file = path.join(FIXTURES, 'json', `${name}.json`);
+  if (fs.existsSync(file)) return;
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const body = await res.json();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(body));
+    console.log('  saved', path.relative(FIXTURES, file));
+  } catch (e) {
+    console.warn(`  skipped ${name}: ${(e as Error).message}`);
+  }
+}
+
 async function main() {
+  const onlyTiles = process.argv.includes('--tiles');
   for (const s of sites) {
     console.log(`${s.id} (${s.lat}, ${s.lon})`);
     const cache = new TileCache();
@@ -44,6 +63,11 @@ async function main() {
     await waterMask(s.lat, s.lon, recordingFetchTile, 48, cache);
     await bowlCheck(s.lat, s.lon, recordingFetchTile, 400, 16, cache);
     await elevationGrid(s.lat, s.lon, recordingFetchTile, 128, cache);
+    if (onlyTiles) continue;
+    await saveJson(`rain-${s.id}`, rainUrl(s.lat, s.lon));
+    await saveJson(`quakes-count-${s.id}`, quakeCountUrl(s.lat, s.lon));
+    await saveJson(`quakes-top-${s.id}`, quakeTopUrl(s.lat, s.lon));
+    await saveJson(`soil-${s.id}`, soilUrl(s.lat, s.lon));
   }
 }
 
