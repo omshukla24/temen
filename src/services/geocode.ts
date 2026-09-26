@@ -55,29 +55,41 @@ export async function searchPlaces(q: string, near?: { lat: number; lon: number 
   return out;
 }
 
-/** Name for a point: the phone's geocoder first (no network quota), Photon reverse as a fallback. */
-export async function placeName(lat: number, lon: number): Promise<{ name: string; trail: string[] } | null> {
+type Named = { name: string; trail: string[] };
+
+const named = (name: string | null | undefined, city: string | null | undefined): Named | null =>
+  name ? { name, trail: city && city !== name ? [city] : [] } : null;
+
+/** The UI reads English or Hindi; a name in another script (Arabic in Dubai) gets an English try. */
+const readable = (s: string) => /[A-Za-zऀ-ॿ]/.test(s);
+
+/**
+ * Name for a point: the phone's geocoder first (no network quota), Photon
+ * reverse (English names where OpenStreetMap has them) as a fallback.
+ */
+export async function placeName(lat: number, lon: number): Promise<Named | null> {
+  let phone: Named | null = null;
   try {
     const [r] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
     if (r) {
-      const local = r.district ?? r.subregion ?? r.name ?? r.street ?? null;
-      const trail = [r.city ?? r.subregion, local].filter((x): x is string => !!x);
-      const name = r.name && !/^\d/.test(r.name) ? r.name : (local ?? r.city ?? null);
-      if (name) return { name, trail: [...new Set(trail)] };
+      // Android's `name` is often the nearest shop or a house number, so the
+      // neighbourhood names the place: GROUND / CHENNAI / MADIPAKKAM.
+      const feature = r.name && !/^\d/.test(r.name) && !r.name.includes('+') ? r.name : null;
+      const city = r.city ?? r.subregion;
+      phone = named(r.district ?? r.street ?? feature ?? city, city);
+      if (phone && readable(phone.name)) return phone;
     }
   } catch {
     // fall through to Photon
   }
   try {
-    const json = (await fetchJson(`https://photon.komoot.io/reverse?lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}&limit=1`)) as {
+    const json = (await fetchJson(`https://photon.komoot.io/reverse?lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}&limit=1&lang=en`)) as {
       features?: PhotonFeature[];
     };
     const p = json.features?.[0]?.properties;
-    if (!p) return null;
-    const name = String(p.name ?? p.street ?? p.district ?? p.city ?? '');
-    const trail = [p.city, p.district ?? p.locality].filter(Boolean).map(String);
-    return name ? { name, trail: [...new Set(trail)] } : null;
+    const pick = (v: string | number | undefined) => (v === undefined ? null : String(v));
+    return named(pick(p?.district ?? p?.locality ?? p?.street ?? p?.name ?? p?.city), pick(p?.city ?? p?.state)) ?? phone;
   } catch {
-    return null;
+    return phone;
   }
 }
