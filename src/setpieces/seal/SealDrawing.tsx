@@ -5,12 +5,12 @@ import { color } from '@/theme/tokens';
 
 /** The benchmark: a bar with the broad arrow beneath it, as cut into survey stones. */
 export function benchmarkPath(cx: number, cy: number, s: number) {
-  const p = Skia.Path.Make();
+  const p = Skia.PathBuilder.Make();
   p.moveTo(cx - 0.42 * s, cy - 0.2 * s).lineTo(cx + 0.42 * s, cy - 0.2 * s);
   p.moveTo(cx, cy - 0.12 * s).lineTo(cx, cy + 0.38 * s);
   p.moveTo(cx, cy - 0.12 * s).lineTo(cx - 0.26 * s, cy + 0.34 * s);
   p.moveTo(cx, cy - 0.12 * s).lineTo(cx + 0.26 * s, cy + 0.34 * s);
-  return p;
+  return p.build();
 }
 
 /**
@@ -41,8 +41,9 @@ export function SealDrawing({
   tint?: string;
 }) {
   // start at the left so the inscription reads over the top
-  const ring = Skia.Path.Make();
-  ring.addArc({ x: cx - r * 0.8, y: cy - r * 0.8, width: r * 1.6, height: r * 1.6 }, 180, 359.9);
+  const ring = Skia.PathBuilder.Make()
+    .addArc({ x: cx - r * 0.8, y: cy - r * 0.8, width: r * 1.6, height: r * 1.6 }, 180, 359.9)
+    .build();
   const textW = fontSmall ? fontSmall.getTextWidth(centerText) : 0;
   return (
     <Group {...(transform ? { transform, origin: { x: cx, y: cy } } : null)} opacity={opacity}>

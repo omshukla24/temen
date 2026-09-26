@@ -7,14 +7,14 @@ export const DIAL = { spacing: 22, from: 1984, to: 2022, height: 88 } as const;
 
 /** Ruler ticks for every year; majors every 5 years and at both ends. */
 export function dialPaths(from: number, to: number, spacing: number, h: number) {
-  const minor = Skia.Path.Make();
-  const major = Skia.Path.Make();
+  const minor = Skia.PathBuilder.Make();
+  const major = Skia.PathBuilder.Make();
   for (let y = from; y <= to; y++) {
     const x = (y - from) * spacing;
     const isMajor = y % 5 === 0 || y === from || y === to;
     (isMajor ? major : minor).moveTo(x, h * 0.18).lineTo(x, h * (isMajor ? 0.56 : 0.4));
   }
-  return { minor, major };
+  return { minor: minor.build(), major: major.build() };
 }
 
 /**
@@ -47,8 +47,12 @@ export function DialDrawing({
   }
   const transform = typeof offset === 'number' ? [{ translateX: width / 2 + offset }] : offset;
   const fade = Math.min(80, width * 0.22);
-  const tri = Skia.Path.Make();
-  tri.moveTo(width / 2 - 6, 0).lineTo(width / 2 + 6, 0).lineTo(width / 2, 8).close();
+  const tri = Skia.PathBuilder.Make()
+    .moveTo(width / 2 - 6, 0)
+    .lineTo(width / 2 + 6, 0)
+    .lineTo(width / 2, 8)
+    .close()
+    .build();
   return (
     <Group>
       <Line p1={vec(0, height * 0.18)} p2={vec(width, height * 0.18)} color={color.hairline} strokeWidth={1} />

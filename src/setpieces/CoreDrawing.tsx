@@ -16,14 +16,14 @@ export function bandColor(b: Band): string {
 
 /** Front-facing band between two seams of a cylinder seen slightly from above. */
 export function bandPath(x0: number, x1: number, top: number, bottom: number, ry: number): SkPath {
-  const p = Skia.Path.Make();
+  const p = Skia.PathBuilder.Make();
   const w = x1 - x0;
   p.moveTo(x0, top);
   p.arcToOval({ x: x0, y: top - ry, width: w, height: ry * 2 }, 180, -180, false);
   p.lineTo(x1, bottom);
   p.arcToOval({ x: x0, y: bottom - ry, width: w, height: ry * 2 }, 0, 180, false);
   p.close();
-  return p;
+  return p.build();
 }
 
 export interface CoreGeometry {
@@ -79,8 +79,9 @@ export function CoreDrawing({
   });
   const outline = bandPath(x0, x1, top, bottom, ry);
   const ghostPath = bandPath(x0, x1, bottom, bottom + ghostH, ry);
-  const seams = Skia.Path.Make();
-  for (const s of shapes.slice(1)) seams.addArc({ x: x0, y: s.seam - ry, width: x1 - x0, height: ry * 2 }, 0, 180);
+  const seamArcs = Skia.PathBuilder.Make();
+  for (const s of shapes.slice(1)) seamArcs.addArc({ x: x0, y: s.seam - ry, width: x1 - x0, height: ry * 2 }, 0, 180);
+  const seams = seamArcs.build();
   const cap = { x: x0, y: top - ry, width: x1 - x0, height: ry * 2 };
 
   return (

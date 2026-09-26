@@ -70,13 +70,13 @@ function build(kind: HatchKind, w: number, h: number, density: number) {
   const r = rng(Math.round(w * 31 + h * 17) + kind.length);
   switch (kind) {
     case 'water': {
-      const p = Skia.Path.Make();
+      const p = Skia.PathBuilder.Make();
       const gap = 9 / density;
       for (let y = gap; y < h; y += gap) {
         p.moveTo(0, y);
         for (let x = 0; x < w; x += 16) p.quadTo(x + 4, y - 2.5, x + 8, y).quadTo(x + 12, y + 2.5, x + 16, y);
       }
-      out.path = p;
+      out.path = p.build();
       break;
     }
     case 'lostWater': {
@@ -85,7 +85,7 @@ function build(kind: HatchKind, w: number, h: number, density: number) {
       break;
     }
     case 'ground': {
-      const p = Skia.Path.Make();
+      const p = Skia.PathBuilder.Make();
       const gap = 11 / density;
       for (let y = gap; y < h + gap; y += gap) {
         const a = (r() - 0.5) * 8;
@@ -93,7 +93,7 @@ function build(kind: HatchKind, w: number, h: number, density: number) {
         p.moveTo(0, y);
         p.cubicTo(w * 0.3, y + a, w * 0.6, y + b, w, y + (a - b) / 3);
       }
-      out.path = p;
+      out.path = p.build();
       break;
     }
     case 'rain': {
@@ -102,14 +102,14 @@ function build(kind: HatchKind, w: number, h: number, density: number) {
       break;
     }
     case 'quakes': {
-      const p = Skia.Path.Make();
+      const p = Skia.PathBuilder.Make();
       const mid = h / 2;
       p.moveTo(0, mid);
       for (let x = 0; x < w; x += 6) {
         const amp = (r() < 0.12 ? 0.42 : 0.14) * h;
         p.lineTo(x + 3, mid + (r() - 0.5) * 2 * amp);
       }
-      out.path = p;
+      out.path = p.build();
       break;
     }
     case 'soil': {
@@ -118,9 +118,7 @@ function build(kind: HatchKind, w: number, h: number, density: number) {
       break;
     }
     case 'egg': {
-      const p = Skia.Path.Make();
-      p.moveTo(0, h / 2).lineTo(w, h / 2);
-      out.path = p;
+      out.path = Skia.PathBuilder.Make().moveTo(0, h / 2).lineTo(w, h / 2).build();
       break;
     }
   }

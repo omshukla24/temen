@@ -12,8 +12,8 @@ export interface ContourPaths {
 
 /** Unit-square contour paths → two Skia paths scaled to cover a w×h box. */
 export function buildContourPaths(lines: ContourLine[], w: number, h: number): ContourPaths {
-  const minor = Skia.Path.Make();
-  const major = Skia.Path.Make();
+  const minor = Skia.PathBuilder.Make();
+  const major = Skia.PathBuilder.Make();
   const s = Math.max(w, h); // cover, keep the terrain's aspect
   const m = Skia.Matrix();
   m.translate((w - s) / 2, (h - s) / 2);
@@ -21,10 +21,9 @@ export function buildContourPaths(lines: ContourLine[], w: number, h: number): C
   for (const l of lines) {
     const p = Skia.Path.MakeFromSVGString(l.d);
     if (!p) continue;
-    p.transform(m);
-    (l.major ? major : minor).addPath(p);
+    (l.major ? major : minor).addPath(p, m);
   }
-  return { minor, major };
+  return { minor: minor.build(), major: major.build() };
 }
 
 /** Live Contours: the place's own terrain, in ink at 8% (index lines at 14%). */
