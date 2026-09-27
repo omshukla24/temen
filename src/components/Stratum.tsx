@@ -6,7 +6,7 @@ import type { Stratum as StratumT } from 'ground-memory';
 
 import { useT } from '@/i18n';
 import { bandColor } from '@/setpieces/CoreDrawing';
-import { makeStyles, motion, space, useTheme } from '@/theme';
+import { makeStyles, motion, space, useTheme, withAlpha } from '@/theme';
 
 import { Glyph } from './Glyph';
 import { HatchFill } from './Hatch';
@@ -65,7 +65,7 @@ export function StratumBand({
       style={[styles.band, { minHeight: minH }]}
     >
       <View style={[styles.column, { backgroundColor: isEgg ? c.crimsonEgg : fill }]}>
-        {h > 0 ? <HatchFill kind={s.hatch} width={COL} height={h} tint={s.hatch === 'lostWater' ? 'rgba(27,110,168,0.55)' : c.dark ? 'rgba(12,23,25,0.45)' : 'rgba(247,248,244,0.5)'} /> : null}
+        {h > 0 ? <HatchFill kind={s.hatch} width={COL} height={h} tint={s.hatch === 'lostWater' ? withAlpha(c.lake, 0.7) : c.hatchInk} /> : null}
         {/* the core-box label: which stratum this is */}
         <View style={styles.boxLabel}>
           <T kind="mono" color={c.ink} style={styles.boxIndex}>

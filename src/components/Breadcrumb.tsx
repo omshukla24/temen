@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { color, space } from '@/theme';
+import { space, useTheme, withAlpha } from '@/theme';
 
 import { Glyph } from './Glyph';
 import { PressableScale } from './PressableScale';
@@ -25,7 +25,8 @@ export function Breadcrumb({
   back?: boolean;
 }) {
   const insets = useSafeAreaInsets();
-  const fg = tone === 'ink' ? color.ink : color.ground;
+  const { c } = useTheme();
+  const fg = tone === 'ink' ? c.ink : c.onPanel;
   const crumbs = trail.filter(Boolean).map((s) => s.toUpperCase());
   return (
     <View style={[styles.bar, { paddingTop: insets.top + space.sm }]} accessibilityRole="header">
@@ -44,7 +45,7 @@ export function Breadcrumb({
         </T>
       </View>
       {index ? (
-        <T kind="mono" color={tone === 'ink' ? color.inkMuted : 'rgba(242,237,228,0.7)'} style={styles.index}>
+        <T kind="mono" color={tone === 'ink' ? c.inkMuted : withAlpha(c.onPanel, 0.7)} style={styles.index}>
           {index}
         </T>
       ) : null}
