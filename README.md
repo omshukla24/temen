@@ -49,6 +49,16 @@ Offline golden tests run against recorded tiles on every `npm test`. This table 
 
 Rain, quakes and soil parse recorded API responses once `npm run fixtures` has saved them (the Chennai check expects Cyclone Michaung: ≥ 150 mm on 4 Dec 2023).
 
+## The app
+
+- **Home** — search a place, paste a Maps link or plus code, *Core this ground* with GPS, or *Drop a pin*. Your locality is named large ("Beta II") with the town small beneath ("Greater Noida"). The latest core and saved places sit underneath.
+- **Places** — every core on the phone, Recent or Saved, with a filter; long-press to pick two to five and compare them.
+- **Watch** — Monsoon Watch (Pro): next-24 h rain at every saved place, with a local alert past the IMD "heavy" line.
+- **Account** — optional sign-in (Google or a one-time email code) that backs up your places and carries Pro to a new phone; membership, restore, preferences, help, data sources, privacy, terms, account deletion.
+- **The check** — the Rising, the Core Pull, the core; sources and method behind ⋯; a speaker that reads the result and stops when tapped again.
+- **Time machine** — Google Earth Timelapse with the Year Dial; the dial seeks the player and the player's playback moves the dial.
+- **Light** — the paper follows the sun where you are (dawn, day, dusk, night), or Light / Dark / System in Preferences. Reduce motion is a preference too.
+
 ## Money (RevenueCat)
 
 - **Free:** unlimited quick checks — the headline, the water and ground strata, the Rising and the time machine. Those sell the app.
@@ -73,7 +83,11 @@ npm run fixtures              # once, with network: records tiles and API respon
 npm run accuracy              # prints the table above
 ```
 
-Env var names only live here; values go in `.env` (gitignored) and EAS env: `EXPO_PUBLIC_RC_STORE` (`test` | `galaxy`), `EXPO_PUBLIC_RC_TEST_KEY`, `EXPO_PUBLIC_RC_GALAXY_KEY`, `EXPO_PUBLIC_APP_UA`.
+Env var names only live here; values go in `.env` (gitignored) and EAS env: `EXPO_PUBLIC_RC_STORE` (`test` | `galaxy`), `EXPO_PUBLIC_RC_TEST_KEY`, `EXPO_PUBLIC_RC_GALAXY_KEY`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_SUPPORT_EMAIL`, `EXPO_PUBLIC_APP_UA`. Without the Supabase pair the app ships without accounts and everything else works.
+
+An installable APK: `eas build -p android --profile preview` (EAS env `preview`), or locally `npx expo run:android --variant release` (reads `.env`; the APK lands in `android/app/build/outputs/apk/release/`).
+
+**Accounts backend** (`supabase/`): `profiles` and `cores` tables with row-level security (each row readable only by its owner), a sign-up trigger, and the `delete-account` Edge Function that deletes the caller's own account from their access token. Privacy policy and terms: [PRIVACY.md](PRIVACY.md), [TERMS.md](TERMS.md) (the same text the app shows).
 
 ## How it is built
 
@@ -93,7 +107,7 @@ Env var names only live here; values go in `.env` (gitignored) and EAS env: `EXP
 src/app/            screens (expo-router)
 src/setpieces/      Skia drawings, each a pure drawing plus a thin on-device wrapper
 src/components/     UI primitives in the "Core Sample" design language
-src/services/       network, storage, purchases, report, watch
+src/services/       network, storage, purchases, accounts + sync, report, watch
 src/state/          small persisted stores
 ground-memory/      the open-source analysis library, tests and fixtures
 ```
