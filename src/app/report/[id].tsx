@@ -1,11 +1,11 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import WebView from 'react-native-webview';
 
-import { Breadcrumb } from '@/components/Breadcrumb';
+import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { HairlineProgress } from '@/components/HairlineProgress';
 import { Screen } from '@/components/Screen';
@@ -15,10 +15,12 @@ import { makePdf, reportHtml, sharePdf } from '@/services/report';
 import { loadKit } from '@/services/sitekit';
 import { canSeeFull, placeKey, useIsPro, useUnlocks } from '@/state/entitlements';
 import { reports } from '@/state/reports';
-import { color, haptic, space } from '@/theme';
+import { haptic, makeStyles, space, useTheme } from '@/theme';
 
 /** See the report before it goes out, then send it as a PDF (WhatsApp, mail, print). */
 export default function Report() {
+  const { c } = useTheme();
+  const styles = useStyles();
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { t } = useT();
@@ -57,7 +59,7 @@ export default function Report() {
   if (!stored) {
     return (
       <Screen>
-        <Breadcrumb trail={[t('crumb.ground'), t('check.report')]} />
+        <Header title={t('check.report')} />
         <T kind="body" style={{ padding: space.gutter }}>
           {t('report.gone')}
         </T>
@@ -67,28 +69,28 @@ export default function Report() {
 
   return (
     <Screen>
-      <Breadcrumb trail={[t('crumb.ground'), stored.report.placeName ?? '', t('check.report')]} index="PDF" />
-      <View style={{ flex: 1, borderTopWidth: 1, borderTopColor: color.ink }}>
+      <Header title={t('check.report')} subtitle={stored.report.placeName ?? 'PDF'} />
+      <View style={{ flex: 1, borderTopWidth: 1, borderTopColor: c.ink }}>
         {!allowed ? (
           <T kind="body" style={{ padding: space.gutter }}>
             {t('check.sealedBand')}
           </T>
         ) : html ? (
           <Animated.View entering={FadeIn} style={{ flex: 1 }}>
-            <WebView source={{ html }} originWhitelist={['*']} style={{ flex: 1, backgroundColor: color.ground }} accessibilityLabel={t('report.preview')} />
+            <WebView source={{ html }} originWhitelist={['*']} style={{ flex: 1, backgroundColor: c.ground }} accessibilityLabel={t('report.preview')} />
           </Animated.View>
         ) : (
           <View style={styles.loading}>
-            <T kind="mono" color={color.ink}>
+            <T kind="mono" color={c.ink}>
               {t('report.sealing').toUpperCase()}
             </T>
-            <HairlineProgress duration={2400} tint={color.laterite} />
+            <HairlineProgress duration={2400} tint={c.laterite} />
           </View>
         )}
       </View>
       <View style={[styles.bar, { paddingBottom: insets.bottom + space.md }]}>
         {err ? (
-          <T kind="small" color={color.laterite}>
+          <T kind="small" color={c.laterite}>
             {err}
           </T>
         ) : null}
@@ -98,7 +100,7 @@ export default function Report() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   loading: { padding: space.gutter, gap: space.md },
-  bar: { paddingHorizontal: space.gutter, paddingTop: space.md, gap: space.sm, borderTopWidth: 1, borderTopColor: color.ink, backgroundColor: color.ground },
-});
+  bar: { paddingHorizontal: space.gutter, paddingTop: space.md, gap: space.sm, borderTopWidth: 1, borderTopColor: c.ink, backgroundColor: c.ground },
+}));

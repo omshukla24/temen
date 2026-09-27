@@ -5,18 +5,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatHemisphere } from 'ground-memory';
 
-import { Breadcrumb } from '@/components/Breadcrumb';
+import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { Glyph } from '@/components/Glyph';
 import { T } from '@/components/T';
 import { useFix } from '@/hooks/useFix';
 import { useT } from '@/i18n';
-import { INDIA, MAP_ATTRIBUTION, MAP_STYLE } from '@/services/map';
+import { INDIA, MAP_ATTRIBUTION } from '@/services/map';
 import { openCheck } from '@/services/nav';
-import { color, haptic, space } from '@/theme';
+import { haptic, makeStyles, space, useTheme } from '@/theme';
 
 /** Drop a pin anywhere: the map moves under a fixed survey crosshair. */
 export default function Pick() {
+  const { c } = useTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const { t } = useT();
   const fix = useFix();
@@ -33,7 +35,7 @@ export default function Pick() {
     <View style={styles.root}>
       <Map
         style={StyleSheet.absoluteFill}
-        mapStyle={MAP_STYLE}
+        mapStyle={c.mapStyle}
         onRegionIsChanging={onMove}
         onRegionDidChange={(e) => {
           onMove(e);
@@ -50,19 +52,19 @@ export default function Pick() {
 
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <View style={styles.cross}>
-          <Glyph name="crosshair" size={56} color={color.laterite} weight={1.4} />
+          <Glyph name="crosshair" size={56} color={c.laterite} weight={1.4} />
         </View>
       </View>
 
       <View style={styles.top} pointerEvents="box-none">
-        <Breadcrumb trail={[t('crumb.ground'), t('home.pin')]} index="00" />
+        <Header variant="overlay" title={t('home.pin')} />
       </View>
 
       <View style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }]}>
-        <T kind="mono" color={color.ink} numberOfLines={1}>
+        <T kind="mono" color={c.ink} numberOfLines={1}>
           {formatHemisphere(center.lat, center.lon, 6)}
         </T>
-        <T kind="caption">{close ? 'Move the map until the crosshair sits on the plot.' : 'Zoom in to street level to place the crosshair on a plot.'}</T>
+        <T kind="caption">{close ? t('pick.hintClose') : t('pick.hintFar')}</T>
         <Button label={t('pick.core')} glyph="drill" onPress={() => openCheck(center, true)} disabled={!close} />
         <T kind="mono" style={styles.attr}>
           {MAP_ATTRIBUTION}
@@ -72,21 +74,21 @@ export default function Pick() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.ground },
+const useStyles = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.ground },
   cross: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  top: { position: 'absolute', left: 0, right: 0, top: 0, backgroundColor: 'rgba(242,237,228,0.92)' },
+  top: { position: 'absolute', left: 0, right: 0, top: 0 },
   sheet: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: color.ground,
+    backgroundColor: c.ground,
     paddingHorizontal: space.gutter,
     paddingTop: space.lg,
     gap: space.sm,
     borderTopWidth: 1,
-    borderTopColor: color.ink,
+    borderTopColor: c.dark ? c.line : c.ink,
   },
   attr: { fontSize: 8, marginTop: space.xs },
-});
+}));
