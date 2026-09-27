@@ -1,5 +1,5 @@
 import * as Clipboard from 'expo-clipboard';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, ScrollView, Share, View, type TextInput } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
@@ -71,6 +71,15 @@ export default function Home() {
   const [reliefNear, setReliefNear] = useState<string | null>(null);
   const input = useRef<TextInput>(null);
   const card = useShareCard();
+  const params = useLocalSearchParams<{ focus?: string }>();
+
+  // "Search" picked on the first-run page: land with the search field ready.
+  useEffect(() => {
+    if (params.focus !== 'search') return;
+    // clearing the param re-runs this effect, so the focus timer must outlive it
+    router.setParams({ focus: undefined });
+    setTimeout(() => input.current?.focus(), 350);
+  }, [params.focus]);
   const [menuFor, setMenuFor] = useState<CoreSummary | null>(null);
   const [asking, setAsking] = useState<CoreSummary | null>(null);
   const openMenu = useCallback(

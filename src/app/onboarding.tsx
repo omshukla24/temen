@@ -10,7 +10,8 @@ import { Screen } from '@/components/Screen';
 import { RegMarks, Staff } from '@/components/Staff';
 import { T } from '@/components/T';
 import { useT } from '@/i18n';
-import { permission } from '@/services/location';
+import { currentFix, permission } from '@/services/location';
+import { openCheck } from '@/services/nav';
 import { CoreCylinder } from '@/setpieces/CoreCylinder';
 import { updateSettings } from '@/state/settings';
 import { haptic, makeStyles, motion, space, useTheme } from '@/theme';
@@ -24,9 +25,10 @@ const SAMPLE = [
 ];
 
 /**
- * First run: three short pages and the location ask. The only place the
- * tagline is shown large. Every page keeps one key at the same spot at the
- * bottom; "Not now" on the last page sits where "Skip" was.
+ * First run: three short pages, then the choice of where to core first —
+ * where you stand, a pin, or a search. Nothing is cored until one is picked.
+ * The only place the tagline is shown large. Every page keeps one key at the
+ * same spot at the bottom; "Not now" on the last page sits where "Skip" was.
  */
 export default function Onboarding() {
   const { t } = useT();
@@ -39,11 +41,16 @@ export default function Onboarding() {
   const x = useSharedValue(0);
   const PAGES = 4;
 
-  const finish = () => {
+  const [locating, setLocating] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  /** Leaves the introduction, then takes the way in that was picked (if any). */
+  const finish = (then?: () => void) => {
     updateSettings({ onboarded: true });
     // first run arrives by redirect (nothing beneath); a replay from Preferences goes back there
     if (router.canGoBack()) router.back();
     else router.replace('/');
+    if (then) setTimeout(then, 0);
   };
 
   const go = (i: number) => {
@@ -57,9 +64,25 @@ export default function Onboarding() {
   };
   const onEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => setPage(Math.round(e.nativeEvent.contentOffset.x / width));
 
-  const allow = async () => {
-    await permission().catch(() => null);
-    finish();
+  // Location is asked for only here, when "where I stand" is picked.
+  const coreHere = async () => {
+    setNote(null);
+    setLocating(true);
+    try {
+      const p = await permission();
+      if (!p.granted) {
+        setNote(t('onboard.startDenied'));
+        haptic.fail();
+        return;
+      }
+      const f = await currentFix();
+      finish(() => openCheck({ lat: f.lat, lon: f.lon }));
+    } catch {
+      setNote(t('onboard.startSlow'));
+      haptic.fail();
+    } finally {
+      setLocating(false);
+    }
   };
 
   const pages: { glyph?: GlyphName; title: string; body: string; hero?: 'core' }[] = [
@@ -75,7 +98,7 @@ export default function Onboarding() {
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
         <T kind="wordmark">TEMEN</T>
         {last ? (
-          <Button label={t('onboard.locLater')} variant="quiet" compact onPress={finish} style={styles.skip} />
+          <Button label={t('onboard.locLater')} variant="quiet" compact onPress={() => finish()} style={styles.skip} />
         ) : (
           <Button label={t('onboard.skip')} variant="quiet" compact onPress={() => go(PAGES - 1)} style={styles.skip} />
         )}
@@ -128,9 +151,27 @@ export default function Onboarding() {
             <Dot key={i} i={i} x={x} />
           ))}
         </View>
+        {last ? (
+          <Animated.View entering={FadeInDown.duration(motion.dur.ui)} style={styles.choices}>
+            <Button label={t('onboard.startPin')} variant="secondary" compact glyph="crosshair" onPress={() => finish(() => router.push('/pick'))} style={styles.flex} />
+            <Button
+              label={t('onboard.startSearch')}
+              variant="secondary"
+              compact
+              glyph="search"
+              onPress={() => finish(() => router.navigate({ pathname: '/', params: { focus: 'search' } }))}
+              style={styles.flex}
+            />
+          </Animated.View>
+        ) : null}
+        {note ? (
+          <T kind="small" color={c.lateriteText} accessibilityLiveRegion="assertive">
+            {note}
+          </T>
+        ) : null}
         <Staff ticks={40} />
         {last ? (
-          <Button label={t('onboard.locAllow')} glyph="crosshair" onPress={allow} />
+          <Button label={t('onboard.startGps')} glyph="drill" loading={locating} onPress={coreHere} />
         ) : (
           <Button label={t('onboard.next')} trailing="arrow" onPress={() => go(page + 1)} />
         )}
@@ -160,6 +201,7 @@ const useStyles = makeStyles((c) => ({
   tagline: { marginBottom: -space.xs },
   body: { maxWidth: 420 },
   bottom: { paddingHorizontal: space.gutter, gap: space.md },
+  choices: { flexDirection: 'row', gap: space.sm },
   dots: { flexDirection: 'row', gap: 6, alignItems: 'center' },
   dot: { height: 6, backgroundColor: c.accent, borderWidth: 1, borderColor: c.ink },
 }));
