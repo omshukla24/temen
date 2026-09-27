@@ -28,6 +28,7 @@ export const LIBRARY_HI: Record<string, string> = {
   'Close to water seen since 1984': '1984 से देखे गए पानी के पास',
   'The records here are quiet': 'यहाँ के रिकॉर्ड शांत हैं',
   'The drill hit bedrock': 'ड्रिल चट्टान से टकराई',
+  'No soil modelled here': 'यहाँ मिट्टी का मॉडल नहीं',
   "What this can't see": 'यह क्या नहीं देख सकता',
   Water: 'पानी',
   Ground: 'ज़मीन',

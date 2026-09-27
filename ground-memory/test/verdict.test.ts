@@ -1,7 +1,8 @@
 import { fixtureFetchTile } from './fixture-fetch';
-import { twoYears, usgsQuery } from './synthetic';
+import { soilGrids, twoYears, usgsQuery } from './synthetic';
 import { parseQuakeTop, quakeReading } from '../src/quakes';
 import { parseRain } from '../src/rain';
+import { SOIL_MASKED, parseSoil } from '../src/soil';
 import { bowlCheck } from '../src/terrain';
 import { settle, type Settled } from '../src/util';
 import { CANT_SEE_ALWAYS, buildReport, questionsFor, summarise, type Readings } from '../src/verdict';
@@ -17,7 +18,7 @@ async function readingsAt(lat: number, lon: number): Promise<Readings> {
     bowl: await settle(() => bowlCheck(lat, lon, fixtureFetchTile), 5000, 'b'),
     rain: ok(parseRain(twoYears({ '20021201': 120 }))),
     quakes: ok(quakeReading(2, parseQuakeTop(usgsQuery([{ mag: 4.8, lon: 80, lat: 13, depth: 10, time: 0, place: 'Bay of Bengal' }]), lat, lon))),
-    soil: fail('SoilGrids: no data here (water, rock or city core)'),
+    soil: fail('Soil took longer than 8 s'),
   };
 }
 
@@ -45,6 +46,27 @@ describe('buildReport', () => {
     expect(soil.status).toBe('error');
     expect(soil.headline).toBe('The drill hit bedrock');
     expect(soil.detail).toMatch(/re-core/);
+  });
+
+  it('says plainly when no soil is modelled, instead of an error', async () => {
+    const readings = { ...(await readingsAt(12.95287, 80.20706)), soil: fail(SOIL_MASKED) };
+    const soil = buildReport({ lat: 12.95287, lon: 80.20706, placeName: null, now, readings }).strata.find((s) => s.key === 'soil')!;
+    expect(soil.status).toBe('empty');
+    expect(soil.headline).toBe('No soil modelled here');
+    expect(soil.detail).toMatch(/built-up ground/);
+  });
+
+  it('names where a borrowed soil reading comes from', async () => {
+    const soil = {
+      ...parseSoil(soilGrids({ clay: [{ label: '15-30cm', mean: 261 }], sand: [{ label: '15-30cm', mean: 300 }], silt: [{ label: '15-30cm', mean: 439 }] })),
+      nearby: { distanceM: 1000, direction: 'N' },
+    };
+    const readings = { ...(await readingsAt(12.95287, 80.20706)), soil: ok(soil) };
+    const s = buildReport({ lat: 12.95287, lon: 80.20706, placeName: null, now, readings }).strata.find((x) => x.key === 'soil')!;
+    expect(s.status).toBe('ok');
+    expect(s.unit).toBe('clay · 1.0 km N');
+    expect(s.detail).toMatch(/nearest modelled soil, 1\.0 km N/);
+    expect(s.facts[0]).toEqual({ label: 'Read at', value: '1.0 km N of the pin' });
   });
 
   it('always ends with what it cannot see', async () => {

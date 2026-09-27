@@ -1,4 +1,5 @@
-import type { SourceRef } from './types';
+import { destination } from './geo';
+import type { FetchJson, SourceRef } from './types';
 import { get } from './util';
 
 export const SOIL_SOURCE: SourceRef = {
@@ -30,7 +31,27 @@ export interface SoilReading {
   texture: string;
   clayHeavy: boolean;
   clayPct: number;
+  /** Set when the point itself is masked and this is the nearest modelled soil. */
+  nearby?: { distanceM: number; direction: string } | null;
 }
+
+/** SoilGrids models no soil under built-up ground, water or bare rock. */
+export const SOIL_MASKED = 'SoilGrids: no data here (water, rock or city core)';
+
+/**
+ * Where to look when the point is masked, nearest first. Probed one at a time
+ * and only until one answers, to stay inside ISRIC's fair use.
+ */
+export const SOIL_PROBES: readonly { bearing: number; m: number; direction: string }[] = [
+  { bearing: 0, m: 1000, direction: 'N' },
+  { bearing: 90, m: 1000, direction: 'E' },
+  { bearing: 180, m: 1000, direction: 'S' },
+  { bearing: 270, m: 1000, direction: 'W' },
+  { bearing: 45, m: 2500, direction: 'NE' },
+  { bearing: 135, m: 2500, direction: 'SE' },
+  { bearing: 225, m: 2500, direction: 'SW' },
+  { bearing: 315, m: 2500, direction: 'NW' },
+];
 
 const FACTOR: Record<string, number> = { clay: 10, sand: 10, silt: 10 }; // g/kg → %
 
@@ -59,9 +80,34 @@ export function parseSoil(json: unknown): SoilReading {
   const top = texture('0-5cm');
   const sub = texture('15-30cm');
   const ref = sub ?? top;
-  if (!ref) throw new Error('SoilGrids: no data here (water, rock or city core)');
+  if (!ref) throw new Error(SOIL_MASKED);
   const clayPct = Math.max(top?.clay ?? 0, sub?.clay ?? 0);
   return { top, sub, texture: usdaTexture(ref), clayHeavy: clayPct >= SOIL_RULES.clayHeavy, clayPct };
+}
+
+const masked = (e: unknown) => e instanceof Error && e.message === SOIL_MASKED;
+
+/**
+ * Soil at a point; if the point is masked (a city block, a lake), the nearest
+ * modelled soil on SOIL_PROBES, marked `nearby`. Network errors are not
+ * hidden: they reject so the stratum can say it could not be read.
+ */
+export async function soilNear(lat: number, lon: number, fetchJson: FetchJson, init?: { headers?: Record<string, string> }): Promise<SoilReading> {
+  try {
+    return parseSoil(await fetchJson(soilUrl(lat, lon), init));
+  } catch (e) {
+    if (!masked(e)) throw e;
+  }
+  for (const p of SOIL_PROBES) {
+    const at = destination({ lat, lon }, p.bearing, p.m);
+    try {
+      const r = parseSoil(await fetchJson(soilUrl(at.lat, at.lon), init));
+      return { ...r, nearby: { distanceM: p.m, direction: p.direction } };
+    } catch (e) {
+      if (!masked(e)) throw e;
+    }
+  }
+  throw new Error(SOIL_MASKED);
 }
 
 /** USDA soil texture triangle (NRCS rules). Inputs in %, normalised to 100. */
