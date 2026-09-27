@@ -29,8 +29,10 @@
   "home.reliefTitle": "Relief mode",
   "home.youAreHere": "Your position",
   "pick.hintClose": "Move the map until the crosshair sits on the plot.",
-  "pick.hintFar": "Zoom in to street level to place the crosshair.",
+  "pick.hintFar": "You are looking at a whole region. Zoom in so the crosshair sits on one plot.",
   "pick.locate": "Go to my location",
   "pick.a11yCross": "Crosshair at the centre of the map",
-  "home.whereTo": "Where to?"
+  "home.whereTo": "Where to?",
+  "pick.zoomIn": "Zoom to street level",
+  "pick.zoomSub": "Then set the crosshair on the plot"
 }

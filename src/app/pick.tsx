@@ -1,5 +1,5 @@
-import { Camera, Map, type ViewStateChangeEvent } from '@maplibre/maplibre-react-native';
-import { useState } from 'react';
+import { Camera, Map, type CameraRef, type ViewStateChangeEvent } from '@maplibre/maplibre-react-native';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, type NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,7 +15,15 @@ import { INDIA, MAP_ATTRIBUTION } from '@/services/map';
 import { openCheck } from '@/services/nav';
 import { haptic, makeStyles, space, useTheme } from '@/theme';
 
-/** Drop a pin anywhere: the map moves under a fixed survey crosshair. */
+/** Street level: close enough that the crosshair sits on one plot. */
+const STREET = 13;
+const LAND = 16.5;
+
+/**
+ * Drop a pin anywhere: the map moves under a fixed survey crosshair. From far
+ * out the button first flies the map down to street level at the crosshair,
+ * so a press always does something.
+ */
 export default function Pick() {
   const { c } = useTheme();
   const styles = useStyles();
@@ -23,14 +31,28 @@ export default function Pick() {
   const { t } = useT();
   const fix = useFix();
   const start = fix.status === 'ok' ? fix.fix : INDIA;
-  const [center, setCenter] = useState<{ lat: number; lon: number; zoom: number }>({ ...start, zoom: fix.status === 'ok' ? 16 : 4.2 });
+  const [center, setCenter] = useState<{ lat: number; lon: number; zoom: number }>({ ...start, zoom: fix.status === 'ok' ? LAND : 4.2 });
+  const camera = useRef<CameraRef>(null);
+  const moved = useRef(false);
+
+  // The map opens before the GPS answers: fly to where you are once it does, unless you've moved it.
+  useEffect(() => {
+    if (fix.status !== 'ok' || moved.current) return;
+    moved.current = true;
+    camera.current?.flyTo({ center: [fix.fix.lon, fix.fix.lat], zoom: LAND, duration: 900 });
+  }, [fix]);
 
   const onMove = (e: NativeSyntheticEvent<ViewStateChangeEvent>) => {
     const [lon, lat] = e.nativeEvent.center;
     setCenter({ lat, lon, zoom: e.nativeEvent.zoom });
   };
 
-  const close = center.zoom >= 13;
+  const close = center.zoom >= STREET;
+  const land = () => {
+    haptic.tick();
+    moved.current = true;
+    camera.current?.flyTo({ center: [center.lon, center.lat], zoom: LAND, duration: 1100 });
+  };
   return (
     <View style={styles.root}>
       <Map
@@ -39,7 +61,10 @@ export default function Pick() {
         onRegionIsChanging={onMove}
         onRegionDidChange={(e) => {
           onMove(e);
-          if (e.nativeEvent.userInteraction) haptic.tick();
+          if (e.nativeEvent.userInteraction) {
+            moved.current = true;
+            haptic.tick();
+          }
         }}
         compass={false}
         logo={false}
@@ -47,7 +72,7 @@ export default function Pick() {
         touchPitch={false}
         touchRotate={false}
       >
-        <Camera initialViewState={{ center: [start.lon, start.lat], zoom: fix.status === 'ok' ? 16 : 4.2 }} />
+        <Camera ref={camera} initialViewState={{ center: [start.lon, start.lat], zoom: fix.status === 'ok' ? LAND : 4.2 }} />
       </Map>
 
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -65,7 +90,11 @@ export default function Pick() {
           {formatHemisphere(center.lat, center.lon, 6)}
         </T>
         <T kind="caption">{close ? t('pick.hintClose') : t('pick.hintFar')}</T>
-        <Button label={t('pick.core')} glyph="drill" onPress={() => openCheck(center, true)} disabled={!close} />
+        {close ? (
+          <Button label={t('pick.core')} glyph="drill" onPress={() => openCheck(center, true)} />
+        ) : (
+          <Button label={t('pick.zoomIn')} sub={t('pick.zoomSub')} glyph="crosshair" variant="ink" onPress={land} />
+        )}
         <T kind="mono" style={styles.attr}>
           {MAP_ATTRIBUTION}
         </T>

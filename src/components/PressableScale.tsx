@@ -29,7 +29,9 @@ export const PressableScale = forwardRef<View, PressableScaleProps>(function Pre
   const reduced = useReducedMotion();
   const s = useSharedValue(1);
   const o = useSharedValue(1);
-  const anim = useAnimatedStyle(() => ({ transform: [{ scale: s.value }], opacity: o.value }));
+  // disabled dims inside the animated style: a static opacity would lose to the animated one
+  const dim = disabled ? 0.4 : 1;
+  const anim = useAnimatedStyle(() => ({ transform: [{ scale: s.value }], opacity: o.value * dim }), [dim]);
   return (
     <APressable
       ref={ref}
@@ -52,7 +54,7 @@ export const PressableScale = forwardRef<View, PressableScaleProps>(function Pre
         if (hapticOnPress) haptic[hapticOnPress]();
         onPress?.(e);
       }}
-      style={[{ minHeight: hit.min, justifyContent: 'center' }, style, anim, disabled && { opacity: 0.45 }]}
+      style={[{ minHeight: hit.min, justifyContent: 'center' }, style, anim]}
     />
   );
 });
