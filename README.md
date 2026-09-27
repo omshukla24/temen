@@ -2,7 +2,7 @@
 
 > **Before you buy or rent anywhere on Earth, Temen shows what that ground remembers:** 40 years of surface water, how low it sits, the worst rain, earthquakes, soil composition, and what to ask before you sign.
 
-[![Test Suite](https://img.shields.io/badge/tests-226%20passed-brightgreen.svg)](#accuracy)
+[![Test Suite](https://img.shields.io/badge/tests-240%20passed-brightgreen.svg)](#accuracy)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Expo](https://img.shields.io/badge/Expo-SDK%2057-black.svg)](https://expo.dev/)
 [![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB.svg)](https://reactnative.dev/)
@@ -102,11 +102,13 @@ Rain, quakes and soil parse recorded API responses once `npm run fixtures` has s
 
 ## The app
 
-- **Home** — search a place, paste a Maps link or plus code, *Core this ground* with GPS, or *Drop a pin*. Your locality is named large ("Beta II") with the town small beneath ("Greater Noida"). The latest core and saved places sit underneath.
-- **Places** — every core on the phone, Recent or Saved, with a filter; long-press to pick two to five and compare them.
-- **Watch** — Monsoon Watch (Pro): next-24 h rain at every saved place, with a local alert past the IMD "heavy" line.
+- **First run** — Temen never cores on its own: the last introduction page asks where to start (where you stand, a pin or a search), and location is asked for only when you pick where you stand.
+- **Home** — search a place, paste a Maps link or plus code, *Core this ground* with GPS, or *Drop a pin*; shortcuts beneath for a pasted link, the time machine, compare, Watch and Places. Your locality is named large ("Beta II") with the town small beneath ("Greater Noida"). The latest core and saved places sit underneath; long-press or ⋯ on one to share, save, compare or delete it.
+- **Places** — every core on the phone: All, Saved or Flagged, sorted newest, oldest, by name, by flags or by distance, with a filter. Each row has save, card, compare and delete; select mode compares two to five or deletes any number; options clear unsaved checks older than 30 days.
+- **Watch** — Monsoon Watch (Pro): next-24 h rain at every saved place, with a local alert past the IMD "heavy" line. Check now and Add a place sit top right; each place can be muted, shared or dropped from the watch.
+- **Share card** — any core as a 1080 × 1350 image: the place, its core beside one row per stratum, the coordinates, the sources and "not a safety rating". Sealed strata stay sealed on the card.
 - **Account** — optional sign-in (Google or a one-time email code) that backs up your places and carries Pro to a new phone; membership, restore, preferences, help, data sources, privacy, terms, account deletion.
-- **The check** — the Rising, the Core Pull, the core; sources and method behind ⋯; a speaker that reads the result and stops when tapped again.
+- **The check** — the Rising, the Core Pull, the core; under the headline, the card, text, copy, maps, directions, re-core, compare and delete are in view; sources and method behind ⋯; a speaker that reads the result and stops when tapped again.
 - **Time machine** — Google Earth Timelapse with the Year Dial; the dial seeks the player and the player's playback moves the dial.
 - **Light** — the paper follows the sun where you are (dawn, day, dusk, night), or Light / Dark / System in Preferences. Reduce motion is a preference too.
 
