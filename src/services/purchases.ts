@@ -130,3 +130,29 @@ export async function openStockPaywall() {
   if (mode === 'off') return;
   await RevenueCatUI.presentPaywall({ displayCloseButton: true });
 }
+
+/**
+ * Ties purchases to the signed-in account, so Pro and paid reports follow the
+ * person to a new phone. Anonymous purchases made before signing in carry over
+ * (RevenueCat's transfer behaviour for the project).
+ */
+export async function linkUser(id: string): Promise<void> {
+  if (mode === 'off') return;
+  try {
+    const r = await Purchases.logIn(id);
+    apply(r.customerInfo);
+  } catch {
+    // purchases keep working anonymously; the next launch tries again
+  }
+}
+
+/** Back to an anonymous store customer after signing out. */
+export async function unlinkUser(): Promise<void> {
+  if (mode === 'off') return;
+  try {
+    if (await Purchases.isAnonymous()) return;
+    apply(await Purchases.logOut());
+  } catch {
+    // already anonymous
+  }
+}

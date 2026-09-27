@@ -3,6 +3,7 @@ import type { GroundReport } from 'ground-memory';
 import { KEYS, readJson, remove, writeJson } from '@/services/storage';
 
 import { mergeCore } from './rules';
+import { byNewest } from './syncRules';
 import { persisted, useStore } from './store';
 
 /** What the Home list needs, without loading every full report. */
@@ -29,6 +30,11 @@ export interface StoredReport {
 const index = persisted<CoreSummary[]>(KEYS.reports, []);
 const MAX_RECENT = 40;
 
+/** What changed, for the account sync (only user actions; a sync's own writes are silent). */
+export type CoreChange = { kind: 'put' | 'saved'; id: string } | { kind: 'remove'; id: string };
+const watchers = new Set<(c: CoreChange) => void>();
+const emit = (c: CoreChange) => watchers.forEach((w) => w(c));
+
 export function summaryOf(report: GroundReport, trail: string[], saved: boolean): CoreSummary {
   return {
     id: report.id,
@@ -54,16 +60,40 @@ export const reports = {
       for (const id of dropped) remove(KEYS.report(id));
       return keep;
     });
+    emit({ kind: 'put', id: report.id });
   },
   get(id: string): StoredReport | null {
     return readJson<StoredReport | null>(KEYS.report(id), null);
   },
-  setSaved(id: string, saved: boolean) {
+  setSaved(id: string, saved: boolean, silent = false) {
     index.set((list) => list.map((c) => (c.id === id ? { ...c, saved } : c)));
+    if (!silent) emit({ kind: 'saved', id });
   },
   remove(id: string) {
     remove(KEYS.report(id));
     index.set((list) => list.filter((c) => c.id !== id));
+    emit({ kind: 'remove', id });
+  },
+  /** Cores downloaded from the account: kept as they are, in date order, never merged away. */
+  adopt(items: { stored: StoredReport; saved: boolean }[]) {
+    if (!items.length) return;
+    for (const { stored } of items) writeJson(KEYS.report(stored.report.id), stored);
+    index.set((list) => {
+      const have = new Set(list.map((c) => c.id));
+      const fresh = items
+        .filter((i) => !have.has(i.stored.report.id))
+        .map((i) => summaryOf(i.stored.report, i.stored.trail ?? [], i.saved));
+      return byNewest([...list, ...fresh]);
+    });
+  },
+  /** Everything on this phone, for "Delete my data". */
+  clear() {
+    for (const c of index.get()) remove(KEYS.report(c.id));
+    index.set([]);
+  },
+  watch(fn: (c: CoreChange) => void) {
+    watchers.add(fn);
+    return () => watchers.delete(fn);
   },
   list: () => index.get(),
   store: index,
