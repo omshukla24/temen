@@ -158,7 +158,7 @@ An installable APK: `eas build -p android --profile preview` (EAS env `preview`)
 ```
 src/app/            screens (expo-router)
 src/setpieces/      Skia drawings, each a pure drawing plus a thin on-device wrapper
-src/components/     UI primitives in the "Cyanotype" design language (Terrain, Staff, Stratum, instrument keys)
+src/components/     UI primitives in the "Field Instrument" design language (Terrain, Staff, Stratum, instrument keys)
 src/services/       network, storage, purchases, accounts + sync, report, watch
 src/state/          small persisted stores
 ground-memory/      the open-source analysis library, tests and fixtures
@@ -166,7 +166,7 @@ ground-memory/      the open-source analysis library, tests and fixtures
 
 ## Credits
 
-Fonts: Geologica and Martian Mono, with Big Shoulders Stencil for the wordmark (SIL Open Font License). Data as listed above; map © OpenStreetMap contributors via OpenFreeMap.
+Fonts: Big Shoulders Stencil, Geologica and Martian Mono (SIL Open Font License). Data as listed above; map © OpenStreetMap contributors via OpenFreeMap.
 
 ## License
 

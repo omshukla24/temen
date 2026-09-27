@@ -1,22 +1,21 @@
-// Design lock v4 "Cyanotype" (DESIGN.md §0). On screen, colours come from the
-// live palette (`useTheme()`, src/theme/palettes.ts). This fixed palette is for
-// print (the PDF report goes out on plain white paper in the plan's blue ink)
-// and for places with no React tree.
+// Design lock v3 "Field Instrument" (DESIGN.md §0). On screen, colours come
+// from the live palette (`useTheme()`, src/theme/palettes.ts). This fixed day
+// palette is for print (the PDF report) and other places with no React tree.
 export const color = {
-  ground: '#FFFFFF',
-  groundDeep: '#E6EDF5',
-  ink: '#0B2440',
-  inkMuted: '#4A5F78',
-  line: '#C9D5E3',
+  ground: '#ECEFE8',
+  groundDeep: '#E0E5DD',
+  ink: '#0C1719',
+  inkMuted: '#4B5C5A',
+  line: '#CBD3CC',
   accent: '#F2BE22',
   accentText: '#875800',
   laterite: '#C4411F',
   lake: '#1B6EA8',
   lakeMemory: '#86B3CB',
   silt: '#94764A',
-  hairline: 'rgba(11,36,64,0.12)',
-  scrim: 'rgba(11,36,64,0.42)',
-  paper: '#F2F6FA',
+  hairline: 'rgba(12,23,25,0.12)',
+  scrim: 'rgba(12,23,25,0.42)',
+  paper: '#F7F8F4',
   crimsonEgg: '#9E1B22',
 } as const;
 

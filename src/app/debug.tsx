@@ -8,11 +8,10 @@ import { Breadcrumb } from '@/components/Breadcrumb';
 import { Screen } from '@/components/Screen';
 import { T } from '@/components/T';
 import { PROBE_JS, type ProbeResult } from '@/features/timelapse/bridge';
-import { color, space, useTheme } from '@/theme';
+import { color, space } from '@/theme';
 
 /** Dev-only spike: does the Timelapse embed load in a WebView, and what does its player expose? */
 export default function Debug() {
-  const { c } = useTheme();
   const [probe, setProbe] = useState<ProbeResult | null>(null);
   const [events, setEvents] = useState<string[]>([]);
   const log = (s: string) => setEvents((e) => [`${new Date().toISOString().slice(11, 19)} ${s}`, ...e].slice(0, 30));
@@ -39,13 +38,13 @@ export default function Debug() {
         />
       </View>
       <ScrollView contentContainerStyle={{ padding: space.gutter, gap: space.xs }}>
-        <T kind="mono" color={c.ink}>
+        <T kind="mono" color={color.ink}>
           PROBE
         </T>
         <T kind="caption" selectable>
           {JSON.stringify(probe, null, 1) ?? 'waiting'}
         </T>
-        <T kind="mono" color={c.ink}>
+        <T kind="mono" color={color.ink}>
           EVENTS
         </T>
         {events.map((e, i) => (

@@ -1,45 +1,43 @@
 import type { TextStyle } from 'react-native';
 
 // Per-weight entry points: the package index would ship every weight in the APK.
+import { BigShouldersStencil_600SemiBold } from '@expo-google-fonts/big-shoulders-stencil/600SemiBold';
 import { BigShouldersStencil_800ExtraBold } from '@expo-google-fonts/big-shoulders-stencil/800ExtraBold';
 import { Geologica_400Regular } from '@expo-google-fonts/geologica/400Regular';
 import { Geologica_500Medium } from '@expo-google-fonts/geologica/500Medium';
 import { Geologica_600SemiBold } from '@expo-google-fonts/geologica/600SemiBold';
-import { Geologica_700Bold } from '@expo-google-fonts/geologica/700Bold';
 import { MartianMono_300Light } from '@expo-google-fonts/martian-mono/300Light';
 import { MartianMono_400Regular } from '@expo-google-fonts/martian-mono/400Regular';
 
 export const fontAssets = {
+  BigShouldersStencil_600SemiBold,
   BigShouldersStencil_800ExtraBold,
   Geologica_400Regular,
   Geologica_500Medium,
   Geologica_600SemiBold,
-  Geologica_700Bold,
   MartianMono_300Light,
   MartianMono_400Regular,
 };
 
-// One family does the talking: Geologica, bold for display and readings,
-// regular for reading. Martian Mono is the instrument's readout. The stencil
-// is kept for the TEMEN wordmark alone.
+// Display: a condensed stencil, the way core boxes and survey kit are
+// labelled. Body: Geologica. Mono: Martian Mono, the instrument's readout.
 export const font = {
-  display: 'Geologica_700Bold',
-  /** A second, lighter voice next to the display (teasers, units). */
-  displayAlt: 'Geologica_400Regular',
+  display: 'BigShouldersStencil_800ExtraBold',
+  /** The lighter stencil, for a second voice next to the display (teasers, units). */
+  displayAlt: 'BigShouldersStencil_600SemiBold',
   body: 'Geologica_400Regular',
   bodyMedium: 'Geologica_500Medium',
   bodySemi: 'Geologica_600SemiBold',
   monoLight: 'MartianMono_300Light',
   mono: 'MartianMono_400Regular',
-  wordmark: 'BigShouldersStencil_800ExtraBold',
 } as const;
 
-// Scale in pt (DESIGN.md §0).
+// Scale in pt (DESIGN.md §0). The stencil is condensed, so it runs larger.
 export const size = {
-  hero: 60,
-  displayXl: 40,
-  display: 34,
-  title: 24,
+  hero: 72,
+  displayXl: 56,
+  display: 44,
+  title: 30,
   heading: 19,
   body: 16,
   small: 14,
@@ -47,24 +45,26 @@ export const size = {
   mono: 10.5,
 } as const;
 
-// Tracking is size-specific: tighten large display, open up small mono caps.
+// Tracking is size-specific: tighten large serif, open up small mono caps.
 const track = (em: number, pt: number) => em * pt;
 
-// Geologica's accents and descenders need ~1.1 em at display sizes.
-const DISPLAY_LH = 1.1;
+// The stencil's caps sit 0.80 em tall over a 0.21 em descent: Android clips the
+// caps if a line is shorter than ~1.02 em, so display lines stay at 1.06 em.
+const STENCIL_LH = 1.06;
 
-const display = (pt: number, em: number): TextStyle => ({
+const stencil = (pt: number, em = 0.005): TextStyle => ({
   fontFamily: font.display,
   fontSize: pt,
-  lineHeight: Math.round(pt * DISPLAY_LH),
+  lineHeight: Math.round(pt * STENCIL_LH),
   letterSpacing: track(em, pt),
+  textTransform: 'uppercase',
 });
 
 export const type = {
-  hero: display(size.hero, -0.03),
-  displayXl: display(size.displayXl, -0.025),
-  display: display(size.display, -0.02),
-  title: display(size.title, -0.015),
+  hero: stencil(size.hero, 0),
+  displayXl: stencil(size.displayXl, 0),
+  display: stencil(size.display),
+  title: stencil(size.title, 0.01),
   heading: {
     fontFamily: font.bodySemi,
     fontSize: size.heading,
@@ -95,21 +95,20 @@ export const type = {
     fontFamily: font.mono,
     fontSize: size.mono,
     lineHeight: size.mono * 1.6,
-    letterSpacing: track(0.1, size.mono),
+    letterSpacing: track(0.2, size.mono),
     textTransform: 'uppercase',
   },
   monoWide: {
     fontFamily: font.monoLight,
     fontSize: size.mono,
     lineHeight: size.mono * 1.6,
-    letterSpacing: track(0.16, size.mono),
+    letterSpacing: track(0.28, size.mono),
     textTransform: 'uppercase',
   },
   wordmark: {
-    fontFamily: font.wordmark,
+    fontFamily: font.display,
     fontSize: 24,
-    // the stencil's caps clip on Android below ~1.02 em
-    lineHeight: Math.round(24 * 1.06),
+    lineHeight: Math.round(24 * STENCIL_LH),
     letterSpacing: track(0.16, 24),
   },
 } satisfies Record<string, TextStyle>;
