@@ -480,7 +480,7 @@ function Check({ params }: { params: CheckParams }) {
           <View style={styles.gapSm}>
             {report.sources.map((s, i) => (
               <View key={s.name} style={styles.sourceRow}>
-                <T kind="mono" color={c.lateriteText}>
+                <T kind="mono" color={c.accentText}>
                   {String(i + 1).padStart(2, '0')}
                 </T>
                 <View style={styles.flex}>

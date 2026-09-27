@@ -31,7 +31,7 @@ export default function Preferences() {
   const phaseName = t(`prefs.phase.${phase}` as 'prefs.phase.day');
 
   return (
-    <Screen>
+    <Screen seed={47}>
       <Header title={t('prefs.title')} />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + space.xxxl }]}>
         <View style={styles.group}>

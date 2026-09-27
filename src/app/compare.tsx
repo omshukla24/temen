@@ -43,7 +43,7 @@ export default function Compare() {
   };
 
   return (
-    <Screen>
+    <Screen seed={29}>
       <Header title={t('compare.title')} subtitle={`${picked.length}/${MAX_COMPARE}`} right={!isPro ? <ProBadge style={styles.badge} /> : null} />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space.xxl, gap: space.lg }}>
         {cores.length < 2 ? (
@@ -121,7 +121,7 @@ export default function Compare() {
 
 const useStyles = makeStyles((c) => ({
   pad: { paddingHorizontal: space.gutter },
-  card: { gap: space.md, marginHorizontal: space.gutter, paddingVertical: space.lg, borderWidth: 1, borderColor: c.dark ? c.line : c.ink, borderRadius: radius.sm, backgroundColor: c.paper },
+  card: { gap: space.md, marginHorizontal: space.gutter, paddingVertical: space.lg, borderWidth: 1.5, borderColor: c.ink, borderRadius: radius.none, backgroundColor: c.paper },
   badge: { marginRight: space.md },
   colTitle: { marginTop: space.sm },
   head: { height: 168, justifyContent: 'flex-end', paddingRight: space.md, paddingBottom: space.sm, borderBottomWidth: 1, borderBottomColor: c.ink },
