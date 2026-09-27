@@ -27,6 +27,7 @@ import { shareMessage } from '@/features/places/share';
 import { useAgo } from '@/features/places/useAgo';
 import { useFix } from '@/hooks/useFix';
 import { useT } from '@/i18n';
+import { permission } from '@/services/location';
 import { syncNow, useAccount } from '@/services/account';
 import { openSaved } from '@/services/nav';
 import { useIsPro } from '@/state/entitlements';
@@ -308,6 +309,8 @@ export default function Places() {
                   haptic.tick();
                   setSort(k);
                   setSorting(false);
+                  // distance needs a fix; ask only now, when it was asked for
+                  if (k === 'nearest') permission().then((p) => !p.granted && toast(t('places.nearNoFix'), 'crosshair'), () => {});
                 }}
               />
             </View>
