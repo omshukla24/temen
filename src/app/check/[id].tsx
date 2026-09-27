@@ -3,7 +3,12 @@ import * as Speech from 'expo-speech';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatHemisphere, formatMetres, summarise, type GroundReport } from 'ground-memory';
@@ -31,6 +36,7 @@ import { canSeeFull, placeKey, useIsPro, useUnlocks } from '@/state/entitlements
 import { reports, useCores } from '@/state/reports';
 import { useSettings } from '@/state/settings';
 import { color, haptic, motion, space } from '@/theme';
+import { useReducedMotion } from '@/theme/reduced';
 
 const ZOOM = 15.5;
 const FREE_STRATA = 2; // water + ground are free; the rest is sealed without a report or Pro

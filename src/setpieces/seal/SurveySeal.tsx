@@ -1,11 +1,18 @@
 import { Canvas, type Transforms3d } from '@shopify/react-native-skia';
 import { useEffect } from 'react';
-import { useDerivedValue, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import {
+  useDerivedValue,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { motion } from '@/theme';
 
 import { useMonoFont } from '../fonts';
 import { SealDrawing } from './SealDrawing';
+import { useReducedMotion } from '@/theme/reduced';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 

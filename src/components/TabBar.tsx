@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Keyboard, View } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import type { BottomTabBarProps } from 'expo-router/tabs';
 
 import { haptic, makeStyles, motion, space, useTheme } from '@/theme';
@@ -8,6 +12,7 @@ import { haptic, makeStyles, motion, space, useTheme } from '@/theme';
 import { Glyph, type GlyphName } from './Glyph';
 import { PressableScale } from './PressableScale';
 import { T } from './T';
+import { useReducedMotion } from '@/theme/reduced';
 
 const ICONS: Record<string, GlyphName> = { index: 'home', places: 'layers', watch: 'bell', account: 'user' };
 const MARK = 26;

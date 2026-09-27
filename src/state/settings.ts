@@ -16,6 +16,8 @@ export interface Settings {
   shareHintSeen: boolean;
   appearance: Appearance;
   haptics: boolean;
+  /** Preferences → Reduce motion (on top of the phone's own accessibility setting). */
+  reduceMotion: boolean;
   /** Finished (or skipped) the first-run introduction. */
   onboarded: boolean;
   /** Where the phone last was, rounded to ~1 km, so Auto can find the sun offline. */
@@ -30,6 +32,7 @@ const DEFAULTS: Settings = {
   shareHintSeen: false,
   appearance: 'auto',
   haptics: true,
+  reduceMotion: false,
   onboarded: false,
   sunAt: null,
 };

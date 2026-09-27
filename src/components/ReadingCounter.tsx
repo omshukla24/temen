@@ -2,13 +2,13 @@ import { useEffect } from 'react';
 import { TextInput, type TextStyle, type StyleProp } from 'react-native';
 import Animated, {
   useAnimatedProps,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
 
 import { motion, type as roles, useTheme } from '@/theme';
+import { useReducedMotion } from '@/theme/reduced';
 
 Animated.addWhitelistedNativeProps({ text: true });
 const AnimatedText = Animated.createAnimatedComponent(TextInput);

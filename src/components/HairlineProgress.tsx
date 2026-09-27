@@ -1,8 +1,15 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming, type SharedValue } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 import { makeStyles, motion, useTheme } from '@/theme';
+import { useReducedMotion } from '@/theme/reduced';
 
 /** A 1 px line that fills left to right. Pass `progress` (0..1) or let it run for `duration`. */
 export function HairlineProgress({

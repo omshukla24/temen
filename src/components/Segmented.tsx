@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Pressable, View, type ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { haptic, makeStyles, motion, radius, useTheme } from '@/theme';
 
 import { T } from './T';
+import { useReducedMotion } from '@/theme/reduced';
 
 export interface SegmentOption<V extends string> {
   value: V;

@@ -1,8 +1,14 @@
 import { forwardRef } from 'react';
 import { Pressable, type PressableProps, type View, type ViewStyle, type StyleProp } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { haptic, hit, motion } from '@/theme';
+import { useReducedMotion } from '@/theme/reduced';
 
 const APressable = Animated.createAnimatedComponent(Pressable);
 

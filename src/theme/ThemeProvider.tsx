@@ -2,7 +2,11 @@ import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState, StyleSheet, useColorScheme } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { useSettings, type Appearance } from '@/state/settings';
@@ -10,6 +14,7 @@ import { useSettings, type Appearance } from '@/state/settings';
 import { phaseAt } from './daylight';
 import { setHapticsEnabled, motion } from './motion';
 import { palettes, strataFills, type Palette, type Phase, type StrataFills } from './palettes';
+import { useReducedMotion } from './reduced';
 
 export interface Theme {
   /** The live palette. */

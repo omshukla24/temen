@@ -5,7 +5,6 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
   useAnimatedReaction,
   useDerivedValue,
-  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
@@ -16,6 +15,7 @@ import { haptic } from '@/theme';
 
 import { useMonoFont } from '../fonts';
 import { DIAL, DialDrawing } from './DialDrawing';
+import { useReducedMotion } from '@/theme/reduced';
 
 /** Where a flick would come to rest (UIScrollView's deceleration, as in Apple's sample code). */
 function project(velocity: number, rate = 0.998) {

@@ -1,6 +1,10 @@
 import { useEffect } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
-import Animated, { useAnimatedProps, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedProps,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import type { Progress } from 'ground-memory';
 
@@ -9,6 +13,7 @@ import { color, motion, space, type as roles } from '@/theme';
 
 import { HairlineProgress } from './HairlineProgress';
 import { T } from './T';
+import { useReducedMotion } from '@/theme/reduced';
 
 const AText = Animated.createAnimatedComponent(TextInput);
 

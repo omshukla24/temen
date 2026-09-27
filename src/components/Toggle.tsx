@@ -1,8 +1,15 @@
 import { useEffect } from 'react';
 import { Pressable } from 'react-native';
-import Animated, { interpolateColor, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { haptic, makeStyles, motion, useTheme } from '@/theme';
+import { useReducedMotion } from '@/theme/reduced';
 
 const W = 46;
 const H = 28;

@@ -1,13 +1,21 @@
 import { Canvas, type Transforms3d } from '@shopify/react-native-skia';
 import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
-import { SensorType, useAnimatedReaction, useAnimatedSensor, useDerivedValue, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
+import {
+  SensorType,
+  useAnimatedReaction,
+  useAnimatedSensor,
+  useDerivedValue,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import type { ContourLine } from 'ground-memory';
 
 import { motion } from '@/theme';
 
 import { buildContourPaths, ContoursDrawing } from './ContoursDrawing';
+import { useReducedMotion } from '@/theme/reduced';
 
 /**
  * The place's real contour lines as the result background. They drift a few
