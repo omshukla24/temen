@@ -167,7 +167,7 @@ export default function Home() {
         : direct.title;
 
   return (
-    <Screen seed={7} drift>
+    <Screen seed={7} drift={focused}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + space.md }]}
