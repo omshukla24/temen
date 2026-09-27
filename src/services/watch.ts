@@ -45,7 +45,7 @@ export async function setupNotifications(): Promise<boolean> {
       name: 'Monsoon Watch',
       description: 'Heavy rain forecast for your saved places',
       importance: Notifications.AndroidImportance.HIGH,
-      lightColor: '#A5482A',
+      lightColor: '#F2BE22',
     });
   }
   const cur = await Notifications.getPermissionsAsync();

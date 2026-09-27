@@ -1,9 +1,9 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-const GROUND = '#F2EDE4';
-const LATERITE = '#A5482A';
-// Night paper (src/theme/palettes.ts), for the dark splash.
-const NIGHT = '#151412';
+// Design lock v3 (src/theme/palettes.ts): the app opens on aquifer in every light,
+// with the core and its levelling staff; survey yellow marks notifications.
+const AQUIFER = '#0C1719';
+const YELLOW = '#F2BE22';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -15,7 +15,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   scheme: 'temen',
   // The app themes itself (dawn/day/dusk/night); 'automatic' lets Settings → System follow the phone.
   userInterfaceStyle: 'automatic',
-  backgroundColor: GROUND,
+  backgroundColor: AQUIFER,
   ios: {
     bundleIdentifier: 'com.urizen.temen',
     supportsTablet: false,
@@ -24,7 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: 'com.urizen.temen',
     versionCode: 1,
     adaptiveIcon: {
-      backgroundColor: GROUND,
+      backgroundColor: AQUIFER,
       foregroundImage: './assets/images/android-icon-foreground.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
@@ -36,10 +36,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        backgroundColor: GROUND,
+        backgroundColor: AQUIFER,
         image: './assets/images/splash-icon.png',
-        imageWidth: 180,
-        dark: { backgroundColor: NIGHT, image: './assets/images/splash-icon.png' },
+        imageWidth: 200,
+        dark: { backgroundColor: AQUIFER, image: './assets/images/splash-icon.png' },
       },
     ],
     '@maplibre/maplibre-react-native',
@@ -58,7 +58,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         recordAudioAndroid: false,
       },
     ],
-    ['expo-notifications', { color: LATERITE }],
+    ['expo-notifications', { color: YELLOW }],
     'expo-sharing',
     'expo-sqlite',
     'expo-localization',
