@@ -41,8 +41,8 @@ Everything platform-specific is injected (`fetchJson`, `fetchTile`, `now`), so t
 | `contours` | smoothed d3-contour lines as unit-square SVG paths |
 | `rain` | NASA POWER daily rain: wettest days, IMD heavy (≥ 64.5 mm) and extreme (≥ 204.5 mm) days per year |
 | `quakes` | USGS count and strongest M4.5+ events within 300 km |
-| `soil` | SoilGrids clay/sand/silt → USDA texture, heavy-clay flag |
-| `forecast` | MET Norway next-24 h rain (needs a User-Agent) |
+| `soil` | SoilGrids clay/sand/silt → USDA texture, heavy-clay flag; `soilNear` borrows the nearest modelled soil when the point is built over or water |
+| `forecast` | MET Norway next-24 h rain (needs a User-Agent); `hourlyStrip` lays it out hour by hour |
 | `relief` | GDACS active floods within 100 km |
 | `timelapse` | Google Earth Timelapse embed and viewer URLs |
 | `parse-location` | WhatsApp / Google / Apple / OSM links, `geo:` URIs, DMS, decimal pairs, plus codes, short links to resolve |
