@@ -38,7 +38,6 @@ import { Rising } from '@/setpieces/rising/Rising';
 import { SurveySeal } from '@/setpieces/seal/SurveySeal';
 import { canSeeFull, placeKey, useIsPro, useUnlocks } from '@/state/entitlements';
 import { reports, useCores } from '@/state/reports';
-import { useSettings } from '@/state/settings';
 import { font, haptic, makeStyles, motion, radius, space, useTheme } from '@/theme';
 import { useReducedMotion } from '@/theme/reduced';
 
@@ -60,7 +59,6 @@ function Check({ params }: { params: CheckParams }) {
   const { t, tl, lang } = useT();
   const { c } = useTheme();
   const styles = useStyles();
-  const { speak } = useSettings();
   const check = useCheck(params);
   const { report } = check;
   const lat = report?.lat ?? Number(params.lat);
@@ -132,12 +130,6 @@ function Check({ params }: { params: CheckParams }) {
       return () => clearTimeout(id);
     }
   }, [pulled, report]);
-
-  // Spoken results (Preferences): once, when the core seats.
-  useEffect(() => {
-    if (pulled && report && speak && params.id === 'new') voice.say(spokenText(report, lang === 'hi', tl), lang);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pulled, report?.id]);
 
   // Leaving the screen (Time machine, Back) quiets the voice.
   useFocusEffect(
@@ -274,7 +266,7 @@ function Check({ params }: { params: CheckParams }) {
                     glyph={voice.speaking ? 'stop' : 'speaker'}
                     label={voice.speaking ? t('check.stopListening') : t('check.listen')}
                     color={voice.speaking ? c.lateriteText : undefined}
-                    onPress={() => voice.toggle(spokenText(report, lang === 'hi', tl), lang)}
+                    onPress={() => voice.toggle(spokenText(report, lang, tl, label.title, t('check.spokenCantSee')), lang)}
                   />
                   <IconButton glyph="more" label={t('common.more')} onPress={() => setMenu(true)} />
                 </>

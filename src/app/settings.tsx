@@ -1,5 +1,4 @@
 import { router } from 'expo-router';
-import * as Speech from 'expo-speech';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -19,7 +18,7 @@ import { reports } from '@/state/reports';
 import { updateSettings, useSettings, type Appearance, type Lang } from '@/state/settings';
 import { haptic, makeStyles, space, useTheme } from '@/theme';
 
-/** Preferences: the light, the language, the voice, touch and motion. */
+/** Preferences: the light, the language, touch and motion. */
 export default function Preferences() {
   const insets = useSafeAreaInsets();
   const { t } = useT();
@@ -68,21 +67,6 @@ export default function Preferences() {
         </View>
 
         <Section label={t('prefs.feel')}>
-          <ListRow
-            glyph="speaker"
-            title={t('settings.speak')}
-            subtitle={t('prefs.voiceHint')}
-            right={
-              <Toggle
-                value={s.speak}
-                label={t('settings.speak')}
-                onValueChange={(v) => {
-                  if (!v) Speech.stop();
-                  updateSettings({ speak: v });
-                }}
-              />
-            }
-          />
           <ListRow glyph="wave" title={t('prefs.haptics')} right={<Toggle value={s.haptics} label={t('prefs.haptics')} onValueChange={(v) => updateSettings({ haptics: v })} />} />
           <ListRow
             glyph="pause"
