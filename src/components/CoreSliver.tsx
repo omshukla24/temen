@@ -106,7 +106,7 @@ const useStyles = makeStyles((c) => ({
   inner: { flexDirection: 'row', alignItems: 'center', gap: space.lg, paddingRight: space.sm },
   text: { flex: 1, minWidth: 0, gap: 2 },
   top: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  title: { flex: 1, minWidth: 0, fontSize: 27, lineHeight: 30 },
+  title: { flex: 1, minWidth: 0, fontSize: 20, lineHeight: 25 },
   // small mono sets its own tracking (the role's is sized for 10.5 pt)
   small: { fontSize: 9.5, lineHeight: 14, letterSpacing: 1.4 },
   headline: { marginTop: 2 },

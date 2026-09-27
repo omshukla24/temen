@@ -23,8 +23,10 @@ export function T({ kind = 'body', color, align, italic, style, maxFontSizeMulti
       style={[
         roles[kind],
         { color: color ?? (MUTED_ROLES.has(kind) ? c.inkMuted : c.ink) },
-        // the second voice: the lighter stencil (there is no italic in an instrument's labels)
-        italic && kind !== 'mono' && kind !== 'monoWide' ? { fontFamily: font.displayAlt, textTransform: 'uppercase' } : null,
+        // the second voice: the lighter stencil on display sizes, medium Geologica on titles
+        // (there is no italic in an instrument's labels)
+        italic && kind === 'title' ? { fontFamily: font.bodyMedium } : null,
+        italic && kind !== 'title' && kind !== 'mono' && kind !== 'monoWide' ? { fontFamily: font.displayAlt, textTransform: 'uppercase' } : null,
         align ? { textAlign: align } : null,
         style,
       ]}

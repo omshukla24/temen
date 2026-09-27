@@ -479,7 +479,7 @@ const useStyles = makeStyles((c) => ({
   // small mono sets its own tracking
   tileIndex: { fontSize: 9, lineHeight: 13, letterSpacing: 1.3 },
   tileText: { gap: space.sm },
-  tileTitle: { fontSize: 30, lineHeight: 32 },
+  tileTitle: { fontSize: 22, lineHeight: 27 },
   dim: { opacity: 0.8 },
   sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 32, marginBottom: space.xs },
   sectionLabel: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
@@ -490,7 +490,7 @@ const useStyles = makeStyles((c) => ({
   strip: { paddingHorizontal: space.gutter, gap: space.md, paddingVertical: space.xs },
   card: { width: 176, borderWidth: 1.5, borderColor: c.ink, borderRadius: radius.none, padding: space.md, gap: 4, backgroundColor: c.paper },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: space.xs },
-  cardTitle: { fontSize: 26, lineHeight: 28 },
+  cardTitle: { fontSize: 20, lineHeight: 25 },
   // small mono sets its own tracking
   cardSub: { fontSize: 9, lineHeight: 13, letterSpacing: 1.2 },
   hint: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start', borderWidth: 1, borderStyle: 'dashed', borderColor: c.ink, padding: space.md, borderRadius: radius.none, marginTop: space.xs },

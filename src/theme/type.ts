@@ -6,6 +6,7 @@ import { BigShouldersStencil_800ExtraBold } from '@expo-google-fonts/big-shoulde
 import { Geologica_400Regular } from '@expo-google-fonts/geologica/400Regular';
 import { Geologica_500Medium } from '@expo-google-fonts/geologica/500Medium';
 import { Geologica_600SemiBold } from '@expo-google-fonts/geologica/600SemiBold';
+import { Geologica_700Bold } from '@expo-google-fonts/geologica/700Bold';
 import { MartianMono_300Light } from '@expo-google-fonts/martian-mono/300Light';
 import { MartianMono_400Regular } from '@expo-google-fonts/martian-mono/400Regular';
 
@@ -15,12 +16,14 @@ export const fontAssets = {
   Geologica_400Regular,
   Geologica_500Medium,
   Geologica_600SemiBold,
+  Geologica_700Bold,
   MartianMono_300Light,
   MartianMono_400Regular,
 };
 
 // Display: a condensed stencil, the way core boxes and survey kit are
-// labelled. Body: Geologica. Mono: Martian Mono, the instrument's readout.
+// labelled, kept for the big moments (wordmark, hero, screen titles, readings).
+// Titles on cards, rows and keys are Geologica bold. Mono: Martian Mono.
 export const font = {
   display: 'BigShouldersStencil_800ExtraBold',
   /** The lighter stencil, for a second voice next to the display (teasers, units). */
@@ -28,6 +31,7 @@ export const font = {
   body: 'Geologica_400Regular',
   bodyMedium: 'Geologica_500Medium',
   bodySemi: 'Geologica_600SemiBold',
+  bodyBold: 'Geologica_700Bold',
   monoLight: 'MartianMono_300Light',
   mono: 'MartianMono_400Regular',
 } as const;
@@ -37,7 +41,7 @@ export const size = {
   hero: 72,
   displayXl: 56,
   display: 44,
-  title: 30,
+  title: 22,
   heading: 19,
   body: 16,
   small: 14,
@@ -64,7 +68,12 @@ export const type = {
   hero: stencil(size.hero, 0),
   displayXl: stencil(size.displayXl, 0),
   display: stencil(size.display),
-  title: stencil(size.title, 0.01),
+  title: {
+    fontFamily: font.bodyBold,
+    fontSize: size.title,
+    lineHeight: Math.round(size.title * 1.22),
+    letterSpacing: track(-0.015, size.title),
+  },
   heading: {
     fontFamily: font.bodySemi,
     fontSize: size.heading,
