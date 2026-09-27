@@ -93,7 +93,7 @@ export default function Account() {
         : t('places.notSynced');
 
   return (
-    <Screen>
+    <Screen seed={43}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Header variant="large" eyebrow={t('tab.account')} title={signedIn ? (user.name ?? t('account.signedInTitle')) : t('account.title')} subtitle={signedIn ? (user.email ?? undefined) : undefined} />
 
@@ -204,7 +204,7 @@ export default function Account() {
 const useStyles = makeStyles((c) => ({
   scroll: { paddingBottom: space.xxxl },
   body: { paddingHorizontal: space.gutter, gap: space.xl },
-  card: { borderWidth: 1, borderColor: c.dark ? c.line : c.ink, borderRadius: radius.sm, padding: space.lg, gap: space.sm, backgroundColor: c.paper },
+  card: { borderWidth: 1.5, borderColor: c.ink, borderRadius: radius.none, padding: space.lg, gap: space.sm, backgroundColor: c.paper },
   cardBtn: { marginTop: space.sm },
   version: { marginTop: space.lg },
   sheet: { gap: space.md, paddingTop: space.sm },

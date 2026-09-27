@@ -118,7 +118,7 @@ export default function Paywall() {
   ];
 
   return (
-    <Screen>
+    <Screen seed={31}>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + space.sm, paddingBottom: insets.bottom + space.xxl }]}>
         <View style={styles.top}>
           <IconButton glyph="close" label={t('common.close')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
@@ -127,10 +127,10 @@ export default function Paywall() {
 
         <View style={styles.hero}>
           <View style={styles.heroText}>
-            <T kind="display">{place ? t('paywall.title') : t('paywall.proTitle')}</T>
+            <T kind="displayXl">{place ? t('paywall.title') : t('paywall.proTitle')}</T>
             {teaser ? (
-              <Animated.View entering={FadeInDown.duration(motion.dur.ui)}>
-                <T kind="title" italic color={c.lateriteText}>
+              <Animated.View entering={FadeInDown.duration(motion.dur.ui)} style={styles.teaser}>
+                <T kind="title" italic color={c.accentText}>
                   {teaser}
                 </T>
               </Animated.View>
@@ -143,7 +143,9 @@ export default function Paywall() {
           <View style={styles.perks}>
             {PERKS.map((k, i) => (
               <Animated.View key={k.key} entering={FadeInDown.delay(i * motion.stagger).duration(motion.dur.ui)} style={styles.perk}>
-                <Glyph name={k.glyph} size={20} color={c.lateriteText} />
+                <View style={styles.perkIcon}>
+                  <Glyph name={k.glyph} size={18} color={c.onAccent} />
+                </View>
                 <T kind="body" style={styles.flex}>
                   {t(k.key)}
                 </T>
@@ -155,7 +157,7 @@ export default function Paywall() {
         <Hairline strong />
 
         {offer === 'loading' ? (
-          <ActivityIndicator color={c.laterite} style={styles.loading} />
+          <ActivityIndicator color={c.ink} style={styles.loading} />
         ) : offer === 'off' || offer === null ? (
           <View style={styles.none}>
             <T kind="heading">{t('paywall.noStore')}</T>
@@ -178,7 +180,7 @@ export default function Paywall() {
                     accessibilityRole="radio"
                     accessibilityState={{ checked: choice === r.key, disabled: !r.p }}
                     accessibilityLabel={`${r.label}, ${r.p?.product.priceString ?? t('paywall.unavailable')} ${r.unit.toLowerCase()}. ${r.sub}`}
-                    style={styles.row}
+                    style={[styles.row, choice === r.key && styles.rowOn]}
                   >
                     <View style={styles.rowInner}>
                       <View style={[styles.radio, choice === r.key && styles.radioOn]}>{choice === r.key ? <View style={styles.radioDot} /> : null}</View>
@@ -187,7 +189,7 @@ export default function Paywall() {
                         <T kind="caption">{r.sub}</T>
                         {r.badge ? (
                           <View style={styles.badge}>
-                            <T kind="mono" color={c.onLaterite} style={styles.badgeText}>
+                            <T kind="mono" color={c.onAccent} style={styles.badgeText}>
                               {r.badge}
                             </T>
                           </View>
@@ -257,18 +259,21 @@ const useStyles = makeStyles((c) => ({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginLeft: -space.md },
   hero: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-end', marginTop: space.md },
   heroText: { flex: 1, gap: space.sm },
+  teaser: { borderLeftWidth: 3, borderLeftColor: c.accent, paddingLeft: space.md },
   perks: { gap: space.md, paddingVertical: space.sm },
   perk: { flexDirection: 'row', gap: space.md, alignItems: 'center' },
+  perkIcon: { width: 32, height: 32, backgroundColor: c.accent, borderWidth: 1.5, borderColor: c.ink, alignItems: 'center', justifyContent: 'center' },
   loading: { marginVertical: space.xxl },
   none: { gap: space.md, paddingVertical: space.lg },
-  row: { paddingVertical: space.md },
+  row: { paddingVertical: space.md, paddingHorizontal: space.sm, marginHorizontal: -space.sm },
+  rowOn: { backgroundColor: c.paper, borderLeftWidth: 4, borderLeftColor: c.accent },
   rowInner: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   rowText: { flex: 1, gap: 2 },
   price: { alignItems: 'flex-end' },
-  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: c.ink, alignItems: 'center', justifyContent: 'center' },
-  radioOn: { borderColor: c.laterite },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.laterite },
-  badge: { alignSelf: 'flex-start', backgroundColor: c.laterite, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1, marginTop: 4 },
+  radio: { width: 22, height: 22, borderRadius: 2, borderWidth: 1.5, borderColor: c.ink, alignItems: 'center', justifyContent: 'center' },
+  radioOn: { backgroundColor: c.accent },
+  radioDot: { width: 8, height: 8, backgroundColor: c.onAccent },
+  badge: { alignSelf: 'flex-start', backgroundColor: c.accent, borderWidth: 1, borderColor: c.ink, borderRadius: radius.none, paddingHorizontal: 8, paddingVertical: 1, marginTop: 4 },
   badgeText: { fontSize: 9, letterSpacing: 1.2 },
   cta: { marginTop: space.lg },
   gapTop: { marginTop: space.sm },

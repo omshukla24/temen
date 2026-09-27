@@ -18,7 +18,7 @@ export function dialPaths(from: number, to: number, spacing: number, h: number) 
 }
 
 /**
- * The Year Dial: a ruler that slides under a fixed laterite index. `offset`
+ * The Year Dial: a ruler that slides under a fixed survey-yellow index. `offset`
  * is the ruler's x translation; the centre of the view reads the year.
  */
 export interface DialColors {
@@ -27,10 +27,11 @@ export interface DialColors {
   hairline: string;
   /** Hex, so the edge fades can append an alpha. */
   ground: string;
-  laterite: string;
+  /** The index: a yellow blade outlined in ink. */
+  mark: string;
 }
 
-const PRINT_DIAL: DialColors = { ink: color.ink, inkMuted: color.inkMuted, hairline: color.hairline, ground: color.ground, laterite: color.laterite };
+const PRINT_DIAL: DialColors = { ink: color.ink, inkMuted: color.inkMuted, hairline: color.hairline, ground: color.ground, mark: color.accent };
 
 export function DialDrawing({
   width,
@@ -61,14 +62,15 @@ export function DialDrawing({
   const transform = typeof offset === 'number' ? [{ translateX: width / 2 + offset }] : offset;
   const fade = Math.min(80, width * 0.22);
   const tri = Skia.PathBuilder.Make()
-    .moveTo(width / 2 - 6, 0)
-    .lineTo(width / 2 + 6, 0)
-    .lineTo(width / 2, 8)
+    .moveTo(width / 2 - 8, 0)
+    .lineTo(width / 2 + 8, 0)
+    .lineTo(width / 2, 11)
     .close()
     .build();
+  const blade = { x: width / 2 - 2.5, y: 0, width: 5, height: height * 0.66 };
   return (
     <Group>
-      <Line p1={vec(0, height * 0.18)} p2={vec(width, height * 0.18)} color={colors.hairline} strokeWidth={1} />
+      <Line p1={vec(0, height * 0.18)} p2={vec(width, height * 0.18)} color={colors.ink} strokeWidth={1.5} />
       <Group transform={transform}>
         <Path path={minor} style="stroke" strokeWidth={1} color={colors.inkMuted} />
         <Path path={major} style="stroke" strokeWidth={1.5} color={colors.ink} />
@@ -85,8 +87,10 @@ export function DialDrawing({
       <Rect x={width - fade} y={0} width={fade} height={height}>
         <LinearGradient start={vec(width - fade, 0)} end={vec(width, 0)} colors={[`${colors.ground}00`, colors.ground]} />
       </Rect>
-      <Line p1={vec(width / 2, 0)} p2={vec(width / 2, height * 0.66)} color={colors.laterite} strokeWidth={2} />
-      <Path path={tri} color={colors.laterite} />
+      <Rect {...blade} color={colors.mark} />
+      <Rect {...blade} style="stroke" strokeWidth={1.2} color={colors.ink} />
+      <Path path={tri} color={colors.mark} />
+      <Path path={tri} style="stroke" strokeWidth={1.2} color={colors.ink} />
     </Group>
   );
 }

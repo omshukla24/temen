@@ -94,7 +94,7 @@ export default function SignIn() {
 
   if (acct.status === 'off') {
     return (
-      <Screen>
+      <Screen seed={43}>
         <Header title={t('account.signIn')} />
         <View style={styles.pad}>
           <T kind="title">{t('signin.offTitle')}</T>
@@ -105,7 +105,7 @@ export default function SignIn() {
   }
 
   return (
-    <Screen>
+    <Screen seed={43}>
       <Header title={step === 'code' ? t('signin.codeTitle') : t('account.signIn')} onBack={step === 'code' ? () => setStep('start') : undefined} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.pad} keyboardShouldPersistTaps="handled">

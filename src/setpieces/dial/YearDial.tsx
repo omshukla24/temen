@@ -55,7 +55,7 @@ export function YearDial({
 }) {
   const reduced = useReducedMotion();
   const { c } = useTheme();
-  const dialColors = useMemo(() => ({ ink: c.ink, inkMuted: c.inkMuted, hairline: c.hairline, ground: c.ground, laterite: c.laterite }), [c]);
+  const dialColors = useMemo(() => ({ ink: c.ink, inkMuted: c.inkMuted, hairline: c.hairline, ground: c.ground, mark: c.accent }), [c]);
   const font = useMonoFont(9);
   const [width, setWidth] = useState(0);
   const sp = DIAL.spacing;

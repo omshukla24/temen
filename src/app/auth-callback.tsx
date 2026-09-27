@@ -24,7 +24,7 @@ export default function AuthCallback() {
   }, []);
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.ground }}>
-      <ActivityIndicator color={c.laterite} />
+      <ActivityIndicator color={c.ink} />
     </View>
   );
 }

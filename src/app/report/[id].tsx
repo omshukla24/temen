@@ -84,7 +84,7 @@ export default function Report() {
             <T kind="mono" color={c.ink}>
               {t('report.sealing').toUpperCase()}
             </T>
-            <HairlineProgress duration={2400} tint={c.laterite} />
+            <HairlineProgress duration={2400} tint={c.accentText} thick />
           </View>
         )}
       </View>

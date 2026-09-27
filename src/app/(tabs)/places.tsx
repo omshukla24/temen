@@ -110,7 +110,7 @@ export default function Places() {
   const count = rows.length === 1 ? t('places.countOne') : t('places.count', { n: rows.length });
 
   return (
-    <Screen>
+    <Screen seed={19}>
       <Header
         variant="large"
         title={t('tab.places')}
@@ -161,7 +161,7 @@ export default function Places() {
         contentContainerStyle={styles.list}
         refreshControl={
           signedIn ? (
-            <RefreshControl refreshing={acct.syncing} onRefresh={syncNow} colors={[c.laterite]} progressBackgroundColor={c.paper} />
+            <RefreshControl refreshing={acct.syncing} onRefresh={syncNow} colors={[c.ink]} progressBackgroundColor={c.accent} />
           ) : undefined
         }
         renderItem={({ item, index }) => (

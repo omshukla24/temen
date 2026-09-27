@@ -92,7 +92,7 @@ export default function TimeMachine() {
   const openViewer = () => WebBrowser.openBrowserAsync(timelapseViewerUrl(lat, lon));
 
   return (
-    <Screen>
+    <Screen seed={13}>
       <Header
         title={label.title}
         subtitle={t('check.timeMachine').toUpperCase()}
@@ -130,7 +130,7 @@ export default function TimeMachine() {
             />
           )}
         </View>
-        <HairlineProgress progress={load} tint={c.laterite} />
+        <HairlineProgress progress={load} tint={c.accent} thick />
 
         <View style={[styles.pad, styles.readout]}>
           <View style={styles.flex}>

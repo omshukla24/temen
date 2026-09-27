@@ -77,7 +77,10 @@ export default function Pick() {
 
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <View style={styles.cross}>
-          <Glyph name="crosshair" size={56} color={c.laterite} weight={1.4} />
+          <View style={styles.crossBox}>
+            <Glyph name="crosshair" size={60} color={c.ink} weight={2} />
+            <View style={styles.crossDot} />
+          </View>
         </View>
       </View>
 
@@ -106,6 +109,8 @@ export default function Pick() {
 const useStyles = makeStyles((c) => ({
   root: { flex: 1, backgroundColor: c.ground },
   cross: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  crossBox: { alignItems: 'center', justifyContent: 'center' },
+  crossDot: { position: 'absolute', width: 10, height: 10, borderRadius: 5, backgroundColor: c.accent, borderWidth: 2, borderColor: c.ink },
   top: { position: 'absolute', left: 0, right: 0, top: 0 },
   sheet: {
     position: 'absolute',
@@ -116,8 +121,8 @@ const useStyles = makeStyles((c) => ({
     paddingHorizontal: space.gutter,
     paddingTop: space.lg,
     gap: space.sm,
-    borderTopWidth: 1,
-    borderTopColor: c.dark ? c.line : c.ink,
+    borderTopWidth: 2,
+    borderTopColor: c.ink,
   },
   attr: { fontSize: 8, marginTop: space.xs },
 }));

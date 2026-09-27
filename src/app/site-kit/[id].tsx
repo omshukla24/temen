@@ -74,7 +74,7 @@ export default function SiteKitScreen() {
   };
 
   return (
-    <Screen>
+    <Screen seed={37}>
       <Header title={t('kit.title')} subtitle={`${stored?.report.placeName ?? ''} · ${done}/${items.length}`.replace(/^ · /, '')} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: insets.bottom + space.xxl, gap: space.lg }}>
         <T kind="title">{t('kit.lede')}</T>
@@ -163,7 +163,7 @@ export default function SiteKitScreen() {
 const useStyles = makeStyles((c) => ({
   item: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   box: { width: 24, height: 24, borderWidth: 1.5, borderColor: c.ink, alignItems: 'center', justifyContent: 'center' },
-  boxOn: { backgroundColor: c.laterite, borderColor: c.laterite },
+  boxOn: { backgroundColor: c.accent, borderColor: c.ink },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
   photo: { width: '47%', gap: 4 },
   img: { width: '100%', aspectRatio: 1, borderWidth: 1, borderColor: c.ink },
@@ -171,5 +171,5 @@ const useStyles = makeStyles((c) => ({
   camBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: space.lg },
   camBtn: { width: 56, height: 56, alignItems: 'center' },
   shutter: { width: 76, height: 76, borderRadius: 38, borderWidth: 3, borderColor: color.ground, alignItems: 'center', justifyContent: 'center' },
-  shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: color.laterite },
+  shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: color.accent, borderWidth: 3, borderColor: color.ink },
 }));

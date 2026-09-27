@@ -15,7 +15,7 @@ export function DocPage({ title, eyebrow, children }: { title: string; eyebrow?:
   const insets = useSafeAreaInsets();
   const styles = useStyles();
   return (
-    <Screen>
+    <Screen seed={53}>
       <Header title={title} subtitle={eyebrow} />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + space.xxxl }]}>{children}</ScrollView>
     </Screen>
