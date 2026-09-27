@@ -1,53 +1,58 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInRight, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Breadcrumb } from '@/components/Breadcrumb';
 import { Button } from '@/components/Button';
 import { CoreSliver } from '@/components/CoreSliver';
+import { EmptyState } from '@/components/EmptyState';
 import { Hairline } from '@/components/Hairline';
+import { Header } from '@/components/Header';
+import { ProBadge } from '@/components/ProBadge';
 import { Screen } from '@/components/Screen';
 import { T } from '@/components/T';
+import { initialPick, MAX_COMPARE, toggleIn } from '@/features/compare/pick';
 import { notable, ROWS } from '@/features/compare/rank';
+import { placeLabel } from '@/features/placeLabel';
 import { useT } from '@/i18n';
 import { CoreCylinder } from '@/setpieces/CoreCylinder';
 import { useIsPro } from '@/state/entitlements';
 import { reports, useCores } from '@/state/reports';
-import { color, haptic, motion, space } from '@/theme';
+import { haptic, makeStyles, motion, radius, space, useTheme } from '@/theme';
 
 const COL = 148;
 const ROW_H = 78;
-const MAX = 5;
 
 /** The core tray: 2–5 cores side by side, strata aligned, the most notable reading per row marked. */
 export default function Compare() {
+  const { ids } = useLocalSearchParams<{ ids?: string }>();
   const insets = useSafeAreaInsets();
   const { t, tl } = useT();
+  const { c } = useTheme();
+  const styles = useStyles();
   const isPro = useIsPro();
   const cores = useCores();
-  const [picked, setPicked] = useState<string[]>(() => cores.filter((c) => c.saved).slice(0, 3).map((c) => c.id));
+  const [picked, setPicked] = useState<readonly string[]>(() => initialPick(cores, ids));
   const full = useMemo(() => picked.map((id) => reports.get(id)?.report).filter((r): r is NonNullable<typeof r> => !!r), [picked]);
   const marks = useMemo(() => notable(full), [full]);
 
   const toggle = (id: string) => {
     haptic.tick();
-    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= MAX ? p : [...p, id]));
+    setPicked((p) => toggleIn(p, id));
   };
 
   return (
     <Screen>
-      <Breadcrumb trail={[t('crumb.ground'), t('compare.title')]} index={`${picked.length}/${MAX}`} />
+      <Header title={t('compare.title')} subtitle={`${picked.length}/${MAX_COMPARE}`} right={!isPro ? <ProBadge style={styles.badge} /> : null} />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space.xxl, gap: space.lg }}>
-        <View style={styles.pad}>
-          <T kind="title">{t('compare.lede')}</T>
-        </View>
-
-        {!isPro ? (
-          <View style={[styles.pad, { gap: space.sm }]}>
-            <T kind="small">{t('compare.pro')}</T>
-            <Button label={t('common.seePro')} glyph="lock" onPress={() => router.push('/paywall')} />
+        {cores.length < 2 ? (
+          <EmptyState glyph="tray" title={t('compare.emptyTitle')} body={t('compare.emptyBody')} action={t('places.goHome')} onAction={() => router.navigate('/')} />
+        ) : !isPro ? (
+          <View style={[styles.pad, styles.card]}>
+            <T kind="heading">{t('compare.proTitle')}</T>
+            <T kind="small">{t('compare.proBody')}</T>
+            <Button label={t('common.seePro')} glyph="star" onPress={() => router.push('/paywall')} />
           </View>
         ) : full.length >= 2 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: space.gutter }}>
@@ -56,7 +61,7 @@ export default function Compare() {
               <View style={{ width: 64, paddingTop: 168 }}>
                 {ROWS.map((k, i) => (
                   <View key={k} style={[styles.cell, { height: ROW_H }]}>
-                    <T kind="mono" color={color.ink}>
+                    <T kind="mono" color={c.ink}>
                       {String(i + 1).padStart(2, '0')}
                     </T>
                     <T kind="mono">{tl(k === 'quakes' ? 'Quakes' : k[0].toUpperCase() + k.slice(1)).toUpperCase()}</T>
@@ -67,8 +72,8 @@ export default function Compare() {
                 <Animated.View key={r.id} entering={FadeInRight.delay(ci * motion.stagger).springify().damping(18)} layout={LinearTransition} style={{ width: COL }}>
                   <View style={styles.head}>
                     <CoreCylinder width={30} height={96} bands={r.strata.map((s) => ({ hatch: s.hatch, significance: s.significance, status: s.status }))} tilt={0.2} />
-                    <T kind="heading" numberOfLines={2} style={{ marginTop: space.sm }}>
-                      {r.placeName ?? r.id}
+                    <T kind="heading" numberOfLines={2} style={styles.colTitle}>
+                      {placeLabel({ placeName: r.placeName, lat: r.lat, lon: r.lon }).title}
                     </T>
                   </View>
                   {ROWS.map((k) => {
@@ -76,7 +81,7 @@ export default function Compare() {
                     const mark = marks[k] === r.id;
                     return (
                       <View key={k} style={[styles.cell, { height: ROW_H }, mark && styles.marked]} accessibilityLabel={`${r.placeName}, ${k}: ${s?.reading ?? t('compare.none')}. ${mark ? t('compare.notable') : ''}`}>
-                        <T kind="title" color={mark ? color.laterite : color.ink} numberOfLines={1}>
+                        <T kind="title" color={mark ? c.lateriteText : c.ink} numberOfLines={1}>
                           {s?.status === 'ok' ? s.reading : '—'}
                         </T>
                         <T kind="caption" numberOfLines={2}>
@@ -91,30 +96,35 @@ export default function Compare() {
           </ScrollView>
         ) : (
           <T kind="small" style={styles.pad}>
-            {t('compare.pick')}
+            {t('compare.pickTwo')}
           </T>
         )}
 
-        <View style={styles.pad}>
-          <T kind="mono" color={color.ink}>
-            {t('compare.pick').toUpperCase()}
-          </T>
-          <Hairline />
-          {cores.map((c) => (
-            <Animated.View key={c.id} entering={FadeIn}>
-              <CoreSliver core={c} onPress={() => toggle(c.id)} selected={picked.includes(c.id)} />
-              <Hairline />
-            </Animated.View>
-          ))}
-        </View>
+        {cores.length >= 2 ? (
+          <View>
+            <T kind="mono" color={c.ink} style={styles.pad}>
+              {t('compare.pick').toUpperCase()}
+            </T>
+            <Hairline />
+            {cores.map((core) => (
+              <Animated.View key={core.id} entering={FadeIn}>
+                <CoreSliver core={core} onPress={toggle} selecting selected={picked.includes(core.id)} />
+                <Hairline />
+              </Animated.View>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   pad: { paddingHorizontal: space.gutter },
-  head: { height: 168, justifyContent: 'flex-end', paddingRight: space.md, paddingBottom: space.sm, borderBottomWidth: 1, borderBottomColor: color.ink },
-  cell: { borderBottomWidth: 1, borderBottomColor: color.hairline, paddingVertical: space.sm, paddingRight: space.md, justifyContent: 'center' },
-  marked: { borderLeftWidth: 3, borderLeftColor: color.laterite, paddingLeft: space.sm, backgroundColor: 'rgba(165,72,42,0.05)' },
-});
+  card: { gap: space.md, marginHorizontal: space.gutter, paddingVertical: space.lg, borderWidth: 1, borderColor: c.dark ? c.line : c.ink, borderRadius: radius.sm, backgroundColor: c.paper },
+  badge: { marginRight: space.md },
+  colTitle: { marginTop: space.sm },
+  head: { height: 168, justifyContent: 'flex-end', paddingRight: space.md, paddingBottom: space.sm, borderBottomWidth: 1, borderBottomColor: c.ink },
+  cell: { borderBottomWidth: 1, borderBottomColor: c.hairline, paddingVertical: space.sm, paddingRight: space.md, justifyContent: 'center' },
+  marked: { borderLeftWidth: 3, borderLeftColor: c.laterite, paddingLeft: space.sm, backgroundColor: c.groundDeep },
+}));
