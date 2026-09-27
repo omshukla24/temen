@@ -1,3 +1,6 @@
+/** Water and ground are free on every core; the rest is sealed without a report or Pro. */
+export const FREE_STRATA = 2;
+
 /** A paid report belongs to the place, so re-coring the same plot keeps it (~11 m grid). */
 export function placeKey(lat: number, lon: number): string {
   return `${lat.toFixed(4)},${lon.toFixed(4)}`;
