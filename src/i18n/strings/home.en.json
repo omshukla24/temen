@@ -7,7 +7,7 @@
   "home.proMember": "Pro member",
   "home.coreTileSub": "GPS · ~10 s",
   "home.coreHint": "Checks the ground where you are standing",
-  "home.pinTileSub": "Anywhere on the map",
+  "home.pinTileSub": "Map · anywhere",
   "home.continue": "Continue",
   "home.seeAll": "See all",
   "home.saved": "Saved",
@@ -34,5 +34,8 @@
   "pick.a11yCross": "Crosshair at the centre of the map",
   "home.whereTo": "Where to?",
   "pick.zoomIn": "Zoom to street level",
-  "pick.zoomSub": "Then set the crosshair on the plot"
+  "pick.zoomSub": "Then set the crosshair on the plot",
+  "home.standingOn": "You are standing on",
+  "home.pickPlace": "Search, paste or drop a pin",
+  "home.scaleMid": "40 years under you"
 }
