@@ -1,1 +1,27 @@
-{}
+{
+  "prefs.title": "पसंद",
+  "prefs.appearance": "रोशनी",
+  "prefs.appearance.auto": "ऑटो",
+  "prefs.appearance.light": "हल्का",
+  "prefs.appearance.dark": "गहरा",
+  "prefs.appearance.system": "सिस्टम",
+  "prefs.phase.dawn": "भोर",
+  "prefs.phase.day": "दिन",
+  "prefs.phase.dusk": "साँझ",
+  "prefs.phase.night": "रात",
+  "prefs.lightNow": "अभी: {phase}।",
+  "prefs.autoHint": "ऑटो आपकी जगह के सूरज के साथ चलता है: भोर, दिन, साँझ और रात।",
+  "prefs.systemHint": "फ़ोन के डार्क मोड के साथ चलता है।",
+  "prefs.feel": "आवाज़, स्पर्श और गति",
+  "prefs.voiceHint": "जाँच पूरी होने पर नतीजा पढ़कर सुनाता है। रोकने के लिए स्पीकर दबाएँ।",
+  "prefs.haptics": "कंपन",
+  "prefs.reduceMotion": "कम गति",
+  "prefs.reduceMotionHint": "राइज़िंग और कोर पुल की जगह धीमा बदलाव; अंक बिना गिनती के दिखते हैं।",
+  "prefs.data": "डेटा",
+  "prefs.replayIntro": "परिचय फिर दिखाएँ",
+  "prefs.clear": "इस फ़ोन का डेटा हटाएँ",
+  "prefs.clearAsk": "इस फ़ोन की हर जगह हटाएँ?",
+  "prefs.clearBody": "हाल की और सहेजी जगहें और उनकी रीडिंग इस फ़ोन से हट जाएँगी। खाते में बैकअप हुआ डेटा वहीं रहेगा।",
+  "prefs.clearYes": "हटाएँ",
+  "prefs.cleared": "इस फ़ोन से जगहें हटा दी गईं"
+}

@@ -1,1 +1,27 @@
-{}
+{
+  "prefs.title": "Preferences",
+  "prefs.appearance": "Light",
+  "prefs.appearance.auto": "Auto",
+  "prefs.appearance.light": "Light",
+  "prefs.appearance.dark": "Dark",
+  "prefs.appearance.system": "System",
+  "prefs.phase.dawn": "Dawn",
+  "prefs.phase.day": "Day",
+  "prefs.phase.dusk": "Dusk",
+  "prefs.phase.night": "Night",
+  "prefs.lightNow": "Now: {phase}.",
+  "prefs.autoHint": "Auto follows the sun where you are: dawn, day, dusk and night.",
+  "prefs.systemHint": "Follows your phone's dark mode.",
+  "prefs.feel": "Voice, touch and motion",
+  "prefs.voiceHint": "Reads the result aloud when a check finishes. Tap the speaker to stop.",
+  "prefs.haptics": "Haptics",
+  "prefs.reduceMotion": "Reduce motion",
+  "prefs.reduceMotionHint": "Crossfades instead of the Rising and the Core Pull; numbers appear without counting.",
+  "prefs.data": "Data",
+  "prefs.replayIntro": "Show the introduction again",
+  "prefs.clear": "Delete data on this phone",
+  "prefs.clearAsk": "Delete every place on this phone?",
+  "prefs.clearBody": "Recent and saved places and their readings leave this phone. Anything backed up to your account stays there.",
+  "prefs.clearYes": "Delete",
+  "prefs.cleared": "Places deleted from this phone"
+}

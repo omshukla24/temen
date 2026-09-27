@@ -1,151 +1,128 @@
-import * as WebBrowser from 'expo-web-browser';
 import { router } from 'expo-router';
+import * as Speech from 'expo-speech';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FORECAST_SOURCE, QUAKE_SOURCE, RAIN_SOURCE, RELIEF_SOURCE, SOIL_SOURCE, TERRAIN_SOURCE, TIMELAPSE_SOURCE, WATER_SOURCE } from 'ground-memory';
-
-import { Breadcrumb } from '@/components/Breadcrumb';
 import { Button } from '@/components/Button';
-import { Hairline } from '@/components/Hairline';
-import { PressableScale } from '@/components/PressableScale';
+import { Header } from '@/components/Header';
+import { ListRow, Section } from '@/components/ListRow';
 import { Screen } from '@/components/Screen';
+import { Segmented } from '@/components/Segmented';
+import { Sheet } from '@/components/Sheet';
 import { T } from '@/components/T';
+import { toast } from '@/components/Toast';
+import { Toggle } from '@/components/Toggle';
 import { useT } from '@/i18n';
-import { MAP_ATTRIBUTION } from '@/services/map';
-import { openCustomerCenter, restore, storeMode } from '@/services/purchases';
-import { useCredits, useIsPro } from '@/state/entitlements';
-import { updateSettings, useSettings, type Lang } from '@/state/settings';
-import { color, space } from '@/theme';
+import { reports } from '@/state/reports';
+import { updateSettings, useSettings, type Appearance, type Lang } from '@/state/settings';
+import { haptic, makeStyles, space, useTheme } from '@/theme';
 
-const SOURCES = [WATER_SOURCE, TERRAIN_SOURCE, RAIN_SOURCE, QUAKE_SOURCE, SOIL_SOURCE, FORECAST_SOURCE, RELIEF_SOURCE, TIMELAPSE_SOURCE];
-
-export default function Settings() {
+/** Preferences: the light, the language, the voice, touch and motion. */
+export default function Preferences() {
   const insets = useSafeAreaInsets();
   const { t } = useT();
+  const { phase } = useTheme();
+  const styles = useStyles();
   const s = useSettings();
-  const isPro = useIsPro();
-  const credits = useCredits();
-  const [note, setNote] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
 
-  const langs: { k: Lang; label: string }[] = [
-    { k: 'en', label: 'English' },
-    { k: 'hi', label: 'हिन्दी' },
-  ];
+  const appearances: Appearance[] = ['auto', 'light', 'dark', 'system'];
+  const phaseName = t(`prefs.phase.${phase}` as 'prefs.phase.day');
 
   return (
     <Screen>
-      <Breadcrumb trail={[t('crumb.ground'), t('settings.title')]} index="S" />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: insets.bottom + space.xxl, gap: space.lg }}>
-        <View style={{ gap: space.xs }}>
-          <T kind="mono" color={color.ink}>
-            01 · {t('settings.membership').toUpperCase()}
+      <Header title={t('prefs.title')} />
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + space.xxxl }]}>
+        <View style={styles.group}>
+          <T kind="mono" accessibilityRole="header">
+            {t('prefs.appearance')}
           </T>
-          <Hairline />
-          <T kind="title">{isPro ? 'Pro' : t('settings.free')}</T>
-          <T kind="small">
-            {isPro ? t('settings.proBody') : t('settings.freeBody')}
-            {credits.length ? ` ${t('settings.credits', { n: credits.length })}` : ''}
-          </T>
-          {!isPro ? <Button label={t('common.seePro')} glyph="lock" onPress={() => router.push('/paywall')} /> : null}
-          <Button
-            label={t('settings.customerCenter')}
-            variant="secondary"
-            onPress={async () => {
-              if (!(await openCustomerCenter())) setNote(t('settings.noStore', { mode: storeMode() }));
-            }}
+          <Segmented
+            options={appearances.map((a) => ({ value: a, label: t(`prefs.appearance.${a}` as 'prefs.appearance.auto') }))}
+            value={s.appearance}
+            onChange={(v) => updateSettings({ appearance: v })}
+            accessibilityLabel={t('prefs.appearance')}
           />
-          <Button
-            label={t('settings.restore')}
-            variant="quiet"
-            onPress={async () => {
-              const r = await restore();
-              setNote(
-                r.ok
-                  ? r.pro
-                    ? t('settings.proRestored')
-                    : r.credits
-                      ? t('settings.creditsRestored', { n: r.credits })
-                      : t('settings.noneFound')
-                  : (r.message ?? null),
-              );
-            }}
-          />
-          {note ? <T kind="small" color={color.laterite}>{note}</T> : null}
-        </View>
-
-        <View style={{ gap: space.sm }}>
-          <T kind="mono" color={color.ink}>
-            02 · {t('settings.language').toUpperCase()}
-          </T>
-          <Hairline />
-          <View style={styles.seg} accessibilityRole="radiogroup">
-            {langs.map((l) => (
-              <PressableScale
-                key={l.k}
-                onPress={() => updateSettings({ lang: l.k })}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: s.lang === l.k }}
-                style={[styles.segItem, s.lang === l.k && styles.segOn]}
-              >
-                <T kind="bodyMedium" align="center" color={s.lang === l.k ? color.ground : color.ink}>
-                  {l.label}
-                </T>
-              </PressableScale>
-            ))}
-          </View>
-          <View style={styles.switchRow}>
-            <T kind="body" style={{ flex: 1 }}>
-              {t('settings.speak')}
+          <Animated.View key={`${s.appearance}-${phase}`} entering={FadeIn}>
+            <T kind="caption">
+              {t('prefs.lightNow', { phase: phaseName })} {s.appearance === 'auto' ? t('prefs.autoHint') : s.appearance === 'system' ? t('prefs.systemHint') : ''}
             </T>
-            <Switch
-              value={s.speak}
-              onValueChange={(v) => updateSettings({ speak: v })}
-              trackColor={{ true: color.laterite, false: color.line }}
-              thumbColor={color.paper}
-              accessibilityLabel={t('settings.speak')}
-            />
-          </View>
+          </Animated.View>
         </View>
 
-        <View style={{ gap: space.xs }}>
-          <T kind="mono" color={color.ink}>
-            03 · {t('settings.sources').toUpperCase()}
+        <View style={styles.group}>
+          <T kind="mono" accessibilityRole="header">
+            {t('settings.language')}
           </T>
-          <Hairline />
-          {SOURCES.map((src, i) => (
-            <PressableScale key={src.name} onPress={() => WebBrowser.openBrowserAsync(src.url)} accessibilityRole="link" style={{ paddingVertical: 4 }}>
-              <T kind="caption" color={color.ink}>
-                {i + 1}. {src.name}
-              </T>
-              <T kind="caption">
-                {src.years} · {src.resolution}
-                {src.licence ? ` · ${src.licence}` : ''}
-              </T>
-            </PressableScale>
-          ))}
-          <T kind="caption">{MAP_ATTRIBUTION}</T>
-          <T kind="caption">{t('settings.geocoding')}</T>
+          <Segmented<Lang>
+            options={[
+              { value: 'en', label: 'English' },
+              { value: 'hi', label: 'हिन्दी' },
+            ]}
+            value={s.lang}
+            onChange={(v) => updateSettings({ lang: v })}
+            accessibilityLabel={t('settings.language')}
+          />
         </View>
 
-        <View style={{ gap: space.xs }}>
-          <T kind="mono" color={color.ink}>
-            04 · {t('settings.about').toUpperCase()}
-          </T>
-          <Hairline />
-          <T kind="small">{t('settings.aboutBody')}</T>
-          <Button label={t('settings.sourceCode')} variant="quiet" glyph="link" onPress={() => WebBrowser.openBrowserAsync('https://github.com/omshukla24/temen')} />
-          {__DEV__ ? <Button label="Debug: Timelapse spike" variant="quiet" onPress={() => router.push('/debug')} /> : null}
-        </View>
+        <Section label={t('prefs.feel')}>
+          <ListRow
+            glyph="speaker"
+            title={t('settings.speak')}
+            subtitle={t('prefs.voiceHint')}
+            right={
+              <Toggle
+                value={s.speak}
+                label={t('settings.speak')}
+                onValueChange={(v) => {
+                  if (!v) Speech.stop();
+                  updateSettings({ speak: v });
+                }}
+              />
+            }
+          />
+          <ListRow glyph="wave" title={t('prefs.haptics')} right={<Toggle value={s.haptics} label={t('prefs.haptics')} onValueChange={(v) => updateSettings({ haptics: v })} />} />
+          <ListRow
+            glyph="pause"
+            title={t('prefs.reduceMotion')}
+            subtitle={t('prefs.reduceMotionHint')}
+            right={<Toggle value={s.reduceMotion} label={t('prefs.reduceMotion')} onValueChange={(v) => updateSettings({ reduceMotion: v })} />}
+          />
+        </Section>
+
+        <Section label={t('prefs.data')}>
+          <ListRow glyph="refresh" title={t('prefs.replayIntro')} chevron={false} onPress={() => router.push('/onboarding')} />
+          <ListRow glyph="trash" title={t('prefs.clear')} tone="danger" chevron={false} onPress={() => setClearing(true)} />
+          {__DEV__ ? <ListRow glyph="info" title="Debug: Timelapse probe" onPress={() => router.push('/debug')} /> : null}
+        </Section>
       </ScrollView>
+
+      <Sheet visible={clearing} onClose={() => setClearing(false)}>
+        <View style={styles.sheet}>
+          <T kind="title">{t('prefs.clearAsk')}</T>
+          <T kind="small">{t('prefs.clearBody')}</T>
+          <Button
+            label={t('prefs.clearYes')}
+            variant="danger"
+            glyph="trash"
+            onPress={() => {
+              reports.clear();
+              haptic.warn();
+              toast(t('prefs.cleared'));
+              setClearing(false);
+            }}
+          />
+          <Button label={t('common.cancel')} variant="quiet" onPress={() => setClearing(false)} />
+        </View>
+      </Sheet>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  seg: { flexDirection: 'row', borderWidth: 1, borderColor: color.ink, borderRadius: 4, overflow: 'hidden' },
-  segItem: { flex: 1, paddingVertical: space.sm },
-  segOn: { backgroundColor: color.ink },
-  switchRow: { flexDirection: 'row', alignItems: 'center', minHeight: 48 },
-});
+const useStyles = makeStyles(() => ({
+  scroll: { paddingHorizontal: space.gutter, paddingTop: space.md, gap: space.xl },
+  group: { gap: space.sm },
+  sheet: { gap: space.md, paddingTop: space.sm },
+}));
