@@ -2,7 +2,7 @@ import { Canvas, Path, Skia, type SkPath } from '@shopify/react-native-skia';
 import { useMemo } from 'react';
 import { View, type ViewStyle } from 'react-native';
 
-import { color as palette } from '@/theme';
+import { useTheme } from '@/theme';
 
 /** Survey-instrument glyphs on a 24 grid: one stroke weight, square caps, no fills. */
 const PATHS = {
@@ -35,6 +35,24 @@ const PATHS = {
   wave: 'M3 12 Q6 9 9 12 T15 12 T21 12',
   refresh: 'M19 12 A7 7 0 1 1 16.9 7 M19 4 V8 H15',
   globe: 'M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 M3 12 H21 M12 3 C8 8 8 16 12 21 C16 16 16 8 12 3',
+  home: 'M4 11 L12 4 L20 11 M6.5 9 V20 H17.5 V9 M10 20 V14 H14 V20',
+  user: 'M12 4 A4 4 0 1 0 12 12 A4 4 0 1 0 12 4 M4.5 20.5 C5.5 16 9 14.5 12 14.5 C15 14.5 18.5 16 19.5 20.5',
+  menu: 'M4 7 H20 M4 12 H20 M4 17 H20',
+  more: 'M5 12 H5.2 M12 12 H12.2 M19 12 H19.2',
+  info: 'M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 M12 11 V17 M12 7.4 V7.8',
+  play: 'M8 5 L19 12 L8 19 Z',
+  pause: 'M8.5 5 V19 M15.5 5 V19',
+  stop: 'M7 7 H17 V17 H7 Z',
+  sun: 'M12 8 A4 4 0 1 0 12 16 A4 4 0 1 0 12 8 M12 2 V4.5 M12 19.5 V22 M2 12 H4.5 M19.5 12 H22 M4.9 4.9 L6.6 6.6 M17.4 17.4 L19.1 19.1 M4.9 19.1 L6.6 17.4 M17.4 6.6 L19.1 4.9',
+  moon: 'M19.5 14.5 A8 8 0 1 1 9.5 4.5 A6.5 6.5 0 0 0 19.5 14.5 Z',
+  star: 'M12 3.5 L14.5 9 L20.5 9.5 L16 13.5 L17.4 19.5 L12 16.3 L6.6 19.5 L8 13.5 L3.5 9.5 L9.5 9 Z',
+  help: 'M12 3 A9 9 0 1 0 12 21 A9 9 0 1 0 12 3 M9.6 9.4 A2.5 2.5 0 1 1 12 12 V14 M12 16.8 V17.2',
+  shield: 'M12 3 L19 6 V11 C19 15.8 15.8 19.3 12 21 C8.2 19.3 5 15.8 5 11 V6 Z',
+  signOut: 'M10 4 H5 V20 H10 M14 8 L18 12 L14 16 M18 12 H9',
+  mail: 'M3.5 6 H20.5 V18 H3.5 Z M3.5 6 L12 13 L20.5 6',
+  cloud: 'M7 18 H17 A4 4 0 0 0 17.3 10 A5.8 5.8 0 0 0 6 10.8 A3.6 3.6 0 0 0 7 18 Z',
+  chevronDown: 'M5 9 L12 16 L19 9',
+  edit: 'M4 20 H8 L19 9 L15 5 L4 16 Z M13 7 L17 11',
 } as const;
 
 export type GlyphName = keyof typeof PATHS;
@@ -51,7 +69,7 @@ function pathFor(name: GlyphName): SkPath | null {
 export function Glyph({
   name,
   size = 22,
-  color = palette.ink,
+  color,
   weight = 1.6,
   style,
 }: {
@@ -61,6 +79,7 @@ export function Glyph({
   weight?: number;
   style?: ViewStyle;
 }) {
+  const { c } = useTheme();
   const path = useMemo(() => pathFor(name), [name]);
   const scale = size / 24;
   if (!path) return <View style={[{ width: size, height: size }, style]} />;
@@ -72,7 +91,7 @@ export function Glyph({
         strokeWidth={weight / scale}
         strokeCap="square"
         strokeJoin="miter"
-        color={color}
+        color={color ?? c.ink}
         transform={[{ scale }]}
       />
     </Canvas>

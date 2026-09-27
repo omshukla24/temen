@@ -1,0 +1,20 @@
+{
+  "tab.home": "होम",
+  "tab.places": "जगहें",
+  "tab.watch": "निगरानी",
+  "tab.account": "खाता",
+  "common.back": "पीछे",
+  "common.more": "और",
+  "common.cancel": "रद्द करें",
+  "common.done": "हो गया",
+  "common.retry": "फिर कोशिश करें",
+  "common.delete": "हटाएँ",
+  "common.share": "शेयर करें",
+  "common.pro": "Pro",
+  "common.on": "चालू",
+  "common.off": "बंद",
+  "common.today": "आज",
+  "common.yesterday": "कल",
+  "common.offline": "आप ऑफ़लाइन हैं",
+  "common.error": "कुछ गड़बड़ हो गई"
+}

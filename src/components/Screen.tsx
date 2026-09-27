@@ -1,16 +1,15 @@
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { View, type ViewStyle } from 'react-native';
 
-import { color } from '@/theme';
+import { useTheme } from '@/theme';
 
 import { PaperGrain } from './PaperGrain';
 
 export function Screen({ children, style, grain = true }: { children: React.ReactNode; style?: ViewStyle; grain?: boolean }) {
+  const { c } = useTheme();
   return (
-    <View style={[styles.root, style]}>
+    <View style={[{ flex: 1, backgroundColor: c.ground }, style]}>
       {grain ? <PaperGrain /> : null}
       {children}
     </View>
   );
 }
-
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: color.ground } });

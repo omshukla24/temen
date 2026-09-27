@@ -1,4 +1,6 @@
-// Design lock v1 "Core Sample" (DESIGN.md §0). Light only; the map is the only large colour field.
+// Design lock "Core Sample" (DESIGN.md §0). On screen, colours come from the
+// live palette (`useTheme()`, src/theme/palettes.ts). This fixed day palette is
+// for print (the PDF report) and other places with no React tree.
 export const color = {
   ground: '#F2EDE4',
   groundDeep: '#E8E1D4',
@@ -26,7 +28,7 @@ export const hairline = 1;
 
 export type ColorToken = keyof typeof color;
 
-/** Band fills for each stratum type in the Core (derived from the palette only). */
+/** Print band fills (on screen use `strataFills(c)` from the live palette). */
 export const strata = {
   water: color.lake,
   lostWater: color.lakeMemory,

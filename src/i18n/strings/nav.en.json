@@ -1,0 +1,20 @@
+{
+  "tab.home": "Home",
+  "tab.places": "Places",
+  "tab.watch": "Watch",
+  "tab.account": "Account",
+  "common.back": "Back",
+  "common.more": "More",
+  "common.cancel": "Cancel",
+  "common.done": "Done",
+  "common.retry": "Try again",
+  "common.delete": "Delete",
+  "common.share": "Share",
+  "common.pro": "Pro",
+  "common.on": "On",
+  "common.off": "Off",
+  "common.today": "Today",
+  "common.yesterday": "Yesterday",
+  "common.offline": "You're offline",
+  "common.error": "Something went wrong"
+}

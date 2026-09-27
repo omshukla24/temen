@@ -1,7 +1,8 @@
 import { useShareIntentContext } from 'expo-share-intent';
 import { useEffect, useRef } from 'react';
-import { Alert } from 'react-native';
 
+import { toast } from '@/components/Toast';
+import { useT } from '@/i18n';
 import { openCheck } from '@/services/nav';
 import { resolveShared } from '@/services/share-in';
 import { haptic } from '@/theme';
@@ -9,6 +10,7 @@ import { haptic } from '@/theme';
 /** A pin shared from WhatsApp or Maps opens straight into a check. */
 export function ShareInHandler() {
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
+  const { t } = useT();
   const busy = useRef(false);
   useEffect(() => {
     if (!hasShareIntent || busy.current) return;
@@ -18,13 +20,17 @@ export function ShareInHandler() {
       .then((r) => {
         if ('error' in r) {
           haptic.fail();
-          Alert.alert('No location found', r.error);
+          toast(t('home.shareNone'), 'pin');
         } else openCheck(r);
+      })
+      .catch(() => {
+        haptic.fail();
+        toast(t('home.shareNone'), 'pin');
       })
       .finally(() => {
         busy.current = false;
         resetShareIntent();
       });
-  }, [hasShareIntent, shareIntent, resetShareIntent]);
+  }, [hasShareIntent, shareIntent, resetShareIntent, t]);
   return null;
 }

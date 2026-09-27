@@ -1,0 +1,18 @@
+{
+  "onboard.skip": "Skip",
+  "onboard.next": "Next",
+  "onboard.start": "Get started",
+  "onboard.p1Title": "What the ground remembers.",
+  "onboard.p1Body": "40 years of satellite water, how low it sits, the worst rain, quakes and soil.",
+  "onboard.p2Title": "Check before you sign.",
+  "onboard.p2Body": "Use your GPS, search a place, or share a WhatsApp pin.",
+  "onboard.p3Body": "Every reading names its source, its years and what it can't see.",
+  "onboard.locTitle": "Core the ground you stand on.",
+  "onboard.locBody": "Temen reads your location only when you ask it to.",
+  "onboard.locAllow": "Allow location",
+  "onboard.locLater": "Not now",
+  "onboard.page": "Page {n} of {total}",
+  "onboard.bandWater": "Water",
+  "onboard.bandGround": "Ground",
+  "onboard.bandRain": "Rain"
+}

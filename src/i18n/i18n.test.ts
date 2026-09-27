@@ -1,11 +1,9 @@
-import en from './en.json';
-import hi from './hi.json';
 import { LIBRARY_HI } from './library-hi';
 import { CANT_SEE_ALWAYS, questionsFor } from 'ground-memory';
 
 import { checklist } from '@/features/sitekit/checklist';
 
-import { translate } from '.';
+import { EN as en, HI as hi, translate } from '.';
 
 describe('i18n', () => {
   it('has a Hindi string for every English key', () => {

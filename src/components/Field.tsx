@@ -1,23 +1,26 @@
 import { forwardRef } from 'react';
-import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { TextInput, View, type TextInputProps } from 'react-native';
 
-import { color, font, radius, size, space } from '@/theme';
+import { font, makeStyles, radius, size, space, useTheme } from '@/theme';
 
 import { Glyph, type GlyphName } from './Glyph';
 
-export const Field = forwardRef<TextInput, TextInputProps & { glyph?: GlyphName; right?: React.ReactNode }>(function Field(
+export const Field = forwardRef<TextInput, TextInputProps & { glyph?: GlyphName | null; right?: React.ReactNode }>(function Field(
   { glyph = 'search', right, style, ...rest },
   ref,
 ) {
+  const { c } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.wrap}>
-      <Glyph name={glyph} size={18} color={color.inkMuted} />
+      {glyph ? <Glyph name={glyph} size={18} color={c.inkMuted} /> : null}
       <TextInput
         ref={ref}
-        placeholderTextColor={color.inkMuted}
-        selectionColor={color.laterite}
-        cursorColor={color.laterite}
+        placeholderTextColor={c.inkMuted}
+        selectionColor={c.lateriteText}
+        cursorColor={c.lateriteText}
         underlineColorAndroid="transparent"
+        keyboardAppearance={c.dark ? 'dark' : 'light'}
         style={[styles.input, style]}
         {...rest}
       />
@@ -26,18 +29,18 @@ export const Field = forwardRef<TextInput, TextInputProps & { glyph?: GlyphName;
   );
 });
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
     borderWidth: 1,
-    borderColor: color.ink,
+    borderColor: c.dark ? c.line : c.ink,
     borderRadius: radius.sm,
     paddingLeft: space.md,
     paddingRight: space.xs,
     minHeight: 52,
-    backgroundColor: color.paper,
+    backgroundColor: c.paper,
   },
-  input: { flex: 1, fontFamily: font.body, fontSize: size.body, color: color.ink, paddingVertical: space.md },
-});
+  input: { flex: 1, fontFamily: font.body, fontSize: size.body, color: c.ink, paddingVertical: space.md },
+}));

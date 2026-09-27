@@ -9,8 +9,6 @@ import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument
 import { MartianMono_300Light } from '@expo-google-fonts/martian-mono/300Light';
 import { MartianMono_400Regular } from '@expo-google-fonts/martian-mono/400Regular';
 
-import { color } from './tokens';
-
 export const fontAssets = {
   InstrumentSerif_400Regular,
   InstrumentSerif_400Regular_Italic,
@@ -50,54 +48,46 @@ export const type = {
   displayXl: {
     fontFamily: font.display,
     fontSize: size.displayXl,
-    lineHeight: size.displayXl * 1.02,
+    lineHeight: size.displayXl * 1.12, // room for italic descenders (the g in "ground")
     letterSpacing: track(-0.02, size.displayXl),
-    color: color.ink,
   },
   display: {
     fontFamily: font.display,
     fontSize: size.display,
-    lineHeight: size.display * 1.05,
+    lineHeight: size.display * 1.12,
     letterSpacing: track(-0.02, size.display),
-    color: color.ink,
   },
   title: {
     fontFamily: font.display,
     fontSize: size.title,
-    lineHeight: size.title * 1.12,
+    lineHeight: size.title * 1.18,
     letterSpacing: track(-0.015, size.title),
-    color: color.ink,
   },
   heading: {
     fontFamily: font.bodySemi,
     fontSize: size.heading,
     lineHeight: size.heading * 1.25,
     letterSpacing: track(-0.005, size.heading),
-    color: color.ink,
   },
   body: {
     fontFamily: font.body,
     fontSize: size.body,
     lineHeight: size.body * 1.5,
-    color: color.ink,
   },
   bodyMedium: {
     fontFamily: font.bodyMedium,
     fontSize: size.body,
     lineHeight: size.body * 1.45,
-    color: color.ink,
   },
   small: {
     fontFamily: font.body,
     fontSize: size.small,
     lineHeight: size.small * 1.5,
-    color: color.inkMuted,
   },
   caption: {
     fontFamily: font.body,
     fontSize: size.caption,
     lineHeight: size.caption * 1.45,
-    color: color.inkMuted,
   },
   mono: {
     fontFamily: font.mono,
@@ -105,7 +95,6 @@ export const type = {
     lineHeight: size.mono * 1.6,
     letterSpacing: track(0.2, size.mono),
     textTransform: 'uppercase',
-    color: color.inkMuted,
   },
   monoWide: {
     fontFamily: font.monoLight,
@@ -113,14 +102,15 @@ export const type = {
     lineHeight: size.mono * 1.6,
     letterSpacing: track(0.28, size.mono),
     textTransform: 'uppercase',
-    color: color.inkMuted,
   },
   wordmark: {
     fontFamily: font.display,
     fontSize: size.title,
     letterSpacing: track(0.08, size.title),
-    color: color.ink,
   },
 } satisfies Record<string, TextStyle>;
 
 export type TypeRole = keyof typeof type;
+
+/** Roles set in the muted ink by default; the rest use full ink. */
+export const MUTED_ROLES: ReadonlySet<TypeRole> = new Set<TypeRole>(['small', 'caption', 'mono', 'monoWide']);

@@ -2,6 +2,8 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 const GROUND = '#F2EDE4';
 const LATERITE = '#A5482A';
+// Night paper (src/theme/palettes.ts), for the dark splash.
+const NIGHT = '#151412';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -11,7 +13,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'temen',
-  userInterfaceStyle: 'light',
+  // The app themes itself (dawn/day/dusk/night); 'automatic' lets Settings → System follow the phone.
+  userInterfaceStyle: 'automatic',
   backgroundColor: GROUND,
   ios: {
     bundleIdentifier: 'com.urizen.temen',
@@ -36,6 +39,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         backgroundColor: GROUND,
         image: './assets/images/splash-icon.png',
         imageWidth: 180,
+        dark: { backgroundColor: NIGHT, image: './assets/images/splash-icon.png' },
       },
     ],
     '@maplibre/maplibre-react-native',

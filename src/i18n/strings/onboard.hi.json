@@ -1,0 +1,18 @@
+{
+  "onboard.skip": "छोड़ें",
+  "onboard.next": "आगे",
+  "onboard.start": "शुरू करें",
+  "onboard.p1Title": "ज़मीन को क्या याद है।",
+  "onboard.p1Body": "40 साल का सैटेलाइट पानी, ज़मीन कितनी नीची है, सबसे भारी बारिश, भूकंप और मिट्टी।",
+  "onboard.p2Title": "दस्तख़त से पहले जाँचें।",
+  "onboard.p2Body": "अपना GPS इस्तेमाल करें, जगह खोजें, या WhatsApp पिन शेयर करें।",
+  "onboard.p3Body": "हर रीडिंग अपना स्रोत, अपने साल और जो वह नहीं देख सकती, बताती है।",
+  "onboard.locTitle": "जहाँ खड़े हैं, वहाँ की ज़मीन जाँचें।",
+  "onboard.locBody": "Temen आपकी लोकेशन तभी पढ़ता है जब आप कहते हैं।",
+  "onboard.locAllow": "लोकेशन की अनुमति दें",
+  "onboard.locLater": "अभी नहीं",
+  "onboard.page": "पेज {n} / {total}",
+  "onboard.bandWater": "पानी",
+  "onboard.bandGround": "ज़मीन",
+  "onboard.bandRain": "बारिश"
+}

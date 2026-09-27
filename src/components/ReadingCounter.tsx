@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { color, motion, type as roles } from '@/theme';
+import { motion, type as roles, useTheme } from '@/theme';
 
 Animated.addWhitelistedNativeProps({ text: true });
 const AnimatedText = Animated.createAnimatedComponent(TextInput);
@@ -40,6 +40,7 @@ export function ReadingCounter({
   run?: boolean;
 }) {
   const reduced = useReducedMotion();
+  const { c } = useTheme();
   const v = useSharedValue(reduced ? value : from);
   useEffect(() => {
     if (!run) return;
@@ -68,7 +69,7 @@ export function ReadingCounter({
       accessibilityLabel={finalText}
       importantForAutofill="no"
       animatedProps={props}
-      style={[roles.display, { color: color.ink, padding: 0, margin: 0 }, style]}
+      style={[roles.display, { color: c.ink, padding: 0, margin: 0 }, style]}
     />
   );
 }
