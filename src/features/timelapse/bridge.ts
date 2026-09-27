@@ -61,7 +61,7 @@ export const PROBE_JS = `
         last = f; lastPaused = p;
         send({ type: 'frame', frame: f, paused: p });
       }
-    }, 200);
+    }, 80);
   }
   probe();
 })();

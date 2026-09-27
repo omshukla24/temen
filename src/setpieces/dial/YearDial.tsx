@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
+  Easing,
   useAnimatedReaction,
   useDerivedValue,
   useSharedValue,
@@ -16,6 +17,11 @@ import { haptic, useTheme } from '@/theme';
 import { useMonoFont } from '../fonts';
 import { DIAL, DialDrawing } from './DialDrawing';
 import { useReducedMotion } from '@/theme/reduced';
+
+/** How long the ruler glides to the player's next year (about one poll of the player). */
+const FOLLOW_MS = 160;
+/** After a finger lets go, `year` changes are the dial's own echoes for this long. */
+const HAND_MS = 1000;
 
 /** Where a flick would come to rest (UIScrollView's deceleration, as in Apple's sample code). */
 function project(velocity: number, rate = 0.998) {
@@ -58,19 +64,31 @@ export function YearDial({
   const start = useSharedValue(0);
   const detent = useSharedValue(year - from);
 
-  // The dial's own detents come back as `year` a frame or two late; moving to
+  // Who is moving the ruler: a finger (its detents are reported up) or the
+  // player (the dial only follows; reporting those back would re-seek the
+  // player and keep the dial a step behind it).
+  const byHand = useSharedValue(false);
+  // The dial's own detents come back as `year` a frame or two late; following
   // one of those would drag a flick back to a year it already passed.
-  const emitted = useRef<number | null>(null);
+  const handAt = useRef(0);
+  const markHand = () => {
+    handAt.current = Date.now();
+  };
   const emit = (y: number) => {
-    emitted.current = y;
+    markHand();
     onChange(y);
   };
 
-  // external changes (e.g. playback) move the dial without a gesture
+  // External changes (playback) move the dial without a gesture: a short glide
+  // to the next year, a jump when playback loops or leaps.
   useEffect(() => {
-    if (year === emitted.current) return;
+    if (Date.now() - handAt.current < HAND_MS) return;
+    byHand.value = false;
     const target = -(year - from) * sp;
-    if (Math.abs(offset.value - target) > sp / 2) offset.value = reduced ? target : withSpring(target, { damping: 26, stiffness: 240 });
+    const years = Math.abs(offset.value - target) / sp;
+    if (years < 0.05) return;
+    detent.value = Math.max(0, Math.min(to - from, year - from));
+    offset.value = reduced || years > 3 ? target : withTiming(target, { duration: FOLLOW_MS, easing: Easing.linear });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year]);
 
@@ -78,11 +96,11 @@ export function YearDial({
     () => Math.round(-offset.value / sp),
     (i, prev) => {
       const clamped = Math.max(0, Math.min(to - from, i));
-      if (prev !== null && clamped !== detent.value) {
-        detent.value = clamped;
-        scheduleOnRN(haptic.tick);
-        scheduleOnRN(emit, from + clamped);
-      }
+      if (prev === null || clamped === detent.value) return;
+      detent.value = clamped;
+      if (!byHand.value) return;
+      scheduleOnRN(haptic.tick);
+      scheduleOnRN(emit, from + clamped);
     },
   );
 
@@ -91,6 +109,8 @@ export function YearDial({
   const pan = Gesture.Pan()
     .activeOffsetX([-10, 10])
     .onBegin(() => {
+      byHand.value = true;
+      scheduleOnRN(markHand);
       start.value = offset.value; // grab from where the ruler is, mid-flight too
     })
     .onUpdate((e) => {
@@ -105,10 +125,13 @@ export function YearDial({
       const target = -i * sp;
       if (reduced) offset.value = withTiming(target, { duration: 120 });
       else offset.value = withSpring(target, { damping: 22, stiffness: 220, mass: 0.9, velocity: e.velocityX });
+      scheduleOnRN(markHand);
       scheduleOnRN(settle, from + i);
     });
 
   const tap = Gesture.Tap().onEnd((e) => {
+    byHand.value = true;
+    scheduleOnRN(markHand);
     const i = Math.max(0, Math.min(to - from, Math.round((-offset.value + (e.x - width / 2)) / sp)));
     offset.value = reduced ? -i * sp : withSpring(-i * sp, { damping: 24, stiffness: 260 });
     scheduleOnRN(settle, from + i);
@@ -128,6 +151,7 @@ export function YearDial({
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
         onAccessibilityAction={(e) => {
           const next = Math.max(from, Math.min(to, year + (e.nativeEvent.actionName === 'increment' ? 1 : -1)));
+          markHand();
           offset.value = -(next - from) * sp;
           onChange(next);
           onSettle?.(next);
