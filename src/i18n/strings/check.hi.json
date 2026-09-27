@@ -1,1 +1,9 @@
-{}
+{
+  "check.showAll": "1984 से दिखा सारा पानी दिखाएँ",
+  "check.showNow": "सिर्फ़ अभी का पानी दिखाएँ",
+  "check.stopListening": "पढ़ना बंद करें",
+  "check.copyCoords": "निर्देशांक कॉपी करें",
+  "check.copied": "निर्देशांक कॉपी हो गए",
+  "check.openMaps": "मैप्स में खोलें",
+  "check.sourcesMethod": "स्रोत और तरीका"
+}

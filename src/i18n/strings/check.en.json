@@ -1,1 +1,9 @@
-{}
+{
+  "check.showAll": "Show all water seen since 1984",
+  "check.showNow": "Show only the water there now",
+  "check.stopListening": "Stop reading aloud",
+  "check.copyCoords": "Copy coordinates",
+  "check.copied": "Coordinates copied",
+  "check.openMaps": "Open in Maps",
+  "check.sourcesMethod": "Sources & method"
+}
