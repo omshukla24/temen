@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ScrollView, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -36,7 +36,9 @@ export default function Onboarding() {
 
   const finish = () => {
     updateSettings({ onboarded: true });
-    router.replace('/');
+    // first run arrives by redirect (nothing beneath); a replay from Preferences goes back there
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
   };
 
   const go = (i: number) => {
@@ -129,7 +131,7 @@ export default function Onboarding() {
   );
 }
 
-function Dot({ i, x }: { i: number; x: { value: number } }) {
+function Dot({ i, x }: { i: number; x: SharedValue<number> }) {
   const styles = useStyles();
   const style = useAnimatedStyle(() => {
     const d = Math.min(1, Math.abs(x.value - i));
