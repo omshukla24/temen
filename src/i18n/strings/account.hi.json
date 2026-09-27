@@ -48,5 +48,14 @@
   "about.contact": "हमसे संपर्क करें",
   "about.openSource": "स्रोत खोलें",
   "about.sourcesLede": "हर रीडिंग अपना डेटासेट, वर्ष और रिज़ॉल्यूशन बताती है। ये सभी खुले हैं और इनके लाइसेंस के तहत उपयोग होते हैं।",
-  "about.name": "Temen सुमेरियन भाषा में \"नींव\" है।"
+  "about.name": "Temen सुमेरियन भाषा में \"नींव\" है।",
+  "paywall.proTitle": "Temen Pro",
+  "paywall.buySingle": "यह जगह खोलें",
+  "paywall.buyPro": "Pro शुरू करें",
+  "paywall.noStoreBody": "इस बिल्ड में अभी ख़रीदारी उपलब्ध नहीं है। मुफ़्त सब कुछ चलता रहेगा।",
+  "paywall.perkAll": "हर जगह पूरी: पाँचों रीडिंग, हर सवाल और PDF रिपोर्ट",
+  "paywall.perkCompare": "पाँच जगहों तक आमने-सामने तुलना",
+  "paywall.perkWatch": "मानसून वॉच: सहेजी जगहों पर भारी बारिश की चेतावनी",
+  "paywall.perkOffline": "सहेजी जगहें ऑफ़लाइन खुलती हैं और खाते में बैकअप होती हैं",
+  "watch.emptyTitle": "अभी देखने को कुछ नहीं"
 }

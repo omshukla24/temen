@@ -48,5 +48,14 @@
   "about.contact": "Contact us",
   "about.openSource": "Open the source",
   "about.sourcesLede": "Every reading names its dataset, years and resolution. All of these are open and used under their licences.",
-  "about.name": "Temen is Sumerian for \"foundation\"."
+  "about.name": "Temen is Sumerian for \"foundation\".",
+  "paywall.proTitle": "Temen Pro",
+  "paywall.buySingle": "Unlock this place",
+  "paywall.buyPro": "Start Pro",
+  "paywall.noStoreBody": "Purchases aren't available in this build yet. Everything free keeps working.",
+  "paywall.perkAll": "Every place in full: all five readings, every question and the PDF report",
+  "paywall.perkCompare": "Compare up to five places side by side",
+  "paywall.perkWatch": "Monsoon Watch: heavy-rain alerts for saved places",
+  "paywall.perkOffline": "Saved places open offline and back up to your account",
+  "watch.emptyTitle": "Nothing to watch yet"
 }

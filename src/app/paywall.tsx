@@ -1,14 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { PurchasesPackage } from 'react-native-purchases';
 
 import { Button } from '@/components/Button';
-import { Glyph } from '@/components/Glyph';
+import { Glyph, type GlyphName } from '@/components/Glyph';
 import { Hairline } from '@/components/Hairline';
+import { IconButton } from '@/components/IconButton';
 import { PressableScale } from '@/components/PressableScale';
+import { ProBadge } from '@/components/ProBadge';
 import { Screen } from '@/components/Screen';
 import { T } from '@/components/T';
 import { useT } from '@/i18n';
@@ -16,7 +18,7 @@ import { buy, initPurchases, loadOffer, openStockPaywall, restore, spendCredit, 
 import { CoreCylinder } from '@/setpieces/CoreCylinder';
 import { useCredits } from '@/state/entitlements';
 import { reports } from '@/state/reports';
-import { color, haptic, motion, radius, space } from '@/theme';
+import { haptic, makeStyles, motion, radius, space, useTheme } from '@/theme';
 
 type Choice = 'single' | 'annual' | 'monthly';
 
@@ -40,6 +42,8 @@ export default function Paywall() {
   const { place, teaser, id } = useLocalSearchParams<{ place?: string; teaser?: string; id?: string }>();
   const insets = useSafeAreaInsets();
   const { t } = useT();
+  const { c } = useTheme();
+  const styles = useStyles();
   const credits = useCredits();
   const [offer, setOffer] = useState<Offer | null | 'loading' | 'off'>('loading');
   const [choice, setChoice] = useState<Choice>(place ? 'single' : 'annual');
@@ -117,18 +121,16 @@ export default function Paywall() {
     <Screen>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + space.sm, paddingBottom: insets.bottom + space.xxl }]}>
         <View style={styles.top}>
-          <PressableScale accessibilityLabel={t('common.close')} onPress={() => router.back()} style={styles.close}>
-            <Glyph name="close" />
-          </PressableScale>
-          <T kind="mono">SEAL · {place ?? 'PRO'}</T>
+          <IconButton glyph="close" label={t('common.close')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+          {place ? <T kind="mono">SEAL · {place}</T> : <ProBadge />}
         </View>
 
         <View style={styles.hero}>
-          <View style={{ flex: 1, gap: space.sm }}>
-            <T kind="display">{t('paywall.title')}</T>
+          <View style={styles.heroText}>
+            <T kind="display">{place ? t('paywall.title') : t('paywall.proTitle')}</T>
             {teaser ? (
               <Animated.View entering={FadeInDown.duration(motion.dur.ui)}>
-                <T kind="title" italic color={color.laterite}>
+                <T kind="title" italic color={c.lateriteText}>
                   {teaser}
                 </T>
               </Animated.View>
@@ -137,24 +139,33 @@ export default function Paywall() {
           {bands.length ? <CoreCylinder width={44} height={150} bands={bands} tilt={0.2} /> : null}
         </View>
 
+        {!place ? (
+          <View style={styles.perks}>
+            {PERKS.map((k, i) => (
+              <Animated.View key={k.key} entering={FadeInDown.delay(i * motion.stagger).duration(motion.dur.ui)} style={styles.perk}>
+                <Glyph name={k.glyph} size={20} color={c.lateriteText} />
+                <T kind="body" style={styles.flex}>
+                  {t(k.key)}
+                </T>
+              </Animated.View>
+            ))}
+          </View>
+        ) : null}
+
         <Hairline strong />
 
         {offer === 'loading' ? (
-          <ActivityIndicator color={color.laterite} style={{ marginVertical: space.xxl }} />
+          <ActivityIndicator color={c.laterite} style={styles.loading} />
         ) : offer === 'off' || offer === null ? (
-          <View style={{ gap: space.md, paddingVertical: space.lg }}>
+          <View style={styles.none}>
             <T kind="heading">{t('paywall.noStore')}</T>
-            <T kind="small">
-              {offer === 'off'
-                ? 'This build has no RevenueCat key. Add EXPO_PUBLIC_RC_TEST_KEY to .env and rebuild to test purchases.'
-                : t('paywall.noProducts')}
-            </T>
+            <T kind="small">{offer === 'off' ? t('paywall.noStoreBody') : t('paywall.noProducts')}</T>
             {offer === null ? <Button label={t('paywall.stock')} variant="secondary" onPress={openStockPaywall} /> : null}
           </View>
         ) : (
           <Animated.View entering={FadeIn} accessibilityRole="radiogroup">
             {rows
-              .filter((r) => r.p || r.key !== 'single' || !place)
+              .filter((r) => r.key !== 'single' || !!place)
               .map((r) => (
                 <View key={r.key}>
                   <PressableScale
@@ -171,18 +182,18 @@ export default function Paywall() {
                   >
                     <View style={styles.rowInner}>
                       <View style={[styles.radio, choice === r.key && styles.radioOn]}>{choice === r.key ? <View style={styles.radioDot} /> : null}</View>
-                      <View style={{ flex: 1, gap: 2 }}>
+                      <View style={styles.rowText}>
                         <T kind="bodyMedium">{r.label}</T>
                         <T kind="caption">{r.sub}</T>
                         {r.badge ? (
                           <View style={styles.badge}>
-                            <T kind="mono" color={color.ground} style={{ fontSize: 9 }}>
+                            <T kind="mono" color={c.onLaterite} style={styles.badgeText}>
                               {r.badge}
                             </T>
                           </View>
                         ) : null}
                       </View>
-                      <View style={{ alignItems: 'flex-end' }}>
+                      <View style={styles.price}>
                         <T kind="title">{r.p?.product.priceString ?? '—'}</T>
                         <T kind="mono">{r.unit}</T>
                       </View>
@@ -196,11 +207,12 @@ export default function Paywall() {
 
         {o ? (
           <Button
-            label={busy ? '…' : `${t('paywall.title')} · ${pkg?.product.priceString ?? ''}`}
-            glyph="lock"
+            label={`${choice === 'single' ? t('paywall.buySingle') : t('paywall.buyPro')}${pkg ? ` · ${pkg.product.priceString}` : ''}`}
+            glyph={choice === 'single' ? 'lock' : 'star'}
+            loading={busy}
             onPress={purchase}
             disabled={busy || !pkg}
-            style={{ marginTop: space.lg }}
+            style={styles.cta}
           />
         ) : null}
         {credits.length && place ? (
@@ -208,18 +220,18 @@ export default function Paywall() {
             label={t('paywall.useCredit', { n: credits.length })}
             variant="secondary"
             glyph="check"
-            style={{ marginTop: space.sm }}
+            style={styles.gapTop}
             onPress={() => spendCredit(place) && done()}
           />
         ) : null}
         {msg ? (
-          <T kind="small" color={color.laterite} style={{ marginTop: space.sm }} accessibilityLiveRegion="assertive">
+          <T kind="small" color={c.lateriteText} style={styles.gapTop} accessibilityLiveRegion="assertive">
             {msg}
           </T>
         ) : null}
         <Button label={t('paywall.restore')} variant="quiet" onPress={onRestore} disabled={busy} />
 
-        <View style={{ gap: space.xs, marginTop: space.md }}>
+        <View style={styles.fine}>
           <T kind="caption">{t('paywall.free')}</T>
           <T kind="caption">{t('paywall.relief')}</T>
           <T kind="caption">
@@ -232,15 +244,33 @@ export default function Paywall() {
   );
 }
 
-const styles = StyleSheet.create({
+const PERKS: { key: 'paywall.perkAll' | 'paywall.perkCompare' | 'paywall.perkWatch' | 'paywall.perkOffline'; glyph: GlyphName }[] = [
+  { key: 'paywall.perkAll', glyph: 'report' },
+  { key: 'paywall.perkCompare', glyph: 'tray' },
+  { key: 'paywall.perkWatch', glyph: 'bell' },
+  { key: 'paywall.perkOffline', glyph: 'cloud' },
+];
+
+const useStyles = makeStyles((c) => ({
+  flex: { flex: 1 },
   scroll: { paddingHorizontal: space.gutter, gap: space.md },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  close: { width: 44, height: 44, alignItems: 'center' },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginLeft: -space.md },
   hero: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-end', marginTop: space.md },
+  heroText: { flex: 1, gap: space.sm },
+  perks: { gap: space.md, paddingVertical: space.sm },
+  perk: { flexDirection: 'row', gap: space.md, alignItems: 'center' },
+  loading: { marginVertical: space.xxl },
+  none: { gap: space.md, paddingVertical: space.lg },
   row: { paddingVertical: space.md },
   rowInner: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: color.ink, alignItems: 'center', justifyContent: 'center' },
-  radioOn: { borderColor: color.laterite },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: color.laterite },
-  badge: { alignSelf: 'flex-start', backgroundColor: color.laterite, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1, marginTop: 4 },
-});
+  rowText: { flex: 1, gap: 2 },
+  price: { alignItems: 'flex-end' },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: c.ink, alignItems: 'center', justifyContent: 'center' },
+  radioOn: { borderColor: c.laterite },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.laterite },
+  badge: { alignSelf: 'flex-start', backgroundColor: c.laterite, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1, marginTop: 4 },
+  badgeText: { fontSize: 9, letterSpacing: 1.2 },
+  cta: { marginTop: space.lg },
+  gapTop: { marginTop: space.sm },
+  fine: { gap: space.xs, marginTop: space.md },
+}));
