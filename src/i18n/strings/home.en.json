@@ -37,5 +37,10 @@
   "pick.zoomSub": "Then set the crosshair on the plot",
   "home.standingOn": "You are standing on",
   "home.pickPlace": "Search, paste or drop a pin",
-  "home.scaleMid": "40 years under you"
+  "home.scaleMid": "40 years under you",
+  "home.shortcuts": "Shortcuts",
+  "home.shortPaste": "Paste a link",
+  "home.shortTime": "Time machine",
+  "home.shortTimeNone": "Core a place first, or turn on location.",
+  "home.open": "Open"
 }
