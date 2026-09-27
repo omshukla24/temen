@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import Animated, {
   useAnimatedProps,
   useSharedValue,
@@ -9,7 +9,7 @@ import Animated, {
 import type { Progress } from 'ground-memory';
 
 import { useT, type Key } from '@/i18n';
-import { color, motion, space, type as roles } from '@/theme';
+import { makeStyles, motion, space, type as roles, useTheme } from '@/theme';
 
 import { HairlineProgress } from './HairlineProgress';
 import { T } from './T';
@@ -32,6 +32,8 @@ const WORD: Record<string, Key> = { sounding: 'check.sounding', coring: 'check.c
 /** SOUNDING 012% → CORING 047% → READING STRATA 083% → SEALED 100% */
 export function LoaderHud({ progress, done }: { progress: Progress | null; done: string[] }) {
   const { t } = useT();
+  const { c } = useTheme();
+  const styles = useStyles();
   const reduced = useReducedMotion();
   const pct = useSharedValue(0);
   const bar = useSharedValue(0);
@@ -56,12 +58,12 @@ export function LoaderHud({ progress, done }: { progress: Progress | null; done:
   return (
     <View style={styles.root} accessibilityLiveRegion="polite" accessibilityLabel={`${word} ${Math.round(fraction * 100)} percent`}>
       <AText editable={false} caretHidden underlineColorAndroid="transparent" animatedProps={props} style={[roles.mono, styles.readout]} />
-      <HairlineProgress progress={bar} tint={color.laterite} />
+      <HairlineProgress progress={bar} tint={c.laterite} />
       <View style={styles.sources}>
         {SOURCES.map((s) => {
           const ok = done.includes(s.key);
           return (
-            <T key={s.key} kind="mono" color={ok ? color.ink : color.inkMuted} style={{ opacity: ok ? 1 : 0.55 }}>
+            <T key={s.key} kind="mono" color={ok ? c.ink : c.inkMuted} style={{ opacity: ok ? 1 : 0.55 }}>
               {ok ? '■' : '□'} {s.label}
             </T>
           );
@@ -71,8 +73,8 @@ export function LoaderHud({ progress, done }: { progress: Progress | null; done:
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   root: { gap: space.sm },
-  readout: { color: color.ink, fontSize: 13, letterSpacing: 13 * 0.24, padding: 0 },
+  readout: { color: c.ink, fontSize: 13, letterSpacing: 13 * 0.24, padding: 0 },
   sources: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md, rowGap: 2 },
-});
+}));

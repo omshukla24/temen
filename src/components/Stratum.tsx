@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import type { Stratum as StratumT } from 'ground-memory';
 
 import { useT } from '@/i18n';
 import { bandColor } from '@/setpieces/CoreDrawing';
-import { color, motion, space } from '@/theme';
+import { makeStyles, motion, space, useTheme } from '@/theme';
 
 import { Glyph } from './Glyph';
 import { HatchFill } from './Hatch';
 import { PressableScale } from './PressableScale';
+import { ProBadge } from './ProBadge';
 import { ReadingCounter } from './ReadingCounter';
 import { ConfidenceTicks, SourceChip } from './SourceChip';
 import { T } from './T';
@@ -42,13 +43,15 @@ export function StratumBand({
   animate: boolean;
 }) {
   const { tl, t } = useT();
+  const { c, fills } = useTheme();
+  const styles = useStyles();
   const [h, setH] = useState(0);
   const [open, setOpen] = useState(false);
   const onLayout = (e: LayoutChangeEvent) => setH(Math.round(e.nativeEvent.layout.height));
   const idx = String(s.index).padStart(2, '0');
   const counter = counterProps(s);
   const isEgg = s.key === 'egg';
-  const fill = bandColor({ hatch: s.hatch, significance: s.significance, status: s.status });
+  const fill = bandColor({ hatch: s.hatch, significance: s.significance, status: s.status }, fills);
   const minH = 92 + s.significance * 70;
   const label = `${idx} ${tl(s.title)}. ${sealed ? t('check.sealedBand') : `${s.reading} ${s.unit}. ${tl(s.headline)}. ${s.detail}`}`;
 
@@ -59,8 +62,8 @@ export function StratumBand({
       onLayout={onLayout}
       style={[styles.band, { minHeight: minH }]}
     >
-      <View style={[styles.column, { backgroundColor: isEgg ? color.crimsonEgg : fill }]}>
-        {h > 0 ? <HatchFill kind={s.hatch} width={18} height={h} tint={s.hatch === 'lostWater' ? 'rgba(29,90,122,0.5)' : 'rgba(242,237,228,0.45)'} /> : null}
+      <View style={[styles.column, { backgroundColor: isEgg ? c.crimsonEgg : fill }]}>
+        {h > 0 ? <HatchFill kind={s.hatch} width={18} height={h} tint={s.hatch === 'lostWater' ? 'rgba(29,90,122,0.5)' : c.dark ? 'rgba(21,20,18,0.4)' : 'rgba(242,237,228,0.45)'} /> : null}
       </View>
       <PressableScale
         onPress={sealed ? onUnlock : () => setOpen((o) => !o)}
@@ -70,7 +73,7 @@ export function StratumBand({
         style={styles.body}
       >
         <View style={styles.head}>
-          <T kind="mono" color={isEgg ? color.crimsonEgg : color.ink}>
+          <T kind="mono" color={isEgg ? c.crimsonEgg : c.ink}>
             {idx} {tl(s.title).toUpperCase()}
           </T>
           {!sealed && s.status === 'ok' ? <ConfidenceTicks level={s.confidence} /> : null}
@@ -78,10 +81,11 @@ export function StratumBand({
 
         {sealed ? (
           <View style={styles.sealed}>
-            <Glyph name="lock" size={18} color={color.laterite} />
-            <T kind="bodyMedium" color={color.laterite}>
+            <Glyph name="lock" size={18} color={c.lateriteText} />
+            <T kind="bodyMedium" color={c.lateriteText} style={styles.flex}>
               {t('check.sealedBand')}
             </T>
+            <ProBadge variant="outline" />
           </View>
         ) : (
           <>
@@ -94,10 +98,10 @@ export function StratumBand({
                   digits={counter.digits}
                   delay={order * motion.stagger + 120}
                   run={animate}
-                  style={isEgg ? { color: color.crimsonEgg } : undefined}
+                  style={isEgg ? { color: c.crimsonEgg } : undefined}
                 />
               ) : (
-                <T kind="display" color={isEgg ? color.crimsonEgg : color.ink}>
+                <T kind="display" color={isEgg ? c.crimsonEgg : c.ink}>
                   {s.reading}
                 </T>
               )}
@@ -105,14 +109,14 @@ export function StratumBand({
                 {s.unit}
               </T>
             </View>
-            <T kind="heading" color={isEgg ? color.crimsonEgg : color.ink}>
+            <T kind="heading" color={isEgg ? c.crimsonEgg : c.ink}>
               {tl(s.headline)}
             </T>
             <T kind="small">{s.detail}</T>
             {s.flag ? (
               <View style={styles.flag}>
-                <Glyph name="pin" size={16} color={color.laterite} />
-                <T kind="small" color={color.laterite} style={{ flex: 1 }}>
+                <Glyph name="pin" size={16} color={c.lateriteText} />
+                <T kind="small" color={c.lateriteText} style={{ flex: 1 }}>
                   {s.flag}
                 </T>
               </View>
@@ -124,7 +128,7 @@ export function StratumBand({
                     <T kind="mono" style={styles.factLabel}>
                       {f.label}
                     </T>
-                    <T kind="caption" color={color.ink} style={{ flex: 1 }}>
+                    <T kind="caption" color={c.ink} style={{ flex: 1 }}>
                       {f.value}
                     </T>
                   </View>
@@ -133,7 +137,7 @@ export function StratumBand({
             ) : null}
             <View style={styles.foot}>
               <SourceChip source={s.source} />
-              {s.facts.length ? <Glyph name={open ? 'close' : 'plus'} size={14} color={color.inkMuted} /> : null}
+              {s.facts.length ? <Glyph name={open ? 'close' : 'plus'} size={14} color={c.inkMuted} /> : null}
             </View>
           </>
         )}
@@ -142,24 +146,42 @@ export function StratumBand({
   );
 }
 
-/** The bottom stratum of every core: dashed, never sealed. */
+/** The bottom stratum of every core: dashed, never sealed. Two lines until tapped. */
 export function CantSeeBand({ items, order, animate }: { items: string[]; order: number; animate: boolean }) {
   const { t } = useT();
+  const { c } = useTheme();
+  const styles = useStyles();
+  const [open, setOpen] = useState(false);
   return (
     <Animated.View
       entering={animate ? FadeInDown.springify().damping(16).stiffness(170).delay(order * motion.stagger) : undefined}
+      layout={LinearTransition.duration(motion.dur.ui)}
       style={styles.cantSee}
-      accessibilityLabel={`${t('check.cantSee')}. ${items.join(' ')}`}
     >
-      <T kind="mono" color={color.ink}>
-        {String(order + 1).padStart(2, '0')} {t('check.cantSee').toUpperCase()}
-      </T>
-      {items.map((x, i) => (
+      <PressableScale
+        onPress={() => setOpen((o) => !o)}
+        scaleTo={0.99}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${t('check.cantSee')}. ${items.join(' ')}`}
+        style={styles.cantHead}
+      >
+        <T kind="mono" color={c.ink} style={styles.flex}>
+          {String(order + 1).padStart(2, '0')} {t('check.cantSee').toUpperCase()}
+        </T>
+        <Glyph name={open ? 'close' : 'plus'} size={14} color={c.inkMuted} />
+      </PressableScale>
+      {!open ? (
+        <T kind="small" color={c.ink} numberOfLines={2}>
+          {items.join(' · ')}
+        </T>
+      ) : null}
+      {(open ? items : []).map((x, i) => (
         <View key={i} style={styles.fact}>
           <T kind="mono" style={styles.factLabel}>
             {String(i + 1).padStart(2, '0')}
           </T>
-          <T kind="small" color={color.ink} style={{ flex: 1 }}>
+          <T kind="small" color={c.ink} style={{ flex: 1 }}>
             {x}
           </T>
         </View>
@@ -168,9 +190,11 @@ export function CantSeeBand({ items, order, animate }: { items: string[]; order:
   );
 }
 
-const styles = StyleSheet.create({
-  band: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: color.hairline },
-  column: { width: 18, overflow: 'hidden', borderLeftWidth: 1, borderRightWidth: 1, borderColor: color.ink },
+const useStyles = makeStyles((c) => ({
+  flex: { flex: 1 },
+  cantHead: { flexDirection: 'row', alignItems: 'center', minHeight: 28 },
+  band: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: c.hairline },
+  column: { width: 18, overflow: 'hidden', borderLeftWidth: 1, borderRightWidth: 1, borderColor: c.ink },
   body: { flex: 1, paddingVertical: space.md, paddingLeft: space.lg, gap: 4, justifyContent: 'flex-start' },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   readingRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm, flexWrap: 'wrap' },
@@ -183,9 +207,9 @@ const styles = StyleSheet.create({
   cantSee: {
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: color.ink,
+    borderColor: c.ink,
     padding: space.lg,
     gap: space.sm,
     marginTop: space.lg,
   },
-});
+}));
