@@ -13,18 +13,18 @@ import type { SiteKit } from './sitekit';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const FONTS = {
-  serif: require('@expo-google-fonts/instrument-serif/400Regular/InstrumentSerif_400Regular.ttf'),
-  serifItalic: require('@expo-google-fonts/instrument-serif/400Regular_Italic/InstrumentSerif_400Regular_Italic.ttf'),
-  body: require('@expo-google-fonts/hanken-grotesk/400Regular/HankenGrotesk_400Regular.ttf'),
-  bodySemi: require('@expo-google-fonts/hanken-grotesk/600SemiBold/HankenGrotesk_600SemiBold.ttf'),
+  stencil: require('@expo-google-fonts/big-shoulders-stencil/800ExtraBold/BigShouldersStencil_800ExtraBold.ttf'),
+  stencilAlt: require('@expo-google-fonts/big-shoulders-stencil/600SemiBold/BigShouldersStencil_600SemiBold.ttf'),
+  body: require('@expo-google-fonts/geologica/400Regular/Geologica_400Regular.ttf'),
+  bodySemi: require('@expo-google-fonts/geologica/600SemiBold/Geologica_600SemiBold.ttf'),
   mono: require('@expo-google-fonts/martian-mono/400Regular/MartianMono_400Regular.ttf'),
 };
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 async function fontFaces(): Promise<string> {
   const faces: [string, number, number | string, 'normal' | 'italic'][] = [
-    ['Serif', FONTS.serif, 400, 'normal'],
-    ['Serif', FONTS.serifItalic, 400, 'italic'],
+    ['Stencil', FONTS.stencil, 800, 'normal'],
+    ['Stencil', FONTS.stencilAlt, 600, 'normal'],
     ['Body', FONTS.body, 400, 'normal'],
     ['Body', FONTS.bodySemi, 600, 'normal'],
     ['Mono', FONTS.mono, 400, 'normal'],

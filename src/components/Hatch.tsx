@@ -43,12 +43,12 @@ export const HatchFill = memo(function HatchFill({
 });
 
 const TINT: Record<HatchKind, string> = {
-  water: 'rgba(29,90,122,0.22)',
-  lostWater: 'rgba(127,166,186,0.55)',
-  ground: 'rgba(138,122,98,0.28)',
-  rain: 'rgba(29,90,122,0.22)',
-  quakes: 'rgba(165,72,42,0.28)',
-  soil: 'rgba(138,122,98,0.42)',
+  water: 'rgba(27,110,168,0.22)',
+  lostWater: 'rgba(134,179,203,0.55)',
+  ground: 'rgba(148,118,74,0.28)',
+  rain: 'rgba(27,110,168,0.22)',
+  quakes: 'rgba(196,65,31,0.28)',
+  soil: 'rgba(148,118,74,0.42)',
   cantSee: 'transparent',
   egg: color.crimsonEgg,
 };

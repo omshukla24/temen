@@ -16,11 +16,12 @@ export interface CoreColors {
   ink: string;
   inkMuted: string;
   paper: string;
-  laterite: string;
+  /** The survey mark on the core's cut face. */
+  mark: string;
   fills: Fills;
 }
 
-const PRINT: CoreColors = { ink: color.ink, inkMuted: color.inkMuted, paper: color.paper, laterite: color.laterite, fills };
+const PRINT: CoreColors = { ink: color.ink, inkMuted: color.inkMuted, paper: color.paper, mark: color.accent, fills };
 
 export function bandColor(b: Band, f: Fills = fills): string {
   if (b.status === 'error') return f.error;
@@ -110,7 +111,7 @@ export function CoreDrawing({
         {shapes.map((s, i) => (
           <Path key={i} path={s.path} color={s.color} />
         ))}
-        <Path path={seams} style="stroke" strokeWidth={0.75} color="rgba(28,27,25,0.25)" />
+        <Path path={seams} style="stroke" strokeWidth={0.75} color="rgba(12,23,25,0.25)" />
         <Path path={outline}>
           <LinearGradient
             start={vec(x0, 0)}
@@ -122,7 +123,8 @@ export function CoreDrawing({
         <Path path={outline} style="stroke" strokeWidth={1} color={colors.ink} />
         <Oval rect={cap} color={colors.paper} />
         <Oval rect={cap} style="stroke" strokeWidth={1} color={colors.ink} />
-        <Oval rect={{ x: x0 + (x1 - x0) * 0.38, y: top - ry * 0.24, width: (x1 - x0) * 0.24, height: ry * 0.48 }} color={colors.laterite} />
+        <Oval rect={{ x: x0 + (x1 - x0) * 0.38, y: top - ry * 0.24, width: (x1 - x0) * 0.24, height: ry * 0.48 }} color={colors.mark} />
+        <Oval rect={{ x: x0 + (x1 - x0) * 0.38, y: top - ry * 0.24, width: (x1 - x0) * 0.24, height: ry * 0.48 }} style="stroke" strokeWidth={0.75} color={colors.ink} />
       </Group>
     </Group>
   );

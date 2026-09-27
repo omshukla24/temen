@@ -4,7 +4,7 @@ import { useFont } from '@shopify/react-native-skia';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const MONO = require('@expo-google-fonts/martian-mono/400Regular/MartianMono_400Regular.ttf');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const SERIF = require('@expo-google-fonts/instrument-serif/400Regular/InstrumentSerif_400Regular.ttf');
+const STENCIL = require('@expo-google-fonts/big-shoulders-stencil/800ExtraBold/BigShouldersStencil_800ExtraBold.ttf');
 
 export const useMonoFont = (size: number) => useFont(MONO, size);
-export const useSerifFont = (size: number) => useFont(SERIF, size);
+export const useStencilFont = (size: number) => useFont(STENCIL, size);
