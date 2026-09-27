@@ -46,7 +46,7 @@ export const PRIVACY: LegalDoc = {
     {
       title: 'Purchases',
       body: [
-        'Payments are handled by the app store. Temen uses RevenueCat to know what you have bought; RevenueCat receives the purchase receipt and an app user id (a random id, or your account id when you are signed in). Temen never sees card details.',
+        'Payments are handled by the app store. Temen uses RevenueCat to know what you have bought; RevenueCat receives the purchase receipt, an app user id (a random id, or your account id when you are signed in) and a note when the upgrade screen is shown. Temen never sees card details.',
       ],
     },
     {
