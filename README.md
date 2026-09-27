@@ -2,7 +2,7 @@
 
 > **Before you buy or rent anywhere on Earth, Temen shows what that ground remembers:** 40 years of surface water, how low it sits, the worst rain, earthquakes, soil composition, and what to ask before you sign.
 
-[![Test Suite](https://img.shields.io/badge/tests-198%20passed-brightgreen.svg)](#accuracy)
+[![Test Suite](https://img.shields.io/badge/tests-226%20passed-brightgreen.svg)](#accuracy)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Expo](https://img.shields.io/badge/Expo-SDK%2057-black.svg)](https://expo.dev/)
 [![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB.svg)](https://reactnative.dev/)
@@ -76,7 +76,7 @@ flowchart TD
 | 02 Ground — does it sit in a bowl? | AWS Terrain Tiles (terrarium) | SRTM 2000 + others | ~10–30 m | open data with attribution |
 | 03 Rain — wettest day, heavy days a year | NASA POWER daily PRECTOTCORR | 1981–2025 | 0.5° × 0.625° | NASA open data |
 | 04 Quakes — M4.5+ within 300 km | USGS earthquake catalogue | 1900–today | catalogue | US public domain |
-| 05 Soil — clay, sand, silt | ISRIC SoilGrids v2.0 | modelled 2020 | 250 m | CC BY 4.0 |
+| 05 Soil — clay, sand, silt (built-over pins borrow the nearest modelled soil, 1–2.5 km out, and say so) | ISRIC SoilGrids v2.0 | modelled 2020 | 250 m | CC BY 4.0 |
 | Monsoon Watch — next 24 h | MET Norway Locationforecast 2.0 | forecast | model grid | CC BY 4.0 |
 | Relief mode — active floods | GDACS | last 14 days | event point | free with attribution |
 | Time machine | Google Earth Timelapse | 1984–2022 | 30 m | CC BY 4.0 |
@@ -128,7 +128,7 @@ cp .env.example .env          # EXPO_PUBLIC_RC_TEST_KEY = your RevenueCat Test S
 npx expo run:android          # builds the dev client and installs it on the connected phone
 npm start                     # later: JS changes reload without a rebuild
 
-npm test                      # ground-memory golden tests (offline) + app unit tests
+npm test                      # ground-memory golden tests (offline) + app unit tests + a render smoke test of every main screen
 npx tsc --noEmit
 npm run fixtures              # once, with network: records tiles and API responses for the tests
 npm run accuracy              # prints the table above
@@ -148,16 +148,17 @@ An installable APK: `eas build -p android --profile preview` (EAS env `preview`)
   - **The Rising** — an SkSL shader over the JRC mask: every 30 m pixel the satellites saw as water fills with lake-blue caustics as a water table sweeps up; water that is gone carries dotted lake-memory; *NOW* drains it back to today.
   - **The Core Pull** — the pin extrudes into a shaded core that lifts off the map as the strata settle.
   - **Live Contours** — the place's own contour lines (d3-contour on the terrain tile) behind the result, drifting with device tilt.
-  - **The Year Dial** — 1:1 drag, momentum projection, velocity hand-off, rubber-band ends, a haptic tick per year; drives the Timelapse player when it allows.
+  - **The Year Dial** — 1:1 drag, momentum projection, velocity hand-off, rubber-band ends, a haptic tick per year; drives the Timelapse player when it allows and follows its playback (jumping, not replaying, when it loops).
+  - **Terrain** — every screen stands on its own seeded piece of imaginary ground, traced with d3-contour and drawn once in Skia; the check screen swaps it for the place's real contours.
   - **The Survey Seal** — a surveyor's benchmark mark with the coordinates to six decimals, stamped on save and printed on the PDF.
-- Reduced motion swaps every set-piece for a crossfade. Hindi and English, spoken verdicts (expo-speech), cores saved offline in SQLite kv-store.
+- Reduced motion swaps every set-piece for a crossfade. Hindi and English, a spoken reading on tap (expo-speech, with ranges, dates and units written out for the voice), cores saved offline in SQLite kv-store.
 
 ## Layout
 
 ```
 src/app/            screens (expo-router)
 src/setpieces/      Skia drawings, each a pure drawing plus a thin on-device wrapper
-src/components/     UI primitives in the "Core Sample" design language
+src/components/     UI primitives in the "Field Instrument" design language (Terrain, Staff, Stratum, instrument keys)
 src/services/       network, storage, purchases, accounts + sync, report, watch
 src/state/          small persisted stores
 ground-memory/      the open-source analysis library, tests and fixtures
@@ -165,7 +166,7 @@ ground-memory/      the open-source analysis library, tests and fixtures
 
 ## Credits
 
-Fonts: Instrument Serif, Hanken Grotesk and Martian Mono (SIL Open Font License). Data as listed above; map © OpenStreetMap contributors via OpenFreeMap.
+Fonts: Big Shoulders Stencil, Geologica and Martian Mono (SIL Open Font License). Data as listed above; map © OpenStreetMap contributors via OpenFreeMap.
 
 ## License
 
