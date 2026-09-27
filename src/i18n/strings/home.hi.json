@@ -37,5 +37,10 @@
   "pick.zoomSub": "फिर क्रॉसहेयर को प्लॉट पर रखें",
   "home.standingOn": "आप खड़े हैं",
   "home.pickPlace": "खोजें, पेस्ट करें या पिन लगाएँ",
-  "home.scaleMid": "आपके नीचे 40 साल"
+  "home.scaleMid": "आपके नीचे 40 साल",
+  "home.shortcuts": "शॉर्टकट",
+  "home.shortPaste": "लिंक पेस्ट करें",
+  "home.shortTime": "टाइम मशीन",
+  "home.shortTimeNone": "पहले कोई जगह कोर करें, या लोकेशन चालू करें।",
+  "home.open": "खोलें"
 }

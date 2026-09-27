@@ -1,22 +1,29 @@
 import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, ScrollView, View, type TextInput } from 'react-native';
+import { ActivityIndicator, Keyboard, ScrollView, Share, View, type TextInput } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ActionChips } from '@/components/ActionChips';
+import { Button } from '@/components/Button';
 import { CoreSliver } from '@/components/CoreSliver';
 import { Field } from '@/components/Field';
 import { Glyph, type GlyphName } from '@/components/Glyph';
 import { Hairline } from '@/components/Hairline';
 import { IconButton } from '@/components/IconButton';
+import { ListRow } from '@/components/ListRow';
 import { PressableScale } from '@/components/PressableScale';
 import { ProBadge } from '@/components/ProBadge';
 import { Screen } from '@/components/Screen';
+import { Sheet } from '@/components/Sheet';
 import { RegMarks, Staff } from '@/components/Staff';
 import { T } from '@/components/T';
+import { toast } from '@/components/Toast';
+import { useShareCard } from '@/features/card/useShareCard';
 import { directRow, EGG, EGG_FALLBACK, firstName, fixText, greetingKey, latestCore, savedCores, shouldSearch } from '@/features/home/logic';
 import { placeLabel } from '@/features/placeLabel';
+import { shareMessage } from '@/features/places/share';
 import { useDebounced } from '@/hooks/useDebounced';
 import { useFix } from '@/hooks/useFix';
 import { useT } from '@/i18n';
@@ -28,7 +35,7 @@ import { currentFix, permission } from '@/services/location';
 import { openCheck, openSaved } from '@/services/nav';
 import { resolveShared } from '@/services/share-in';
 import { useIsPro } from '@/state/entitlements';
-import { useCores, type CoreSummary } from '@/state/reports';
+import { reports, useCores, type CoreSummary } from '@/state/reports';
 import { updateSettings, useSettings } from '@/state/settings';
 import { haptic, makeStyles, motion, radius, space, useTheme } from '@/theme';
 
@@ -63,6 +70,16 @@ export default function Home() {
   const [note, setNote] = useState<string | null>(null);
   const [reliefNear, setReliefNear] = useState<string | null>(null);
   const input = useRef<TextInput>(null);
+  const card = useShareCard();
+  const [menuFor, setMenuFor] = useState<CoreSummary | null>(null);
+  const [asking, setAsking] = useState<CoreSummary | null>(null);
+  const openMenu = useCallback(
+    (id: string) => {
+      haptic.tick();
+      setMenuFor(cores.find((x) => x.id === id) ?? null);
+    },
+    [cores],
+  );
   const dq = useDebounced(q, 400);
   const direct = useMemo(() => directRow(q), [q]);
 
@@ -149,6 +166,22 @@ export default function Home() {
     }
     setQ(text.trim());
     input.current?.focus();
+  };
+
+  const timeMachine = () => {
+    const at = fix.status === 'ok' ? { id: 'new', lat: fix.fix.lat, lon: fix.fix.lon } : latestCore(cores);
+    if (!at) {
+      toast(t('home.shortTimeNone'), 'clock');
+      return;
+    }
+    router.push({ pathname: '/timelapse/[id]', params: { id: at.id, lat: String(at.lat), lon: String(at.lon) } });
+  };
+  const shareText = async (core: CoreSummary) => {
+    try {
+      await Share.share({ message: shareMessage({ ...placeLabel(core), headline: tl(core.headline), lat: core.lat, lon: core.lon, footer: t('places.shareBy') }) });
+    } catch {
+      toast(t('places.shareFail'));
+    }
   };
 
   const hour = new Date().getHours();
@@ -298,12 +331,26 @@ export default function Home() {
               <Tile index="02" glyph="crosshair" title={t('home.pin')} sub={t('home.pinTileSub')} onPress={() => router.push('/pick')} />
             </Animated.View>
 
+            {/* shortcuts: the other ways in, one tap each */}
+            <Animated.View entering={enter(3)}>
+              <ActionChips
+                bleed={space.gutter}
+                items={[
+                  { key: 'paste', glyph: 'link', label: t('home.shortPaste'), onPress: paste },
+                  { key: 'time', glyph: 'clock', label: t('home.shortTime'), onPress: timeMachine },
+                  { key: 'compare', glyph: 'tray', label: t('places.compare'), onPress: () => router.push('/compare') },
+                  { key: 'watch', glyph: 'bell', label: t('tab.watch'), onPress: () => router.navigate('/watch') },
+                  { key: 'places', glyph: 'layers', label: t('tab.places'), onPress: () => router.navigate('/places') },
+                ]}
+              />
+            </Animated.View>
+
             {latest ? (
               <Animated.View entering={enter(4)}>
                 <SectionHead label={t('home.continue')} />
                 <Hairline />
                 <View style={styles.bleed}>
-                  <CoreSliver core={latest} onPress={openSaved} />
+                  <CoreSliver core={latest} onPress={openSaved} onLongPress={openMenu} onMore={openMenu} />
                 </View>
                 <Hairline />
               </Animated.View>
@@ -314,7 +361,7 @@ export default function Home() {
                 <SectionHead label={t('home.saved')} action={t('home.seeAll')} onAction={() => router.navigate({ pathname: '/places', params: { tab: 'saved' } })} />
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip} style={styles.bleedStrip}>
                   {saved.map((core) => (
-                    <SavedCard key={core.id} core={core} headline={tl(core.headline)} />
+                    <SavedCard key={core.id} core={core} headline={tl(core.headline)} onMenu={openMenu} />
                   ))}
                 </ScrollView>
               </Animated.View>
@@ -334,6 +381,102 @@ export default function Home() {
           </>
         ) : null}
       </ScrollView>
+
+      {/* a card's menu: long-press or ⋯ on Continue and Saved */}
+      <Sheet visible={!!menuFor} onClose={() => setMenuFor(null)} title={menuFor ? placeLabel(menuFor).title : undefined}>
+        {menuFor ? (
+          <View>
+            <ListRow
+              glyph="arrow"
+              title={t('home.open')}
+              chevron={false}
+              onPress={() => {
+                const id = menuFor.id;
+                setMenuFor(null);
+                openSaved(id);
+              }}
+            />
+            <Hairline />
+            <ListRow
+              glyph="card"
+              title={t('places.card')}
+              chevron={false}
+              onPress={() => {
+                const id = menuFor.id;
+                setMenuFor(null);
+                card.share(id);
+              }}
+            />
+            <Hairline />
+            <ListRow
+              glyph="share"
+              title={t('places.shareText')}
+              chevron={false}
+              onPress={() => {
+                const core = menuFor;
+                setMenuFor(null);
+                shareText(core);
+              }}
+            />
+            <Hairline />
+            <ListRow
+              glyph={menuFor.saved ? 'saved' : 'save'}
+              title={menuFor.saved ? t('places.unsave') : t('places.save')}
+              chevron={false}
+              onPress={() => {
+                reports.setSaved(menuFor.id, !menuFor.saved);
+                toast(menuFor.saved ? t('places.unsavedToast') : t('places.savedToast'), menuFor.saved ? 'save' : 'saved');
+                haptic.success();
+                setMenuFor(null);
+              }}
+            />
+            <Hairline />
+            <ListRow
+              glyph="tray"
+              title={t('check.compareWith')}
+              chevron={false}
+              onPress={() => {
+                const id = menuFor.id;
+                setMenuFor(null);
+                router.navigate({ pathname: '/places', params: { pick: id } });
+              }}
+            />
+            <Hairline />
+            <ListRow
+              glyph="trash"
+              title={t('places.delete')}
+              tone="danger"
+              chevron={false}
+              onPress={() => {
+                const core = menuFor;
+                setMenuFor(null);
+                setTimeout(() => setAsking(core), motion.dur.exit + 40);
+              }}
+            />
+          </View>
+        ) : null}
+      </Sheet>
+
+      <Sheet visible={!!asking} onClose={() => setAsking(null)}>
+        {asking ? (
+          <View style={styles.ask}>
+            <T kind="title">{t('places.deleteAsk', { place: placeLabel(asking).title })}</T>
+            <T kind="small">{t('places.deleteBody')}</T>
+            <Button
+              label={t('places.deleteYes')}
+              variant="danger"
+              glyph="trash"
+              onPress={() => {
+                reports.remove(asking.id);
+                toast(t('places.deletedToast'), 'trash');
+                haptic.warn();
+                setAsking(null);
+              }}
+            />
+            <Button label={t('common.cancel')} variant="quiet" onPress={() => setAsking(null)} />
+          </View>
+        ) : null}
+      </Sheet>
     </Screen>
   );
 }
@@ -407,15 +550,25 @@ function SectionHead({ label, action, onAction }: { label: string; action?: stri
   );
 }
 
-function SavedCard({ core, headline }: { core: CoreSummary; headline: string }) {
+function SavedCard({ core, headline, onMenu }: { core: CoreSummary; headline: string; onMenu: (id: string) => void }) {
   const { c } = useTheme();
+  const { t } = useT();
   const styles = useStyles();
   const label = placeLabel(core);
   return (
-    <PressableScale onPress={() => openSaved(core.id)} scaleTo={0.96} style={styles.card} accessibilityLabel={`${label.title}. ${headline}`}>
+    <PressableScale
+      onPress={() => openSaved(core.id)}
+      onLongPress={() => onMenu(core.id)}
+      scaleTo={0.96}
+      style={styles.card}
+      accessibilityLabel={`${label.title}. ${headline}`}
+    >
       <View style={styles.cardTop}>
         <CoreCylinder width={16} height={44} bands={core.bands} tilt={0.22} />
-        <Glyph name="saved" size={14} color={c.accentText} />
+        <View style={styles.cardMarks}>
+          <Glyph name="saved" size={14} color={c.accentText} />
+          <IconButton glyph="more" size={18} color={c.inkMuted} label={t('places.more', { place: label.title })} onPress={() => onMenu(core.id)} style={styles.cardMore} />
+        </View>
       </View>
       <T kind="title" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.cardTitle}>
         {label.title}
@@ -491,6 +644,9 @@ const useStyles = makeStyles((c) => ({
   card: { width: 176, borderWidth: 1.5, borderColor: c.ink, borderRadius: radius.none, padding: space.md, gap: 4, backgroundColor: c.paper },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: space.xs },
   cardTitle: { fontSize: 20, lineHeight: 25 },
+  cardMarks: { flexDirection: 'row', alignItems: 'center', marginTop: -10, marginRight: -12 },
+  cardMore: { width: 40, height: 40 },
+  ask: { gap: space.md, paddingTop: space.sm },
   // small mono sets its own tracking
   cardSub: { fontSize: 9, lineHeight: 13, letterSpacing: 1.2 },
   hint: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start', borderWidth: 1, borderStyle: 'dashed', borderColor: c.ink, padding: space.md, borderRadius: radius.none, marginTop: space.xs },
