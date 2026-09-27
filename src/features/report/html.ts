@@ -7,25 +7,35 @@ import type { SiteKit } from '@/services/sitekit';
 
 export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+// Each stratum's hatch as a small SVG tile, repeated down the whole column by CSS.
+const tile = (w: number, h: number, body: string) =>
+  `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>${body}</svg>`)}")`;
+
 const HATCH: Record<string, string> = {
-  water: `<pattern id="h-water" width="16" height="9" patternUnits="userSpaceOnUse"><path d="M0 5 Q4 2.5 8 5 T16 5" fill="none" stroke="rgba(242,237,228,.5)" stroke-width="1"/></pattern>`,
-  lostWater: `<pattern id="h-lostWater" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="3.5" cy="3.5" r="1.1" fill="rgba(29,90,122,.55)"/></pattern>`,
-  ground: `<pattern id="h-ground" width="40" height="11" patternUnits="userSpaceOnUse"><path d="M0 6 C12 3 26 9 40 6" fill="none" stroke="rgba(242,237,228,.45)"/></pattern>`,
-  rain: `<pattern id="h-rain" width="8" height="12" patternUnits="userSpaceOnUse"><path d="M4 2 V7" stroke="rgba(28,27,25,.3)"/></pattern>`,
-  quakes: `<pattern id="h-quakes" width="24" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 L4 6 L8 14 L12 4 L16 12 L20 8 L24 10" fill="none" stroke="rgba(242,237,228,.55)"/></pattern>`,
-  soil: `<pattern id="h-soil" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="2" cy="3" r=".8" fill="rgba(28,27,25,.35)"/><circle cx="6.5" cy="7" r=".7" fill="rgba(28,27,25,.3)"/></pattern>`,
+  water: tile(16, 9, `<path d='M0 5 Q4 2.5 8 5 T16 5' fill='none' stroke='rgba(247,248,244,.55)' stroke-width='1'/>`),
+  lostWater: tile(7, 7, `<circle cx='3.5' cy='3.5' r='1.1' fill='rgba(27,110,168,.6)'/>`),
+  ground: tile(40, 11, `<path d='M0 6 C12 3 26 9 40 6' fill='none' stroke='rgba(247,248,244,.5)'/>`),
+  rain: tile(8, 12, `<path d='M4 2 V7' stroke='rgba(12,23,25,.35)'/>`),
+  quakes: tile(24, 20, `<path d='M0 10 L4 6 L8 14 L12 4 L16 12 L20 8 L24 10' fill='none' stroke='rgba(247,248,244,.6)'/>`),
+  soil: tile(9, 9, `<circle cx='2' cy='3' r='.8' fill='rgba(12,23,25,.4)'/><circle cx='6.5' cy='7' r='.7' fill='rgba(12,23,25,.35)'/>`),
 };
 
 function band(s: Stratum): string {
   const fill = s.status === 'error' ? fills.error : (fills as Record<string, string>)[s.hatch] ?? fills.ground;
   const h = Math.round(56 + s.significance * 50);
   const idx = String(s.index).padStart(2, '0');
+  const hatch = HATCH[s.hatch];
+  const reading =
+    s.status === 'ok'
+      ? `<span class="reading">${esc(s.reading)}</span><span class="mono">${esc(s.unit)}</span>`
+      : `<span class="stamp mono ink">${s.status === 'error' ? 'NO READING' : 'NOT MODELLED'}</span>`;
+  // the column is a stretched block, so it runs the stratum's full height however long the facts are
   return `
   <div class="band" style="min-height:${h}px">
-    <svg class="col" width="18" height="${h}" preserveAspectRatio="none"><rect width="18" height="100%" fill="${fill}"/><rect width="18" height="100%" fill="url(#h-${s.hatch})"/></svg>
+    <div class="col" style="background-color:${fill};${hatch ? `background-image:${hatch};` : ''}"><span class="idx">${idx}</span></div>
     <div class="bandBody">
-      <div class="row"><span class="mono ink">${idx} ${esc(s.title.toUpperCase())}</span><span class="mono ink">${{ low: '●○○', med: '●●○', high: '●●●' }[s.confidence]}</span></div>
-      <div class="row base"><span class="reading">${esc(s.reading)}</span><span class="mono">${esc(s.unit)}</span></div>
+      <div class="row"><span class="mono ink">${esc(s.title.toUpperCase())}</span><span class="mono ink">${{ low: '●○○', med: '●●○', high: '●●●' }[s.confidence]}</span></div>
+      <div class="row base">${reading}</div>
       <div class="heading">${esc(s.headline)}</div>
       <div class="small">${esc(s.detail)}</div>
       ${s.flag ? `<div class="flag">▲ ${esc(s.flag)}</div>` : ''}
@@ -77,42 +87,45 @@ ${faces}
 body { margin: 0; background: ${color.ground}; color: ${color.ink}; font-family: Body, sans-serif; font-size: 11px; line-height: 1.5; }
 .mono { font-family: Mono, monospace; font-size: 8px; letter-spacing: .2em; text-transform: uppercase; color: ${color.inkMuted}; }
 .ink { color: ${color.ink}; }
-h1 { font-family: Serif, serif; font-weight: 400; font-size: 34px; line-height: 1.05; letter-spacing: -.02em; margin: 6px 0 8px; }
-h2 { margin: 18px 0 6px; }
-.wordmark { font-family: Serif, serif; font-size: 20px; letter-spacing: .08em; }
-.top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid ${color.ink}; padding-bottom: 8px; }
+h1 { font-family: Stencil, sans-serif; font-weight: 800; font-size: 44px; line-height: 1.02; text-transform: uppercase; margin: 6px 0 8px; }
+h2 { margin: 18px 0 6px; display: flex; align-items: center; gap: 6px; }
+h2:before { content: ''; width: 7px; height: 7px; background: ${color.accent}; border: 1px solid ${color.ink}; }
+.wordmark { font-family: Stencil, sans-serif; font-weight: 800; font-size: 22px; letter-spacing: .16em; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid ${color.ink}; padding-bottom: 8px; }
+.staff { height: 8px; margin-top: 6px; background: repeating-linear-gradient(90deg, ${color.accent} 0 10px, ${color.ink} 10px 12px); border: 1px solid ${color.ink}; }
 .meta { display: flex; gap: 14px; flex-wrap: wrap; margin: 6px 0 10px; }
-.map { width: 100%; border: 1px solid ${color.ink}; margin: 8px 0 4px; }
-.band { display: flex; border-bottom: 1px solid rgba(28,27,25,.12); page-break-inside: avoid; }
-.col { flex: none; border-left: 1px solid ${color.ink}; border-right: 1px solid ${color.ink}; }
+.map { width: 100%; border: 1.5px solid ${color.ink}; margin: 8px 0 4px; }
+.band { display: flex; align-items: stretch; border-bottom: 1px solid rgba(12,23,25,.12); page-break-inside: avoid; }
+.col { flex: none; width: 26px; align-self: stretch; position: relative; border-left: 1.5px solid ${color.ink}; border-right: 1.5px solid ${color.ink}; background-repeat: repeat; }
+.idx { position: absolute; top: 6px; left: 3px; right: 3px; text-align: center; background: ${color.paper}; border: 1px solid ${color.ink}; font-family: Mono, monospace; font-size: 7px; line-height: 11px; }
 .bandBody { flex: 1; padding: 8px 0 8px 12px; }
 .row { display: flex; justify-content: space-between; gap: 8px; }
 .base { justify-content: flex-start; align-items: baseline; }
-.reading { font-family: Serif, serif; font-size: 28px; line-height: 1.1; }
+.reading { font-family: Stencil, sans-serif; font-weight: 800; font-size: 32px; line-height: 1.06; text-transform: uppercase; }
+.stamp { display: inline-block; border: 1.5px dashed ${color.ink}; padding: 2px 6px; margin: 4px 0; }
 .heading { font-weight: 600; font-size: 13px; }
 .small { color: ${color.inkMuted}; }
 .flag { color: ${color.laterite}; margin-top: 4px; }
 .facts { margin-top: 4px; border-collapse: collapse; }
 .facts td { padding: 1px 10px 1px 0; vertical-align: top; }
-.chip { display: inline-block; border: 1px solid ${color.line}; border-radius: 99px; padding: 1px 8px; margin-top: 6px; font-size: 7px; }
-.cant { border: 1px dashed ${color.ink}; padding: 10px 12px; margin-top: 12px; page-break-inside: avoid; }
-ol { padding-left: 18px; margin: 4px 0; } li { margin: 3px 0; }
-.q li::marker { font-family: Serif, serif; color: ${color.laterite}; }
-.foot { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; border-top: 1px solid ${color.ink}; padding-top: 8px; gap: 16px; }
+.chip { display: inline-block; border: 1px solid ${color.line}; border-left: 3px solid ${color.inkMuted}; padding: 1px 8px; margin-top: 6px; font-size: 7px; }
+.cant { border: 1.5px dashed ${color.ink}; background: ${color.paper}; padding: 10px 12px; margin-top: 12px; page-break-inside: avoid; }
+ol { padding-left: 22px; margin: 4px 0; } li { margin: 3px 0; }
+.q li::marker { font-family: Stencil, sans-serif; font-weight: 800; color: ${color.accentText}; }
+.foot { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; border-top: 2px solid ${color.ink}; padding-top: 8px; gap: 16px; }
 .photos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 figure { margin: 0; } figure img { width: 100%; border: 1px solid ${color.ink}; } figcaption { margin-top: 2px; font-size: 7px; }
 .page { page-break-before: always; }
-.italic { font-family: Serif, serif; font-style: italic; font-size: 16px; color: ${color.laterite}; }
+.teaser { font-family: Stencil, sans-serif; font-weight: 600; font-size: 17px; line-height: 1.15; text-transform: uppercase; color: ${color.accentText}; }
 </style></head><body>
-<div class="top"><div><div class="wordmark">TEMEN</div><div class="mono">what the ground remembers</div></div><div class="mono ink" style="text-align:right">CORE ${esc(r.id.toUpperCase())}<br/>${esc(r.createdAt.slice(0, 16).replace('T', ' · '))} UTC</div></div>
+<div class="top"><div><div class="wordmark">TEMEN</div><div class="mono">what the ground remembers</div><div class="staff" style="width:120px"></div></div><div class="mono ink" style="text-align:right">CORE ${esc(r.id.toUpperCase())}<br/>${esc(r.createdAt.slice(0, 16).replace('T', ' · '))} UTC</div></div>
 <div class="mono" style="margin-top:8px">${crumbs}</div>
 <h1>${esc(r.headline)}</h1>
-<div class="italic">${esc(r.teaser)}</div>
+<div class="teaser">${esc(r.teaser)}</div>
 <div class="meta mono ink"><span>${esc(formatHemisphere(r.lat, r.lon, 6))}</span><span>ELEV ${r.elevationM != null ? esc(formatMetres(r.elevationM)) : '—'}</span></div>
 ${map ? `<img class="map" src="${map}"/><div class="mono" style="font-size:6.5px">${esc(MAP_ATTRIBUTION)}</div>` : ''}
-<svg width="0" height="0" style="position:absolute"><defs>${Object.values(HATCH).join('')}</defs></svg>
 <h2 class="mono ink">THE CORE · NOW → 1984</h2>
-<div style="border-top:1px solid ${color.ink}">${strata.map(band).join('')}</div>
+<div style="border-top:2px solid ${color.ink}">${strata.map(band).join('')}</div>
 <div class="cant"><div class="mono ink">WHAT THIS CAN'T SEE</div><ol>${r.cantSee.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>
 <h2 class="mono ink">ASK BEFORE YOU SIGN</h2>
 <ol class="q">${r.questions.map((q) => `<li>${esc(q)}</li>`).join('')}</ol>
