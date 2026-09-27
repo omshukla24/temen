@@ -2,7 +2,7 @@ import { KEYS } from '@/services/storage';
 
 import { memory, persisted, useStore } from './store';
 
-export { canSeeFull, placeKey } from './rules';
+export { canSeeFull, FREE_STRATA, placeKey } from './rules';
 
 /** placeKey → store transaction id, for single-report unlocks. */
 export const unlocks = persisted<Record<string, string>>(KEYS.unlocks, {});

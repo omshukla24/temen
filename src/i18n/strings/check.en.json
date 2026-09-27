@@ -6,5 +6,11 @@
   "check.copied": "Coordinates copied",
   "check.openMaps": "Open in Maps",
   "check.sourcesMethod": "Sources & method",
-  "check.spokenCantSee": "This cannot see drains, official lake boundaries or single plots."
+  "check.spokenCantSee": "This cannot see drains, official lake boundaries or single plots.",
+  "card.share": "Share as a card",
+  "card.shareShort": "Card",
+  "card.making": "Drawing the card…",
+  "card.dialog": "Send this card",
+  "card.fail": "Couldn't make the card. Try again.",
+  "card.missing": "This core isn't on this phone any more."
 }

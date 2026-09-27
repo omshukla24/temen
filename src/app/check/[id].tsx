@@ -45,13 +45,12 @@ import { LiveContours } from '@/setpieces/contours/LiveContours';
 import { centreShare } from '@/setpieces/rising/mask';
 import { Rising } from '@/setpieces/rising/Rising';
 import { SurveySeal } from '@/setpieces/seal/SurveySeal';
-import { canSeeFull, placeKey, useIsPro, useUnlocks } from '@/state/entitlements';
+import { canSeeFull, FREE_STRATA, placeKey, useIsPro, useUnlocks } from '@/state/entitlements';
 import { reports, useCores } from '@/state/reports';
 import { font, haptic, makeStyles, motion, radius, space, useTheme } from '@/theme';
 import { useReducedMotion } from '@/theme/reduced';
 
 const ZOOM = 15.5;
-const FREE_STRATA = 2; // water + ground are free; the rest is sealed without a report or Pro
 
 type CheckParams = { id: string; lat?: string; lon?: string; label?: string; egg?: string };
 
