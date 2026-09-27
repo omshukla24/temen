@@ -52,6 +52,7 @@ export async function shareCard(
   const place = (report.placeName ?? 'core').replace(/[^\w-]+/g, '-').replace(/-+/g, '-').slice(0, 40);
   const file = new File(Paths.cache, `Temen-${place}-${report.id.slice(0, 6)}.png`);
   if (file.exists) file.delete();
+  file.create();
   file.write(bytes);
   if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available on this phone');
   await Sharing.shareAsync(file.uri, { mimeType: 'image/png', dialogTitle: opts.dialogTitle, UTI: 'public.png' });
