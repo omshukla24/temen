@@ -3,7 +3,7 @@ import { forecastUrl, parseForecast, type ForecastReading } from './forecast';
 import { parseQuakeCount, parseQuakeTop, quakeCountUrl, quakeReading, quakeTopUrl } from './quakes';
 import { parseRain, rainUrl } from './rain';
 import { parseRelief, reliefUrl, type ReliefReading } from './relief';
-import { parseSoil, soilUrl } from './soil';
+import { soilNear } from './soil';
 import { bowlCheck } from './terrain';
 import { TileCache } from './tiles';
 import type { Deps, GroundReport, LatLon } from './types';
@@ -106,13 +106,11 @@ export async function checkGround(at: LatLon, deps: Deps, opts: CheckOptions = {
         t,
         'Quakes',
       ),
+    // a masked point probes its neighbours one by one, so soil gets more room too
     soil: () =>
       settle(
-        () =>
-          cached(rc, `soil:${lat.toFixed(3)},${lon.toFixed(3)}`, 180 * DAY, async () =>
-            parseSoil(await deps.fetchJson(soilUrl(lat, lon), { headers })),
-          ),
-        t,
+        () => cached(rc, `soil:${lat.toFixed(3)},${lon.toFixed(3)}`, 180 * DAY, () => soilNear(lat, lon, deps.fetchJson, { headers })),
+        t * 2,
         'Soil',
       ),
     relief: () =>

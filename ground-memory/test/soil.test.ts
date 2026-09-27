@@ -1,4 +1,4 @@
-import { parseSoil, soilUrl, usdaTexture } from '../src/soil';
+import { SOIL_MASKED, parseSoil, soilNear, soilUrl, usdaTexture } from '../src/soil';
 import { soilGrids } from './synthetic';
 
 describe('soil', () => {
@@ -26,6 +26,42 @@ describe('soil', () => {
     expect(() =>
       parseSoil(soilGrids({ clay: [{ label: '0-5cm', mean: null }], sand: [{ label: '0-5cm', mean: null }], silt: [] })),
     ).toThrow(/no data here/);
+  });
+
+  describe('soilNear', () => {
+    const masked = soilGrids({ clay: [{ label: '15-30cm', mean: null }], sand: [{ label: '15-30cm', mean: null }], silt: [{ label: '15-30cm', mean: null }] });
+    const loam = soilGrids({ clay: [{ label: '15-30cm', mean: 261 }], sand: [{ label: '15-30cm', mean: 300 }], silt: [{ label: '15-30cm', mean: 439 }] });
+
+    it('reads the point itself when it is modelled', async () => {
+      const fetchJson = jest.fn(async () => loam);
+      const r = await soilNear(28.4861, 77.512, fetchJson);
+      expect(r.nearby).toBeUndefined();
+      expect(fetchJson).toHaveBeenCalledTimes(1);
+    });
+
+    it('walks out to the nearest modelled soil when the point is built over, one call at a time', async () => {
+      // the pin and the probe 1 km north are masked; 1 km east is modelled
+      const answers = [masked, masked, loam];
+      const fetchJson = jest.fn(async () => answers.shift());
+      const r = await soilNear(28.4861, 77.512, fetchJson);
+      expect(r.nearby).toEqual({ distanceM: 1000, direction: 'E' });
+      expect(r.sub!.clay).toBeCloseTo(26.1, 5);
+      expect(fetchJson).toHaveBeenCalledTimes(3);
+    });
+
+    it('gives up with the masked message when nothing nearby is modelled', async () => {
+      const fetchJson = jest.fn(async () => masked);
+      await expect(soilNear(25.1173, 55.1351, fetchJson)).rejects.toThrow(SOIL_MASKED);
+      expect(fetchJson).toHaveBeenCalledTimes(9);
+    });
+
+    it('does not hide network failures behind a neighbour', async () => {
+      const fetchJson = jest.fn(async () => {
+        throw new Error('HTTP 503');
+      });
+      await expect(soilNear(28.4861, 77.512, fetchJson)).rejects.toThrow('HTTP 503');
+      expect(fetchJson).toHaveBeenCalledTimes(1);
+    });
   });
 
   it.each([

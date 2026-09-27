@@ -2,7 +2,7 @@ import { formatMetres, TERRAIN_SOURCE, bowlHeadline, type BowlReading } from './
 import { QUAKE_SOURCE, type QuakeReading } from './quakes';
 import { RAIN_RULES, RAIN_SOURCE, type RainReading } from './rain';
 import type { ReliefReading } from './relief';
-import { SOIL_SOURCE, type SoilReading } from './soil';
+import { SOIL_MASKED, SOIL_SOURCE, type SoilReading } from './soil';
 import type { GroundFlags, GroundReport, SourceRef, Stratum } from './types';
 import { hashId, prettyDate, type Settled } from './util';
 import { WATER_SOURCE, bufferText, pct, waterHeadline, type WaterEdge, type WaterSample } from './water';
@@ -179,20 +179,32 @@ export function quakeStratum(r: Settled<QuakeReading>): Stratum {
 }
 
 export function soilStratum(r: Settled<SoilReading>): Stratum {
+  if (!r.ok && r.error === SOIL_MASKED) {
+    return {
+      index: 5, key: 'soil', title: 'Soil', reading: '—', value: null, unit: 'not modelled',
+      headline: 'No soil modelled here',
+      detail:
+        'SoilGrids leaves out built-up ground, water and bare rock, and found no modelled soil within 2.5 km of this point. Ask for the soil test done for the foundation design.',
+      confidence: 'low', significance: 0.25, status: 'empty', source: SOIL_SOURCE, hatch: 'soil', flag: null, facts: [],
+    };
+  }
   if (!r.ok) return errorStratum(5, 'soil', 'Soil', SOIL_SOURCE, 'soil', r.error);
   const s = r.value;
   const ref = s.sub ?? s.top!;
+  const near = s.nearby ? `Nothing is modelled under this point (built-up ground or water); this is the nearest modelled soil, ${(s.nearby.distanceM / 1000).toFixed(1)} km ${s.nearby.direction}. ` : '';
   return {
     index: 5,
     key: 'soil',
     title: 'Soil',
     reading: `${Math.round(s.clayPct)}%`,
     value: Math.round(s.clayPct),
-    unit: 'clay',
+    unit: s.nearby ? `clay · ${(s.nearby.distanceM / 1000).toFixed(1)} km ${s.nearby.direction}` : 'clay',
     headline: s.clayHeavy ? 'Heavy clay' : s.texture,
-    detail: s.clayHeavy
-      ? `Modelled texture: ${s.texture.toLowerCase()}, ${Math.round(s.clayPct)}% clay. Clay swells when wet and shrinks when dry, which can crack walls and floors.`
-      : `Modelled texture: ${s.texture.toLowerCase()} — ${Math.round(ref.clay)}% clay, ${Math.round(ref.sand)}% sand, ${Math.round(ref.silt)}% silt at 15–30 cm.`,
+    detail:
+      near +
+      (s.clayHeavy
+        ? `Modelled texture: ${s.texture.toLowerCase()}, ${Math.round(s.clayPct)}% clay. Clay swells when wet and shrinks when dry, which can crack walls and floors.`
+        : `Modelled texture: ${s.texture.toLowerCase()} — ${Math.round(ref.clay)}% clay, ${Math.round(ref.sand)}% sand, ${Math.round(ref.silt)}% silt at 15–30 cm.`),
     confidence: 'low',
     significance: Math.min(1, 0.25 + s.clayPct / 80),
     status: 'ok',
@@ -200,6 +212,7 @@ export function soilStratum(r: Settled<SoilReading>): Stratum {
     hatch: 'soil',
     flag: null,
     facts: [
+      ...(s.nearby ? [{ label: 'Read at', value: `${(s.nearby.distanceM / 1000).toFixed(1)} km ${s.nearby.direction} of the pin` }] : []),
       ...(s.top ? [{ label: '0–5 cm', value: `${Math.round(s.top.clay)}% clay · ${Math.round(s.top.sand)}% sand · ${Math.round(s.top.silt)}% silt` }] : []),
       ...(s.sub ? [{ label: '15–30 cm', value: `${Math.round(s.sub.clay)}% clay · ${Math.round(s.sub.sand)}% sand · ${Math.round(s.sub.silt)}% silt` }] : []),
     ],
