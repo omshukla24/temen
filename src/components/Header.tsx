@@ -101,7 +101,7 @@ const useStyles = makeStyles((c) => ({
   overlay: { backgroundColor: c.veil, borderBottomWidth: 1.5, borderBottomColor: c.ink },
   spacer: { width: space.sm },
   titles: { flex: 1, minWidth: 0, paddingHorizontal: space.xs },
-  title: { fontSize: 27, lineHeight: 30 },
+  title: { fontSize: 20, lineHeight: 25 },
   // small mono sets its own tracking (the role's is sized for 10.5 pt)
   subtitle: { fontSize: 9.5, lineHeight: 14, letterSpacing: 1.6 },
   right: { flexDirection: 'row', alignItems: 'center', flexShrink: 0 },

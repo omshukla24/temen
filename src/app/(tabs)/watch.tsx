@@ -200,7 +200,7 @@ const useStyles = makeStyles((c) => ({
   card: { borderWidth: 1.5, borderColor: c.ink, borderRadius: radius.none, padding: space.lg, gap: space.md, backgroundColor: c.paper },
   row: { paddingVertical: space.md, gap: space.sm },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  place: { fontSize: 27, lineHeight: 30 },
+  place: { fontSize: 20, lineHeight: 25 },
   mm: { alignItems: 'flex-end' },
   strip: { flexDirection: 'row', alignItems: 'flex-end', height: 38, gap: 2, borderBottomWidth: 1.5, borderBottomColor: c.ink },
   hour: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
