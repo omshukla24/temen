@@ -1,7 +1,7 @@
 import type { CoreSummary } from '@/state/reports';
 
 import { ago } from './ago';
-import { matches, normalise, visibleCores } from './filter';
+import { flagCount, matches, metresBetween, normalise, sortCores, staleUnsaved, visibleCores } from './filter';
 import { directionsLink, mapsLink, shareMessage } from './share';
 
 function core(id: string, over: Partial<CoreSummary> = {}): CoreSummary {
@@ -77,11 +77,47 @@ describe('places filter', () => {
     expect(matches(cores[0], 'पानी', hi)).toBe(true);
   });
 
-  it('keeps the store order and splits recent from saved', () => {
-    expect(visibleCores(cores, 'recent', '').map((c) => c.id)).toEqual(['a', 'b', 'c']);
+  it('keeps the store order and splits all, saved and flagged', () => {
+    expect(visibleCores(cores, 'all', '').map((c) => c.id)).toEqual(['a', 'b', 'c']);
     expect(visibleCores(cores, 'saved', '').map((c) => c.id)).toEqual(['a', 'c']);
     expect(visibleCores(cores, 'saved', 'dubai').map((c) => c.id)).toEqual(['c']);
-    expect(visibleCores(cores, 'recent', 'nowhere')).toEqual([]);
+    expect(visibleCores(cores, 'all', 'nowhere')).toEqual([]);
+    const flagged = [core('x', { flags: { bowl: true } as CoreSummary['flags'] }), core('y')];
+    expect(visibleCores(flagged, 'flagged', '').map((c) => c.id)).toEqual(['x']);
+  });
+});
+
+describe('sorting and clearing', () => {
+  const list = [
+    core('new', { placeName: 'Velachery', createdAt: '2026-09-27T10:00:00Z', lat: 12.97, lon: 80.22 }),
+    core('mid', { placeName: 'Adyar', createdAt: '2026-09-10T10:00:00Z', lat: 13.0, lon: 80.25, flags: { bowl: true, buffer: true } as CoreSummary['flags'] }),
+    core('old', { placeName: 'Beta II', createdAt: '2026-06-01T10:00:00Z', saved: true, flags: { lostWater: true, seasonal: true } as CoreSummary['flags'] }),
+  ];
+  const ids = (l: CoreSummary[]) => l.map((c) => c.id);
+
+  it('counts caution flags but not the seasonal qualifier', () => {
+    expect(flagCount(list[1])).toBe(2);
+    expect(flagCount(list[2])).toBe(1);
+    expect(flagCount(list[0])).toBe(0);
+  });
+
+  it('sorts by time, name, flags and distance', () => {
+    expect(ids(sortCores(list, 'newest'))).toEqual(['new', 'mid', 'old']);
+    expect(ids(sortCores(list, 'oldest'))).toEqual(['old', 'mid', 'new']);
+    expect(ids(sortCores(list, 'name'))).toEqual(['mid', 'old', 'new']);
+    expect(ids(sortCores(list, 'flags'))).toEqual(['mid', 'old', 'new']);
+    expect(ids(sortCores(list, 'nearest', { lat: 28.48, lon: 77.51 }))).toEqual(['old', 'mid', 'new']);
+    expect(ids(sortCores(list, 'nearest', null))).toEqual(['new', 'mid', 'old']);
+  });
+
+  it('measures distance well enough to order places', () => {
+    expect(Math.round(metresBetween({ lat: 0, lon: 0 }, { lat: 0, lon: 1 }) / 1000)).toBe(111);
+  });
+
+  it('clears only unsaved cores older than the cutoff', () => {
+    const now = Date.parse('2026-09-27T12:00:00Z');
+    expect(staleUnsaved(list, now, 7)).toEqual(['mid']);
+    expect(staleUnsaved(list, now, 0)).toEqual(['new', 'mid']);
   });
 });
 
