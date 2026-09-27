@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -10,19 +10,33 @@ import { EmptyState } from '@/components/EmptyState';
 import { Glyph } from '@/components/Glyph';
 import { Hairline } from '@/components/Hairline';
 import { Header } from '@/components/Header';
+import { IconButton } from '@/components/IconButton';
 import { ListRow } from '@/components/ListRow';
 import { PressableScale } from '@/components/PressableScale';
 import { ProBadge } from '@/components/ProBadge';
 import { RollingNumber } from '@/components/RollingNumber';
 import { Screen } from '@/components/Screen';
+import { Sheet } from '@/components/Sheet';
 import { RegMarks } from '@/components/Staff';
 import { T } from '@/components/T';
+import { toast } from '@/components/Toast';
 import { Toggle } from '@/components/Toggle';
+import { useShareCard } from '@/features/card/useShareCard';
+import { placeLabel } from '@/features/placeLabel';
 import { useT } from '@/i18n';
 import { openSaved } from '@/services/nav';
-import { enableBackgroundWatch, lastReadings, runWatch, setupNotifications, watchedPlaces } from '@/services/watch';
+import {
+  enableBackgroundWatch,
+  isBackgroundWatchOn,
+  lastReadings,
+  mutedPlaces,
+  runWatch,
+  setMuted,
+  setupNotifications,
+  watchedPlaces,
+} from '@/services/watch';
 import { useIsPro } from '@/state/entitlements';
-import { useCores } from '@/state/reports';
+import { reports, useCores } from '@/state/reports';
 import { haptic, makeStyles, motion, radius, space, useTheme } from '@/theme';
 
 /** Monsoon Watch: next-24 h rain at every saved place, with a local alert past 64.5 mm. */
@@ -31,11 +45,31 @@ export default function Watch() {
   const { c } = useTheme();
   const styles = useStyles();
   const isPro = useIsPro();
-  useCores(); // re-render when saved places change
+  const cores = useCores(); // re-render when saved places change
   const places = watchedPlaces();
+  const card = useShareCard();
   const [last, setLast] = useState(lastReadings);
   const [busy, setBusy] = useState(false);
   const [bg, setBg] = useState(false);
+  const [muted, setMutedIds] = useState(mutedPlaces);
+  const [adding, setAdding] = useState(false);
+  const addable = cores.filter((x) => !x.saved);
+
+  useEffect(() => {
+    isBackgroundWatchOn().then(setBg);
+  }, []);
+
+  const toggleMute = async (id: string, name: string) => {
+    const off = !muted.includes(id);
+    setMutedIds(await setMuted(id, off));
+    haptic.tick();
+    toast(off ? t('watch.mutedToast', { place: name }) : t('watch.unmutedToast', { place: name }), off ? 'bellOff' : 'bell');
+  };
+  const unwatch = (id: string, name: string) => {
+    reports.setSaved(id, false);
+    haptic.tick();
+    toast(t('watch.removed', { place: name }), 'save');
+  };
 
   const check = async () => {
     setBusy(true);
@@ -54,7 +88,16 @@ export default function Watch() {
           eyebrow={isPro ? t('watch.next24') : t('common.pro')}
           title={t('watch.title')}
           measure={['NOW', '+12 H', '+24 H']}
-          right={!isPro ? <ProBadge /> : null}
+          right={
+            isPro ? (
+              <View style={styles.headRight}>
+                <IconButton glyph="plus" label={t('watch.add')} onPress={() => setAdding(true)} />
+                <IconButton glyph="refresh" label={t('watch.check')} disabled={busy || places.length === 0} onPress={check} />
+              </View>
+            ) : (
+              <ProBadge />
+            )
+          }
         />
         <View style={styles.body}>
           <T kind="small">{t('watch.lede')}</T>
@@ -81,6 +124,7 @@ export default function Watch() {
                 const strip = reading && r ? hourlyStrip(reading, new Date(r.at)) : null;
                 const peak = strip ? Math.max(...strip) : 0;
                 const status = r?.error ? r.error : mm === null ? t('watch.notChecked') : heavy ? t('watch.heavy') : mm > 0 ? t('watch.calm') : t('watch.dry');
+                const quiet = muted.includes(p.id);
                 const meta = [
                   r ? t('watch.checked', { time: clock(r.at) }) : null,
                   reading?.updatedAt ? t('watch.run', { time: clock(reading.updatedAt) }) : null,
@@ -110,12 +154,25 @@ export default function Watch() {
                         </View>
                       </View>
                       {strip ? <RainStrip hours={strip} heavy={heavy} label={t('watch.stripA11y', { mm: mmText(peak) })} /> : null}
-                      {meta.length ? (
+                      {meta.length || quiet ? (
                         <T kind="mono" numberOfLines={2} style={styles.meta}>
-                          {meta.join(' · ')}
+                          {[...meta, quiet ? t('watch.muted') : null].filter(Boolean).join(' · ')}
                         </T>
                       ) : null}
                     </PressableScale>
+                    <View style={styles.rowKeys}>
+                      <IconButton
+                        glyph={quiet ? 'bellOff' : 'bell'}
+                        size={19}
+                        color={quiet ? c.inkMuted : c.ink}
+                        label={`${quiet ? t('watch.unmute') : t('watch.mute')}, ${p.name}`}
+                        onPress={() => toggleMute(p.id, p.name)}
+                      />
+                      <IconButton glyph="card" size={19} label={`${t('places.card')}, ${p.name}`} onPress={() => card.share(p.id)} />
+                      <IconButton glyph="arrow" size={19} label={`${t('places.openHint')}, ${p.name}`} onPress={() => openSaved(p.id)} />
+                      <View style={styles.grow} />
+                      <IconButton glyph="close" size={17} color={c.inkMuted} label={`${t('watch.remove')}, ${p.name}`} onPress={() => unwatch(p.id, p.name)} />
+                    </View>
                     <Hairline />
                   </Animated.View>
                 );
@@ -130,6 +187,7 @@ export default function Watch() {
             </T>
           </View>
 
+          {isPro ? <Button label={t('watch.add')} glyph="plus" variant="secondary" onPress={() => setAdding(true)} /> : null}
           <Button label={t('watch.check')} glyph="refresh" loading={busy} onPress={check} disabled={busy || places.length === 0 || !isPro} />
           <ListRow
             glyph="bell"
@@ -152,6 +210,41 @@ export default function Watch() {
           </T>
         </View>
       </ScrollView>
+
+      <Sheet visible={adding} onClose={() => setAdding(false)} title={t('watch.addTitle')}>
+        <View style={styles.addList}>
+          <T kind="small">{t('watch.addBody')}</T>
+          <View>
+            {addable.slice(0, 8).map((x, i) => (
+              <View key={x.id}>
+                {i ? <Hairline /> : null}
+                <ListRow
+                  glyph="plus"
+                  title={placeLabel(x).title}
+                  subtitle={placeLabel(x).subtitle}
+                  chevron={false}
+                  onPress={() => {
+                    reports.setSaved(x.id, true);
+                    haptic.success();
+                    toast(t('watch.added', { place: placeLabel(x).title }), 'bell');
+                    setAdding(false);
+                  }}
+                />
+              </View>
+            ))}
+            {!addable.length ? <T kind="caption">{t('watch.addNone')}</T> : null}
+            <Hairline />
+            <ListRow
+              glyph="search"
+              title={t('watch.searchNew')}
+              onPress={() => {
+                setAdding(false);
+                router.navigate('/');
+              }}
+            />
+          </View>
+        </View>
+      </Sheet>
     </Screen>
   );
 }
@@ -198,7 +291,11 @@ const useStyles = makeStyles((c) => ({
   scroll: { paddingBottom: space.xxxl },
   body: { paddingHorizontal: space.gutter, gap: space.lg },
   card: { borderWidth: 1.5, borderColor: c.ink, borderRadius: radius.none, padding: space.lg, gap: space.md, backgroundColor: c.paper },
-  row: { paddingVertical: space.md, gap: space.sm },
+  row: { paddingTop: space.md, gap: space.sm },
+  rowKeys: { flexDirection: 'row', alignItems: 'center', marginLeft: -10, paddingBottom: space.xs },
+  grow: { flex: 1 },
+  headRight: { flexDirection: 'row', alignItems: 'center' },
+  addList: { gap: space.md },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   place: { fontSize: 20, lineHeight: 25 },
   mm: { alignItems: 'flex-end' },

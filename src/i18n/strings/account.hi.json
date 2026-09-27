@@ -57,5 +57,18 @@
   "paywall.perkCompare": "पाँच जगहों तक आमने-सामने तुलना",
   "paywall.perkWatch": "मानसून वॉच: सहेजी जगहों पर भारी बारिश की चेतावनी",
   "paywall.perkOffline": "सहेजी जगहें ऑफ़लाइन खुलती हैं और खाते में बैकअप होती हैं",
-  "watch.emptyTitle": "अभी देखने को कुछ नहीं"
+  "watch.emptyTitle": "अभी देखने को कुछ नहीं",
+  "watch.add": "जगह जोड़ें",
+  "watch.addTitle": "वॉच में जगह जोड़ें",
+  "watch.addBody": "वॉच आपकी सेव की गई जगहों पर नज़र रखता है। कोई कोर की हुई जगह चुनें, या नई खोजें।",
+  "watch.addNone": "आपकी कोर की हुई हर जगह पहले से वॉच में है।",
+  "watch.searchNew": "नई जगह खोजें",
+  "watch.added": "{place} पर नज़र",
+  "watch.mute": "अलर्ट बंद करें",
+  "watch.unmute": "अलर्ट चालू करें",
+  "watch.muted": "अलर्ट बंद",
+  "watch.mutedToast": "{place} के अलर्ट बंद",
+  "watch.unmutedToast": "{place} के अलर्ट चालू",
+  "watch.remove": "नज़र हटाएँ",
+  "watch.removed": "{place} से नज़र हटाई"
 }
