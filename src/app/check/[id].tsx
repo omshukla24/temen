@@ -3,8 +3,17 @@ import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, useSharedValue, withTiming } from 'react-native-reanimated';
+import { RefreshControl, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, {
+  Extrapolation,
+  FadeIn,
+  FadeInDown,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatHemisphere, formatMetres } from 'ground-memory';
@@ -72,7 +81,24 @@ function Check({ params }: { params: CheckParams }) {
   const voice = useSpeech(report?.id ?? null);
 
   const headerH = insets.top + 64;
-  const mapH = Math.round(Math.min(400, height * 0.42)) + insets.top;
+  // the map is the top of the page: it scrolls away with the core, receding a little slower than the text
+  const mapH = Math.round(Math.min(440, height * 0.46)) + insets.top;
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  const stageMotion = useAnimatedStyle(() => {
+    const y = scrollY.value;
+    if (reduced) return { transform: [{ translateY: 0 }, { scale: 1 }] };
+    return {
+      transform: [
+        // down-pull stretches the map a touch; scrolling up lets it sink behind the core
+        { translateY: y > 0 ? y * 0.45 : y / 2 },
+        { scale: interpolate(y, [-160, 0], [1.18, 1], Extrapolation.CLAMP) },
+      ],
+    };
+  });
+  const [resultH, setResultH] = useState(0);
   const [mapReady, setMapReady] = useState(false);
   const rise = useSharedValue(0);
   const drain = useSharedValue(0);
@@ -190,199 +216,216 @@ function Check({ params }: { params: CheckParams }) {
     }
   };
 
+  const realGround = !!(contours && contours.length);
   return (
-    <Screen>
-      {/* map stage */}
-      <View style={[styles.stage, { height: mapH }]}>
-        {Number.isFinite(lat) ? (
-          <Map
-            style={StyleSheet.absoluteFill}
-            mapStyle={c.mapStyle}
-            dragPan={false}
-            touchZoom={false}
-            doubleTapZoom={false}
-            doubleTapHoldZoom={false}
-            touchRotate={false}
-            touchPitch={false}
-            compass={false}
-            logo={false}
-            attribution={false}
-            onDidFinishLoadingMap={() => setMapReady(true)}
-            onDidFailLoadingMap={() => setMapReady(true)}
-          >
-            <Camera initialViewState={{ center: [lon, lat], zoom: ZOOM }} />
-          </Map>
-        ) : null}
-        {mask ? <Rising mask={mask} lat={lat} lon={lon} zoom={ZOOM} width={width} height={mapH} rise={rise} drain={drain} live={live} /> : null}
+    <Screen seed={11} terrain={!realGround}>
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 110 }}
+        refreshControl={
+          report ? (
+            <RefreshControl
+              refreshing={check.phase === 'drilling' && !!report}
+              onRefresh={check.recore}
+              colors={[c.ink]}
+              progressBackgroundColor={c.accent}
+              progressViewOffset={headerH}
+            />
+          ) : undefined
+        }
+      >
+        {/* map stage: the first thing on the page, not a fixed frame */}
+        <Animated.View style={[styles.stage, { height: mapH }, stageMotion]}>
+          {Number.isFinite(lat) ? (
+            <Map
+              style={StyleSheet.absoluteFill}
+              mapStyle={c.mapStyle}
+              dragPan={false}
+              touchZoom={false}
+              doubleTapZoom={false}
+              doubleTapHoldZoom={false}
+              touchRotate={false}
+              touchPitch={false}
+              compass={false}
+              logo={false}
+              attribution={false}
+              onDidFinishLoadingMap={() => setMapReady(true)}
+              onDidFailLoadingMap={() => setMapReady(true)}
+            >
+              <Camera initialViewState={{ center: [lon, lat], zoom: ZOOM }} />
+            </Map>
+          ) : null}
+          {mask ? <Rising mask={mask} lat={lat} lon={lon} zoom={ZOOM} width={width} height={mapH} rise={rise} drain={drain} live={live} /> : null}
 
-        {/* the pin */}
-        <View pointerEvents="none" style={[styles.pin, { left: width / 2 - 9, top: mapH / 2 - 9 }]}>
-          <View style={styles.pinDot} />
-        </View>
+          {/* the pin: a survey mark */}
+          <View pointerEvents="none" style={[styles.pin, { left: width / 2 - 11, top: mapH / 2 - 11 }]}>
+            <View style={styles.pinDot} />
+          </View>
 
-        {/* HUD: where exactly, and how high */}
-        <View style={[styles.hud, { top: headerH + space.sm }]} pointerEvents="none">
-          <T kind="mono" color={c.ink} numberOfLines={1} style={styles.hudText}>
-            {formatHemisphere(lat, lon, 6)}
-          </T>
-          <T kind="mono" color={c.ink} style={styles.hudText}>
-            ELEV {report?.elevationM != null ? formatMetres(report.elevationM) : '—'} · Z {ZOOM}
-          </T>
-        </View>
-        {rising ? (
-          <Animated.View entering={FadeIn} style={styles.hudBottom} pointerEvents="box-none">
-            <View style={styles.hudBox} pointerEvents="none">
-              <T kind="mono" color={c.ink} style={styles.hudText}>
-                WATER TABLE
-              </T>
-              <View style={styles.hudRow}>
-                <ReadingCounter value={2024} from={1984} format="int" style={styles.hudNum} />
-                <ReadingCounter value={share.pct} format="pad3" suffix="%" style={styles.hudNum} />
-                <T kind="mono" style={styles.hudText}>
-                  {share.gone ? 'GONE' : 'WATER'}
+          {/* HUD: where exactly, and how high */}
+          <View style={[styles.hud, { top: headerH + space.sm }]} pointerEvents="none">
+            <T kind="mono" color={c.onPanel} numberOfLines={1} style={styles.hudText}>
+              {formatHemisphere(lat, lon, 6)}
+            </T>
+            <T kind="mono" color={c.accent} style={styles.hudText}>
+              ELEV {report?.elevationM != null ? formatMetres(report.elevationM) : '—'} · Z {ZOOM}
+            </T>
+          </View>
+          {rising ? (
+            <Animated.View entering={FadeIn} style={styles.hudBottom} pointerEvents="box-none">
+              <View style={styles.hudBox} pointerEvents="none">
+                <T kind="mono" color={c.onPanel} style={styles.hudText}>
+                  WATER TABLE
                 </T>
+                <View style={styles.hudRow}>
+                  <ReadingCounter value={2024} from={1984} format="int" style={styles.hudNum} />
+                  <ReadingCounter value={share.pct} format="pad3" suffix="%" style={styles.hudNum} />
+                  <T kind="mono" color={c.onPanel} style={styles.hudText}>
+                    {share.gone ? 'GONE' : 'WATER'}
+                  </T>
+                </View>
               </View>
-            </View>
-            <PressableScale onPress={toggleNow} style={styles.nowChip} accessibilityLabel={now ? t('check.showAll') : t('check.showNow')}>
-              <T kind="mono" color={c.ground}>
-                {now ? '1984–2024' : t('check.now').toUpperCase()}
-              </T>
-            </PressableScale>
-          </Animated.View>
-        ) : null}
-        <T kind="mono" style={styles.mapAttr} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-          {MAP_ATTRIBUTION}
-        </T>
-
-        <View style={styles.header} pointerEvents="box-none">
-          <Header
-            variant="overlay"
-            title={label.title}
-            subtitle={label.subtitle}
-            right={
-              report ? (
-                <>
-                  <IconButton
-                    glyph={voice.speaking ? 'stop' : 'speaker'}
-                    label={voice.speaking ? t('check.stopListening') : t('check.listen')}
-                    color={voice.speaking ? c.lateriteText : undefined}
-                    onPress={() => voice.toggle(spokenText(report, lang, tl, label.title, t('check.spokenCantSee')), lang)}
-                  />
-                  <IconButton glyph="more" label={t('common.more')} onPress={() => setMenu(true)} />
-                </>
-              ) : null
-            }
-          />
-        </View>
-        {pulling && report ? <CorePull bands={bands} pinX={width / 2} pinY={mapH / 2} width={width} height={mapH} onDone={() => setPulled(true)} /> : null}
-      </View>
-
-      {/* result */}
-      <View style={styles.flex}>
-        {contours && contours.length ? <LiveContours lines={contours} width={width} height={height - mapH} /> : null}
-        <ScrollView
-          contentContainerStyle={[styles.result, { paddingBottom: insets.bottom + 110 }]}
-          refreshControl={
-            report ? (
-              <RefreshControl refreshing={check.phase === 'drilling' && !!report} onRefresh={check.recore} colors={[c.laterite]} progressBackgroundColor={c.paper} />
-            ) : undefined
-          }
-        >
-          {check.phase === 'drilling' ? <LoaderHud progress={check.progress} done={check.done} /> : null}
-
-          {check.phase === 'failed' ? (
-            <Animated.View entering={FadeIn} style={styles.gapMd}>
-              <T kind="title">{t('check.bedrock')}</T>
-              <T kind="body">{check.error === 'bedrock' ? t('check.bedrockBody') : check.error}</T>
-              <Button label={t('check.recore')} glyph="refresh" onPress={check.recore} />
+              <PressableScale onPress={toggleNow} style={styles.nowChip} accessibilityLabel={now ? t('check.showAll') : t('check.showNow')}>
+                <T kind="mono" color={c.onAccent}>
+                  {now ? '1984–2024' : t('check.now').toUpperCase()}
+                </T>
+              </PressableScale>
             </Animated.View>
           ) : null}
+          <T kind="mono" style={styles.mapAttr} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            {MAP_ATTRIBUTION}
+          </T>
+          {pulling && report ? <CorePull bands={bands} pinX={width / 2} pinY={mapH / 2} width={width} height={mapH} onDone={() => setPulled(true)} /> : null}
+        </Animated.View>
 
-          {report && pulled ? (
-            <>
-              <Animated.View entering={FadeInDown.duration(motion.dur.ui)} style={styles.gapXs}>
-                <T kind="mono" numberOfLines={1}>
-                  {new Date(report.createdAt).toISOString().slice(0, 10)} · CORE {report.id.slice(0, 6).toUpperCase()}
-                </T>
-                <T kind="display" accessibilityRole="header">
-                  {tl(report.headline)}
-                </T>
+        {/* result: opaque ground, so the map sinks behind it; the place's own contours under the strata */}
+        <View style={[styles.resultWrap, { minHeight: height - mapH }]} onLayout={(e) => setResultH(Math.round(e.nativeEvent.layout.height))}>
+          {realGround && resultH ? <LiveContours lines={contours!} width={width} height={Math.min(resultH, height * 2.2)} /> : null}
+          <View style={styles.result}>
+            {check.phase === 'drilling' ? <LoaderHud progress={check.progress} done={check.done} /> : null}
+
+            {check.phase === 'failed' ? (
+              <Animated.View entering={FadeIn} style={styles.gapMd}>
+                <T kind="display">{t('check.bedrock')}</T>
+                <T kind="body">{check.error === 'bedrock' ? t('check.bedrockBody') : check.error}</T>
+                <Button label={t('check.recore')} glyph="refresh" onPress={check.recore} />
               </Animated.View>
+            ) : null}
 
-              {report.flags.relief ? (
-                <View style={styles.relief}>
-                  <Glyph name="wave" color={c.onLaterite} size={18} />
-                  <T kind="small" color={c.onLaterite} style={styles.flex}>
-                    {t('check.reliefBanner')}
-                  </T>
-                </View>
-              ) : null}
-
-              <View>
-                <Hairline strong />
-                {report.strata
-                  .filter((s) => s.key !== 'cantSee')
-                  .map((s, i) => (
-                    <StratumBand key={s.key} s={s} order={i} animate={!reduced} sealed={!full && i >= FREE_STRATA && s.key !== 'egg'} onUnlock={openPaywall} />
-                  ))}
-                <CantSeeBand items={report.cantSee} order={report.strata.length - 1} animate={!reduced} />
-              </View>
-
-              {!full ? <Button label={t('check.unlock')} sub={report.teaser} glyph="lock" onPress={openPaywall} /> : null}
-
-              <View style={styles.gapSm}>
-                <View style={styles.qHead}>
-                  <T kind="mono" color={c.ink} style={styles.flex}>
-                    {t('check.questions').toUpperCase()}
-                  </T>
-                  {!full ? <ProBadge variant="outline" /> : null}
-                </View>
-                <Hairline />
-                {report.questions.map((q, i) => (
-                  <View key={i} style={styles.question}>
-                    <T kind="display" color={c.lateriteText} style={styles.qNum}>
-                      {i + 1}
+            {report && pulled ? (
+              <>
+                <Animated.View entering={FadeInDown.duration(motion.dur.ui)} style={styles.gapXs}>
+                  <View style={styles.eyebrow}>
+                    <View style={styles.mark} />
+                    <T kind="mono" numberOfLines={1} color={c.ink}>
+                      {new Date(report.createdAt).toISOString().slice(0, 10)} · CORE {report.id.slice(0, 6).toUpperCase()}
                     </T>
-                    {full || i === 0 ? (
-                      <T kind="body" style={styles.flex}>
-                        {tl(q)}
-                      </T>
-                    ) : (
-                      <PressableScale onPress={openPaywall} style={styles.flex} accessibilityLabel={t('check.sealedBand')}>
-                        <T kind="body" color={c.inkMuted}>
-                          {t('check.sealedBand')}
-                        </T>
-                      </PressableScale>
-                    )}
                   </View>
-                ))}
-              </View>
-            </>
-          ) : null}
-        </ScrollView>
-
-        {sealUp ? (
-          <Animated.View entering={FadeIn.duration(motion.dur.micro)} pointerEvents="none" style={[styles.seal, { left: width / 2 - 90 }]}>
-            <SurveySeal size={180} lat={lat} lon={lon} date={report?.createdAt ?? new Date().toISOString()} stamp={stamp} />
-          </Animated.View>
-        ) : null}
-
-        {/* action bar */}
-        {report ? (
-          <View style={[styles.actions, { paddingBottom: insets.bottom + space.sm }]}>
-            {actions.map((a) => (
-              <PressableScale key={a.key} onPress={a.onPress} style={styles.action} accessibilityLabel={a.locked ? `${a.label}. ${t('common.pro')}` : a.label}>
-                <View style={styles.actionInner}>
-                  <Glyph name={a.locked ? 'lock' : a.glyph} color={a.on ? c.lateriteText : c.ink} />
-                  <T kind="mono" color={c.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={styles.actionLabel}>
-                    {a.label.toUpperCase()}
+                  <T kind="displayXl" accessibilityRole="header">
+                    {tl(report.headline)}
                   </T>
+                </Animated.View>
+
+                {report.flags.relief ? (
+                  <View style={styles.relief}>
+                    <Glyph name="wave" color={c.onLaterite} size={18} />
+                    <T kind="small" color={c.onLaterite} style={styles.flex}>
+                      {t('check.reliefBanner')}
+                    </T>
+                  </View>
+                ) : null}
+
+                <View>
+                  <View style={styles.coreTop} />
+                  {report.strata
+                    .filter((s) => s.key !== 'cantSee')
+                    .map((s, i) => (
+                      <StratumBand key={s.key} s={s} order={i} animate={!reduced} sealed={!full && i >= FREE_STRATA && s.key !== 'egg'} onUnlock={openPaywall} />
+                    ))}
+                  <CantSeeBand items={report.cantSee} order={report.strata.length - 1} animate={!reduced} />
                 </View>
-              </PressableScale>
-            ))}
+
+                {!full ? <Button label={t('check.unlock')} sub={report.teaser} glyph="lock" onPress={openPaywall} /> : null}
+
+                <View style={styles.gapSm}>
+                  <View style={styles.qHead}>
+                    <View style={styles.mark} />
+                    <T kind="mono" color={c.ink} style={styles.flex}>
+                      {t('check.questions').toUpperCase()}
+                    </T>
+                    {!full ? <ProBadge variant="outline" /> : null}
+                  </View>
+                  <Hairline strong />
+                  {report.questions.map((q, i) => (
+                    <View key={i} style={styles.question}>
+                      <T kind="display" color={c.accentText} style={styles.qNum}>
+                        {String(i + 1).padStart(2, '0')}
+                      </T>
+                      {full || i === 0 ? (
+                        <T kind="body" style={styles.flex}>
+                          {tl(q)}
+                        </T>
+                      ) : (
+                        <PressableScale onPress={openPaywall} style={styles.flex} accessibilityLabel={t('check.sealedBand')}>
+                          <T kind="body" color={c.inkMuted}>
+                            {t('check.sealedBand')}
+                          </T>
+                        </PressableScale>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </>
+            ) : null}
           </View>
-        ) : null}
+        </View>
+      </Animated.ScrollView>
+
+      {/* the header stays put while the map scrolls under it */}
+      <View style={styles.header} pointerEvents="box-none">
+        <Header
+          variant="overlay"
+          title={label.title}
+          subtitle={label.subtitle}
+          right={
+            report ? (
+              <>
+                <IconButton
+                  glyph={voice.speaking ? 'stop' : 'speaker'}
+                  label={voice.speaking ? t('check.stopListening') : t('check.listen')}
+                  color={voice.speaking ? c.accentText : undefined}
+                  onPress={() => voice.toggle(spokenText(report, lang, tl, label.title, t('check.spokenCantSee')), lang)}
+                />
+                <IconButton glyph="more" label={t('common.more')} onPress={() => setMenu(true)} />
+              </>
+            ) : null
+          }
+        />
       </View>
+
+      {sealUp ? (
+        <Animated.View entering={FadeIn.duration(motion.dur.micro)} pointerEvents="none" style={[styles.seal, { left: width / 2 - 90, top: height * 0.34 }]}>
+          <SurveySeal size={180} lat={lat} lon={lon} date={report?.createdAt ?? new Date().toISOString()} stamp={stamp} />
+        </Animated.View>
+      ) : null}
+
+      {/* action bar */}
+      {report ? (
+        <View style={[styles.actions, { paddingBottom: insets.bottom + space.sm }]}>
+          {actions.map((a) => (
+            <PressableScale key={a.key} onPress={a.onPress} style={styles.action} accessibilityLabel={a.locked ? `${a.label}. ${t('common.pro')}` : a.label}>
+              <View style={styles.actionInner}>
+                <Glyph name={a.locked ? 'lock' : a.glyph} color={a.on ? c.accentText : c.ink} />
+                <T kind="mono" color={c.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={styles.actionLabel}>
+                  {a.label.toUpperCase()}
+                </T>
+              </View>
+            </PressableScale>
+          ))}
+        </View>
+      ) : null}
 
       {/* ⋯ : everything that isn't the reading itself */}
       <Sheet visible={menu} onClose={() => setMenu(false)} title={label.title}>
@@ -460,25 +503,29 @@ const useStyles = makeStyles((c) => ({
   gapXs: { gap: space.xs },
   gapSm: { gap: space.sm },
   gapMd: { gap: space.md },
-  stage: { overflow: 'hidden', borderBottomWidth: 1, borderBottomColor: c.dark ? c.line : c.ink },
+  stage: { overflow: 'hidden', backgroundColor: c.groundDeep },
   header: { position: 'absolute', top: 0, left: 0, right: 0 },
-  pin: { position: 'absolute', width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: c.ground, backgroundColor: c.laterite, alignItems: 'center', justifyContent: 'center' },
-  pinDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: c.ground },
-  hud: { position: 'absolute', left: space.gutter, gap: 2, backgroundColor: c.veil, paddingHorizontal: 6, paddingVertical: 4, borderRadius: 2 },
+  pin: { position: 'absolute', width: 22, height: 22, borderRadius: 11, borderWidth: 3, borderColor: '#0C1719', backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' },
+  pinDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#0C1719' },
+  hud: { position: 'absolute', left: space.gutter, gap: 2, backgroundColor: c.panel, paddingHorizontal: 8, paddingVertical: 5 },
   // small mono sets its own tracking
   hudText: { fontSize: 9.5, lineHeight: 14, letterSpacing: 1.4 },
   hudBottom: { position: 'absolute', left: space.gutter, right: space.gutter, bottom: space.lg, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  hudBox: { backgroundColor: c.veil, paddingHorizontal: 8, paddingVertical: 6, gap: 2, borderRadius: 2 },
+  hudBox: { backgroundColor: c.panel, paddingHorizontal: 10, paddingVertical: 7, gap: 2 },
   hudRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
-  hudNum: { fontFamily: font.mono, fontSize: 16, letterSpacing: 1, lineHeight: 22, color: c.ink },
-  nowChip: { backgroundColor: c.ink, paddingHorizontal: space.md, borderRadius: radius.pill, minHeight: 36, justifyContent: 'center' },
+  hudNum: { fontFamily: font.display, fontSize: 24, letterSpacing: 1, lineHeight: 27, color: c.accent, textTransform: 'uppercase' },
+  nowChip: { backgroundColor: c.accent, paddingHorizontal: space.md, borderRadius: radius.none, borderWidth: 1.5, borderColor: '#0C1719', minHeight: 38, justifyContent: 'center' },
   mapAttr: { position: 'absolute', left: space.sm, right: space.sm, bottom: 2, fontSize: 7, lineHeight: 10, letterSpacing: 0.4, textAlign: 'right', opacity: 0.7 },
+  resultWrap: { backgroundColor: c.ground, borderTopWidth: 2, borderTopColor: c.ink, overflow: 'hidden' },
   result: { paddingHorizontal: space.gutter, paddingTop: space.lg, gap: space.lg },
-  relief: { flexDirection: 'row', gap: space.md, alignItems: 'center', backgroundColor: c.lake, padding: space.md, borderRadius: radius.sm },
+  eyebrow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  mark: { width: 8, height: 8, backgroundColor: c.accent, borderWidth: 1, borderColor: c.ink },
+  coreTop: { height: 2, backgroundColor: c.ink },
+  relief: { flexDirection: 'row', gap: space.md, alignItems: 'center', backgroundColor: c.lake, padding: space.md, borderRadius: radius.none },
   qHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   question: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start', paddingVertical: space.xs },
-  qNum: { width: 28, lineHeight: 36 },
-  seal: { position: 'absolute', top: 20 },
+  qNum: { width: 40, fontSize: 30, lineHeight: 32 },
+  seal: { position: 'absolute' },
   actions: {
     position: 'absolute',
     left: 0,
@@ -486,8 +533,8 @@ const useStyles = makeStyles((c) => ({
     bottom: 0,
     flexDirection: 'row',
     backgroundColor: c.ground,
-    borderTopWidth: 1,
-    borderTopColor: c.dark ? c.line : c.ink,
+    borderTopWidth: 1.5,
+    borderTopColor: c.ink,
     paddingTop: space.sm,
   },
   action: { flex: 1, alignItems: 'center', paddingHorizontal: 2 },
