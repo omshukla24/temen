@@ -7,7 +7,7 @@
   "home.proMember": "Pro सदस्य",
   "home.coreTileSub": "GPS · ~10 सेकंड",
   "home.coreHint": "जहाँ आप खड़े हैं, उस ज़मीन की जाँच करता है",
-  "home.pinTileSub": "नक्शे पर कहीं भी",
+  "home.pinTileSub": "नक्शा · कहीं भी",
   "home.continue": "जारी रखें",
   "home.seeAll": "सब देखें",
   "home.saved": "सहेजी गई",
@@ -34,5 +34,8 @@
   "pick.a11yCross": "नक्शे के बीच में क्रॉसहेयर",
   "home.whereTo": "कहाँ जाँचें?",
   "pick.zoomIn": "गली के स्तर तक ज़ूम करें",
-  "pick.zoomSub": "फिर क्रॉसहेयर को प्लॉट पर रखें"
+  "pick.zoomSub": "फिर क्रॉसहेयर को प्लॉट पर रखें",
+  "home.standingOn": "आप खड़े हैं",
+  "home.pickPlace": "खोजें, पेस्ट करें या पिन लगाएँ",
+  "home.scaleMid": "आपके नीचे 40 साल"
 }

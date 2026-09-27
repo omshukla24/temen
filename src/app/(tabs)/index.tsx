@@ -13,6 +13,7 @@ import { IconButton } from '@/components/IconButton';
 import { PressableScale } from '@/components/PressableScale';
 import { ProBadge } from '@/components/ProBadge';
 import { Screen } from '@/components/Screen';
+import { RegMarks, Staff } from '@/components/Staff';
 import { T } from '@/components/T';
 import { directRow, EGG, EGG_FALLBACK, firstName, fixText, greetingKey, latestCore, savedCores, shouldSearch } from '@/features/home/logic';
 import { placeLabel } from '@/features/placeLabel';
@@ -166,45 +167,53 @@ export default function Home() {
         : direct.title;
 
   return (
-    <Screen>
+    <Screen seed={7} drift>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + space.md }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* masthead: the greeting and membership, nothing to read twice */}
+        {/* masthead: the wordmark and membership */}
         <Animated.View entering={enter(0)} style={styles.masthead}>
-          <T kind="mono" color={c.ink} numberOfLines={1} style={styles.flex}>
-            {greeting}
+          <T kind="wordmark" accessibilityRole="header" accessibilityLabel="Temen">
+            TEMEN
           </T>
+          <View style={styles.flex} />
           {isPro ? (
             <ProBadge />
           ) : (
             <PressableScale onPress={() => router.push('/paywall')} style={styles.goPro} accessibilityLabel={t('home.goPro')}>
-              <T kind="mono" color={c.lateriteText} style={styles.goProText}>
+              <T kind="mono" color={c.ink} style={styles.goProText}>
                 {t('home.goPro').toUpperCase()}
               </T>
             </PressableScale>
           )}
         </Animated.View>
 
-        {/* where you stand */}
+        {/* where you stand: the locality as big as the screen allows */}
         <Animated.View entering={enter(1)} style={styles.where}>
-          <T kind="display" numberOfLines={2} accessibilityRole="header">
-            {here?.name ?? t('home.whereTo')}
-          </T>
-          <View style={styles.fixRow} accessibilityLiveRegion="polite">
+          <View style={styles.eyebrow}>
             <View style={[styles.dot, fix.status === 'ok' && styles.dotOn]} />
-            <T kind="mono" numberOfLines={1} style={styles.flex}>
-              {fix.status === 'ok'
-                ? [here?.town, fixText(fix.fix)].filter(Boolean).join(' · ')
-                : fix.status === 'off'
-                  ? t('home.fixOff')
-                  : fix.status === 'denied'
-                    ? t('home.fixDenied')
-                    : t('home.fixWaiting')}
+            <T kind="mono" color={fix.status === 'ok' ? c.accentText : c.inkMuted} numberOfLines={1} style={styles.flex}>
+              {fix.status === 'ok' && here ? t('home.standingOn') : greeting}
             </T>
           </View>
+          <T kind="hero" numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.55} accessibilityRole="header">
+            {here?.name ?? t('home.whereTo')}
+          </T>
+          <T kind="mono" color={c.ink} numberOfLines={1} accessibilityLiveRegion="polite">
+            {fix.status === 'ok'
+              ? [here?.town, fixText(fix.fix)].filter(Boolean).join(' · ')
+              : fix.status === 'off'
+                ? t('home.fixOff')
+                : fix.status === 'denied'
+                  ? t('home.fixDenied')
+                  : here
+                    ? t('home.fixWaiting')
+                    : t('home.pickPlace')}
+          </T>
+          {/* one tick a year: the record under your feet, 1984 to 2024 */}
+          <Staff ticks={40} labels={['1984', t('home.scaleMid'), '2024']} style={styles.staff} />
         </Animated.View>
 
         {reliefNear ? (
@@ -278,6 +287,7 @@ export default function Home() {
             <Animated.View entering={enter(3)} style={styles.tiles}>
               <Tile
                 primary
+                index="01"
                 glyph="drill"
                 title={t('home.core')}
                 sub={t('home.coreTileSub')}
@@ -285,7 +295,7 @@ export default function Home() {
                 onPress={coreHere}
                 hint={t('home.coreHint')}
               />
-              <Tile glyph="crosshair" title={t('home.pin')} sub={t('home.pinTileSub')} onPress={() => router.push('/pick')} />
+              <Tile index="02" glyph="crosshair" title={t('home.pin')} sub={t('home.pinTileSub')} onPress={() => router.push('/pick')} />
             </Animated.View>
 
             {latest ? (
@@ -312,7 +322,8 @@ export default function Home() {
 
             {!shareHintSeen ? (
               <Animated.View entering={enter(6)} exiting={FadeOut} style={styles.hint}>
-                <Glyph name="share" size={20} color={c.inkMuted} />
+                <RegMarks />
+                <Glyph name="share" size={20} color={c.ink} />
                 <View style={styles.hintText}>
                   <T kind="bodyMedium">{t('home.shareTitle')}</T>
                   <T kind="small">{t('home.tipBody')}</T>
@@ -331,6 +342,7 @@ function Tile({
   glyph,
   title,
   sub,
+  index,
   onPress,
   primary,
   busy,
@@ -339,6 +351,7 @@ function Tile({
   glyph: GlyphName;
   title: string;
   sub: string;
+  index: string;
   onPress: () => void;
   primary?: boolean;
   busy?: boolean;
@@ -346,7 +359,7 @@ function Tile({
 }) {
   const { c } = useTheme();
   const styles = useStyles();
-  const fg = primary ? c.onLaterite : c.ink;
+  const fg = primary ? c.onAccent : c.ink;
   return (
     <PressableScale
       onPress={busy ? undefined : onPress}
@@ -357,15 +370,15 @@ function Tile({
       style={[styles.tile, primary ? styles.tilePrimary : styles.tileQuiet]}
     >
       <View style={styles.tileTop}>
-        <Glyph name={glyph} size={26} color={fg} />
+        <T kind="mono" color={fg} numberOfLines={1} style={[styles.flex, styles.tileIndex]}>
+          {index} · {sub}
+        </T>
         {busy ? <ActivityIndicator color={fg} /> : <Glyph name="arrow" size={18} color={fg} />}
       </View>
       <View style={styles.tileText}>
-        <T kind="heading" color={fg} numberOfLines={2}>
+        <Glyph name={glyph} size={28} color={fg} weight={1.8} />
+        <T kind="title" color={fg} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.8} style={styles.tileTitle}>
           {title}
-        </T>
-        <T kind="mono" color={fg} numberOfLines={1} style={primary ? styles.dim : null}>
-          {sub}
         </T>
       </View>
     </PressableScale>
@@ -377,13 +390,16 @@ function SectionHead({ label, action, onAction }: { label: string; action?: stri
   const styles = useStyles();
   return (
     <View style={styles.sectionHead}>
-      <T kind="mono" color={c.ink} accessibilityRole="header">
-        {label}
-      </T>
+      <View style={styles.sectionLabel}>
+        <View style={styles.mark} />
+        <T kind="mono" color={c.ink} accessibilityRole="header">
+          {label}
+        </T>
+      </View>
       {action && onAction ? (
         <PressableScale onPress={onAction} accessibilityRole="link" accessibilityLabel={action} style={styles.sectionAction}>
-          <T kind="mono" color={c.lateriteText}>
-            {action}
+          <T kind="mono" color={c.accentText}>
+            {action} →
           </T>
         </PressableScale>
       ) : null}
@@ -399,9 +415,9 @@ function SavedCard({ core, headline }: { core: CoreSummary; headline: string }) 
     <PressableScale onPress={() => openSaved(core.id)} scaleTo={0.96} style={styles.card} accessibilityLabel={`${label.title}. ${headline}`}>
       <View style={styles.cardTop}>
         <CoreCylinder width={16} height={44} bands={core.bands} tilt={0.22} />
-        <Glyph name="saved" size={14} color={c.lateriteText} />
+        <Glyph name="saved" size={14} color={c.accentText} />
       </View>
-      <T kind="heading" numberOfLines={1} style={styles.cardTitle}>
+      <T kind="title" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.cardTitle}>
         {label.title}
       </T>
       <T kind="mono" numberOfLines={1} style={styles.cardSub}>
@@ -421,7 +437,7 @@ function ResultRow({ title, sub, onPress, crimson }: { title: string; sub: strin
   return (
     <PressableScale onPress={onPress} scaleTo={0.985} style={styles.result} accessibilityLabel={`${title}. ${sub}`}>
       <View style={styles.resultRow}>
-        <Glyph name="pin" size={18} color={crimson ? c.crimsonEgg : c.lateriteText} />
+        <Glyph name="pin" size={18} color={crimson ? c.crimsonEgg : c.accentText} />
         <View style={styles.flex}>
           <T kind="bodyMedium" numberOfLines={1} color={tint}>
             {title}
@@ -441,36 +457,42 @@ function ResultRow({ title, sub, onPress, crimson }: { title: string; sub: strin
 const useStyles = makeStyles((c) => ({
   scroll: { paddingHorizontal: space.gutter, paddingBottom: space.xxxl, gap: space.xl },
   flex: { flex: 1, minWidth: 0 },
-  masthead: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 32 },
-  goPro: { borderWidth: 1, borderColor: c.lateriteText, borderRadius: radius.sm, paddingHorizontal: space.sm, paddingVertical: 4 },
+  masthead: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 36 },
+  goPro: { borderWidth: 1.5, borderColor: c.ink, backgroundColor: c.accent, paddingHorizontal: space.sm, paddingVertical: 4, minHeight: 28 },
   // small mono sets its own tracking
-  goProText: { fontSize: 9.5, lineHeight: 14, letterSpacing: 1.4 },
-  where: { gap: space.sm, marginTop: -space.sm },
-  fixRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.line },
-  dotOn: { backgroundColor: c.laterite },
-  relief: { flexDirection: 'row', gap: space.md, alignItems: 'center', backgroundColor: c.lake, padding: space.md, borderRadius: radius.sm },
+  goProText: { fontSize: 9.5, lineHeight: 14, letterSpacing: 1.4, color: c.onAccent },
+  where: { gap: space.sm, marginTop: space.md },
+  eyebrow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  staff: { marginTop: space.sm },
+  dot: { width: 8, height: 8, borderWidth: 1, borderColor: c.inkMuted },
+  dotOn: { backgroundColor: c.accent, borderColor: c.ink },
+  relief: { flexDirection: 'row', gap: space.md, alignItems: 'center', backgroundColor: c.lake, padding: space.md, borderRadius: radius.none },
   spinner: { marginTop: space.md },
   note: { marginTop: space.sm },
   result: { paddingVertical: space.sm, borderBottomWidth: 1, borderBottomColor: c.hairline },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 44 },
   tiles: { flexDirection: 'row', gap: space.md },
-  tile: { flex: 1, minHeight: 148, borderRadius: radius.sm, padding: space.lg, justifyContent: 'space-between' },
-  tilePrimary: { backgroundColor: c.laterite },
-  tileQuiet: { borderWidth: 1, borderColor: c.dark ? c.line : c.ink, backgroundColor: c.paper },
-  tileTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  tileText: { gap: 4 },
+  tile: { flex: 1, minHeight: 168, borderRadius: radius.none, padding: space.lg, justifyContent: 'space-between', borderWidth: 1.5 },
+  tilePrimary: { flex: 1.2, backgroundColor: c.accent, borderColor: c.dark ? c.accent : c.ink },
+  tileQuiet: { borderColor: c.ink, backgroundColor: c.paper },
+  tileTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
+  // small mono sets its own tracking
+  tileIndex: { fontSize: 9, lineHeight: 13, letterSpacing: 1.3 },
+  tileText: { gap: space.sm },
+  tileTitle: { fontSize: 30, lineHeight: 32 },
   dim: { opacity: 0.8 },
   sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 32, marginBottom: space.xs },
+  sectionLabel: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  mark: { width: 8, height: 8, backgroundColor: c.accent, borderWidth: 1, borderColor: c.ink },
   sectionAction: { minHeight: 32, justifyContent: 'center', paddingLeft: space.md },
   bleed: { marginHorizontal: -space.gutter },
   bleedStrip: { marginHorizontal: -space.gutter },
-  strip: { paddingHorizontal: space.gutter, gap: space.md },
-  card: { width: 176, borderWidth: 1, borderColor: c.line, borderRadius: radius.sm, padding: space.md, gap: 4, backgroundColor: c.paper },
+  strip: { paddingHorizontal: space.gutter, gap: space.md, paddingVertical: space.xs },
+  card: { width: 176, borderWidth: 1.5, borderColor: c.ink, borderRadius: radius.none, padding: space.md, gap: 4, backgroundColor: c.paper },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: space.xs },
-  cardTitle: { fontSize: 18, lineHeight: 23 },
+  cardTitle: { fontSize: 26, lineHeight: 28 },
   // small mono sets its own tracking
   cardSub: { fontSize: 9, lineHeight: 13, letterSpacing: 1.2 },
-  hint: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start', borderWidth: 1, borderStyle: 'dashed', borderColor: c.inkMuted, padding: space.md, borderRadius: radius.sm },
+  hint: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start', borderWidth: 1, borderStyle: 'dashed', borderColor: c.ink, padding: space.md, borderRadius: radius.none, marginTop: space.xs },
   hintText: { flex: 1, gap: 2 },
 }));
