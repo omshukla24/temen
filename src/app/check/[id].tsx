@@ -301,7 +301,8 @@ function Check({ params }: { params: CheckParams }) {
         </Animated.View>
 
         {/* result: opaque ground, so the map sinks behind it; the place's own contours under the strata */}
-        <View style={[styles.resultWrap, { minHeight: height - mapH }]} onLayout={(e) => setResultH(Math.round(e.nativeEvent.layout.height))}>
+        {/* measured in 400 pt steps, so opening a stratum's facts doesn't re-trace the contours */}
+        <View style={[styles.resultWrap, { minHeight: height - mapH }]} onLayout={(e) => setResultH(Math.ceil(e.nativeEvent.layout.height / 400) * 400)}>
           {realGround && resultH ? <LiveContours lines={contours!} width={width} height={Math.min(resultH, height * 2.2)} /> : null}
           <View style={styles.result}>
             {check.phase === 'drilling' ? <LoaderHud progress={check.progress} done={check.done} /> : null}
