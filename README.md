@@ -1,20 +1,71 @@
-# Temen
+# TEMEN — What the Ground Remembers
 
-**What the ground remembers.** Before you buy or rent anywhere on Earth, Temen shows what that ground remembers: 40 years of surface water, how low it sits, the worst rain, the earthquakes, the soil, and what to ask before you sign.
+> **Before you buy or rent anywhere on Earth, Temen shows what that ground remembers:** 40 years of surface water, how low it sits, the worst rain, earthquakes, soil composition, and what to ask before you sign.
+
+[![Test Suite](https://img.shields.io/badge/tests-198%20passed-brightgreen.svg)](#accuracy)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Expo](https://img.shields.io/badge/Expo-SDK%2057-black.svg)](https://expo.dev/)
+[![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB.svg)](https://reactnative.dev/)
+[![RevenueCat](https://img.shields.io/badge/RevenueCat-Enabled-e85d43.svg)](https://www.revenuecat.com/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+---
+
+## Overview
 
 Share a location pin from WhatsApp or Google Maps (or stand on the plot and tap *Core this ground*). Ten seconds later you get a **core**: a column of strata read from now back to 1984, each with its source, years, resolution and a confidence mark, ending in *What this can't see*.
 
-<p>
-<img src="docs/img/rising-palm-jumeirah.png" width="32%" alt="The Rising over Palm Jumeirah: sea that became land in lake-memory dots, open water with caustics"/>
-<img src="docs/img/contours-jaisalmer.png" width="20%" alt="Live Contours: real terrain lines around Jaisalmer Fort"/>
-<img src="docs/img/survey-seal.png" width="20%" alt="The Survey Seal with coordinates to six decimals"/>
+<p align="center">
+  <img src="docs/img/rising-palm-jumeirah.png" width="32%" alt="The Rising over Palm Jumeirah: sea that became land in lake-memory dots, open water with caustics"/>
+  <img src="docs/img/contours-jaisalmer.png" width="20%" alt="Live Contours: real terrain lines around Jaisalmer Fort"/>
+  <img src="docs/img/survey-seal.png" width="20%" alt="The Survey Seal with coordinates to six decimals"/>
 </p>
 
 *Renders of the app's own Skia drawing code on real data: the Rising over Palm Jumeirah (JRC water mask), Live Contours around Jaisalmer Fort (AWS terrain), the Survey Seal.*
 
-## Why
+---
+
+## Why Ground Memory Matters
 
 People buy flats on filled lakes. In August 2024 Hyderabad demolished a convention centre built inside a lake's buffer zone; in September 2022 upscale Bengaluru villas flooded and residents left by tractor. In the UK an environmental search is a standard part of buying a home. Most of the world has nothing like it, and in India a plot often arrives as a WhatsApp pin from a broker.
+
+---
+
+## System Architecture
+
+```mermaid
+flowchart TD
+    A[Input: GPS / WhatsApp Pin / Search] --> B[Location Normalizer & Coordinate Resolver]
+    B --> C[ground-memory Core Engine]
+    
+    subgraph Data Sources [Keyless Open Data & Earth Observation]
+        D1[JRC Global Surface Water 1984–2024]
+        D2[AWS Terrain Terrarium z14]
+        D3[NASA POWER 45-Year Precipitation]
+        D4[USGS Global Seismic Catalogue]
+        D5[ISRIC SoilGrids v2.0]
+        D6[Google Earth Engine Timelapse]
+        D7[MET Norway Forecast 2.0]
+        D8[GDACS Global Disasters & Relief]
+    end
+
+    C <--> D1
+    C <--> D2
+    C <--> D3
+    C <--> D4
+    C <--> D5
+    C <--> D6
+    C <--> D7
+    C <--> D8
+
+    C --> E[Stratigraphic Core Synthesis & Question Generator]
+    E --> F[React Native Mobile App / Expo SDK 57]
+    F --> G[Interactive Skia Set-Pieces: Rising, Core Pull, Dial, Seal]
+    F --> H[RevenueCat Monetization & Entitlement Gate]
+    F --> I[Exportable Certified PDF Report]
+```
+
+---
 
 ## What it reads
 
