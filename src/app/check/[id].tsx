@@ -514,7 +514,7 @@ const useStyles = makeStyles((c) => ({
   hudBottom: { position: 'absolute', left: space.gutter, right: space.gutter, bottom: space.lg, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   hudBox: { backgroundColor: c.panel, paddingHorizontal: 10, paddingVertical: 7, gap: 2 },
   hudRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
-  hudNum: { fontFamily: font.display, fontSize: 24, letterSpacing: 1, lineHeight: 27, color: c.accent, textTransform: 'uppercase' },
+  hudNum: { fontFamily: font.display, fontSize: 24, letterSpacing: -0.2, lineHeight: 28, color: c.accent, textTransform: 'uppercase' },
   nowChip: { backgroundColor: c.accent, paddingHorizontal: space.md, borderRadius: radius.none, borderWidth: 1.5, borderColor: c.onAccent, minHeight: 38, justifyContent: 'center' },
   mapAttr: { position: 'absolute', left: space.sm, right: space.sm, bottom: 2, fontSize: 7, lineHeight: 10, letterSpacing: 0.4, textAlign: 'right', opacity: 0.7 },
   resultWrap: { backgroundColor: c.ground, borderTopWidth: 2, borderTopColor: c.ink, overflow: 'hidden' },
