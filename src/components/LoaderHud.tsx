@@ -78,7 +78,7 @@ export function LoaderHud({ progress, done }: { progress: Progress | null; done:
 
 const useStyles = makeStyles((c) => ({
   root: { gap: space.sm },
-  readout: { color: c.ink, fontFamily: font.display, fontSize: 30, lineHeight: 36, letterSpacing: -0.3, padding: 0, textTransform: 'uppercase' },
+  readout: { color: c.ink, fontFamily: font.display, fontSize: 34, lineHeight: 38, letterSpacing: 1, padding: 0, textTransform: 'uppercase' },
   sources: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md, rowGap: 4 },
   source: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   box: { width: 8, height: 8, borderWidth: 1, borderColor: c.inkMuted },

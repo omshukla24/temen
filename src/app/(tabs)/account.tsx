@@ -143,7 +143,7 @@ export default function Account() {
           {/* how the app behaves */}
           <Animated.View entering={enter(2)}>
             <Section label={t('account.app')}>
-              <ListRow glyph={c.phase === 'night' ? 'moon' : 'sun'} title={t('prefs.title')} value={`${t(`prefs.appearance.${appearance}` as 'prefs.appearance.auto')} · ${s.lang === 'hi' ? 'हिन्दी' : 'EN'}`} onPress={() => router.push('/settings')} />
+              <ListRow glyph={c.dark ? 'moon' : 'sun'} title={t('prefs.title')} value={`${appearance} · ${s.lang === 'hi' ? 'हिन्दी' : 'EN'}`} onPress={() => router.push('/settings')} />
               <ListRow glyph="bell" title={t('watch.title')} right={!isPro ? <ProBadge variant="outline" /> : undefined} onPress={() => router.navigate('/watch')} />
             </Section>
           </Animated.View>

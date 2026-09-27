@@ -167,7 +167,7 @@ const useStyles = makeStyles((c) => ({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
   photo: { width: '47%', gap: 4 },
   img: { width: '100%', aspectRatio: 1, borderWidth: 1, borderColor: c.ink },
-  del: { position: 'absolute', right: 4, top: 4, width: 36, minHeight: 36, backgroundColor: c.scrim, alignItems: 'center' },
+  del: { position: 'absolute', right: 4, top: 4, width: 36, minHeight: 36, backgroundColor: 'rgba(28,27,25,0.6)', alignItems: 'center' },
   camBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: space.lg },
   camBtn: { width: 56, height: 56, alignItems: 'center' },
   shutter: { width: 76, height: 76, borderRadius: 38, borderWidth: 3, borderColor: color.ground, alignItems: 'center', justifyContent: 'center' },

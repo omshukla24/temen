@@ -111,7 +111,7 @@ export function CoreDrawing({
         {shapes.map((s, i) => (
           <Path key={i} path={s.path} color={s.color} />
         ))}
-        <Path path={seams} style="stroke" strokeWidth={0.75} color="rgba(11,36,64,0.25)" />
+        <Path path={seams} style="stroke" strokeWidth={0.75} color="rgba(12,23,25,0.25)" />
         <Path path={outline}>
           <LinearGradient
             start={vec(x0, 0)}

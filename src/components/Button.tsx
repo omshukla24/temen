@@ -67,16 +67,16 @@ export function Button({
   );
 }
 
-// Instrument keys: square, framed in ink, labelled in Geologica.
+// Instrument keys: square, framed in ink, labelled in the stencil.
 const useStyles = makeStyles((c) => ({
   base: { paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.none, minHeight: 56 },
   compact: { minHeight: 44, paddingVertical: space.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   text: { flex: 1, gap: 2 },
-  label: { fontFamily: font.bodySemi, fontSize: 17, lineHeight: 22, letterSpacing: -0.1 },
-  labelCompact: { fontSize: 15, lineHeight: 20 },
+  label: { fontFamily: font.display, fontSize: 21, lineHeight: 23, letterSpacing: 0.6, textTransform: 'uppercase' },
+  labelCompact: { fontSize: 17, lineHeight: 19 },
   quietLabel: { textDecorationLine: 'underline' },
-  // the yellow key keeps an ink frame on a light ground, where yellow alone has no edge
+  // the yellow key keeps an ink frame on chalk, where yellow alone has no edge
   primary: { backgroundColor: c.accent, borderWidth: stroke.frame, borderColor: c.dark ? c.accent : c.ink },
   ink: { backgroundColor: c.ink },
   secondary: { borderWidth: stroke.frame, borderColor: c.ink, backgroundColor: c.paper },

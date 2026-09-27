@@ -12,12 +12,12 @@ const tile = (w: number, h: number, body: string) =>
   `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>${body}</svg>`)}")`;
 
 const HATCH: Record<string, string> = {
-  water: tile(16, 9, `<path d='M0 5 Q4 2.5 8 5 T16 5' fill='none' stroke='rgba(255,255,255,.55)' stroke-width='1'/>`),
+  water: tile(16, 9, `<path d='M0 5 Q4 2.5 8 5 T16 5' fill='none' stroke='rgba(247,248,244,.55)' stroke-width='1'/>`),
   lostWater: tile(7, 7, `<circle cx='3.5' cy='3.5' r='1.1' fill='rgba(27,110,168,.6)'/>`),
-  ground: tile(40, 11, `<path d='M0 6 C12 3 26 9 40 6' fill='none' stroke='rgba(255,255,255,.5)'/>`),
-  rain: tile(8, 12, `<path d='M4 2 V7' stroke='rgba(11,36,64,.35)'/>`),
-  quakes: tile(24, 20, `<path d='M0 10 L4 6 L8 14 L12 4 L16 12 L20 8 L24 10' fill='none' stroke='rgba(255,255,255,.6)'/>`),
-  soil: tile(9, 9, `<circle cx='2' cy='3' r='.8' fill='rgba(11,36,64,.4)'/><circle cx='6.5' cy='7' r='.7' fill='rgba(11,36,64,.35)'/>`),
+  ground: tile(40, 11, `<path d='M0 6 C12 3 26 9 40 6' fill='none' stroke='rgba(247,248,244,.5)'/>`),
+  rain: tile(8, 12, `<path d='M4 2 V7' stroke='rgba(12,23,25,.35)'/>`),
+  quakes: tile(24, 20, `<path d='M0 10 L4 6 L8 14 L12 4 L16 12 L20 8 L24 10' fill='none' stroke='rgba(247,248,244,.6)'/>`),
+  soil: tile(9, 9, `<circle cx='2' cy='3' r='.8' fill='rgba(12,23,25,.4)'/><circle cx='6.5' cy='7' r='.7' fill='rgba(12,23,25,.35)'/>`),
 };
 
 function band(s: Stratum): string {
@@ -85,9 +85,9 @@ ${faces}
 @media screen { body { padding: 20px 18px 40px; } }
 * { box-sizing: border-box; }
 body { margin: 0; background: ${color.ground}; color: ${color.ink}; font-family: Body, sans-serif; font-size: 11px; line-height: 1.5; }
-.mono { font-family: Mono, monospace; font-size: 8px; letter-spacing: .1em; text-transform: uppercase; color: ${color.inkMuted}; }
+.mono { font-family: Mono, monospace; font-size: 8px; letter-spacing: .2em; text-transform: uppercase; color: ${color.inkMuted}; }
 .ink { color: ${color.ink}; }
-h1 { font-weight: 700; font-size: 34px; line-height: 1.1; letter-spacing: -.02em; margin: 6px 0 8px; }
+h1 { font-family: Stencil, sans-serif; font-weight: 800; font-size: 44px; line-height: 1.02; text-transform: uppercase; margin: 6px 0 8px; }
 h2 { margin: 18px 0 6px; display: flex; align-items: center; gap: 6px; }
 h2:before { content: ''; width: 7px; height: 7px; background: ${color.accent}; border: 1px solid ${color.ink}; }
 .wordmark { font-family: Stencil, sans-serif; font-weight: 800; font-size: 22px; letter-spacing: .16em; }
@@ -95,13 +95,13 @@ h2:before { content: ''; width: 7px; height: 7px; background: ${color.accent}; b
 .staff { height: 8px; margin-top: 6px; background: repeating-linear-gradient(90deg, ${color.accent} 0 10px, ${color.ink} 10px 12px); border: 1px solid ${color.ink}; }
 .meta { display: flex; gap: 14px; flex-wrap: wrap; margin: 6px 0 10px; }
 .map { width: 100%; border: 1.5px solid ${color.ink}; margin: 8px 0 4px; }
-.band { display: flex; align-items: stretch; border-bottom: 1px solid ${color.hairline}; page-break-inside: avoid; }
+.band { display: flex; align-items: stretch; border-bottom: 1px solid rgba(12,23,25,.12); page-break-inside: avoid; }
 .col { flex: none; width: 26px; align-self: stretch; position: relative; border-left: 1.5px solid ${color.ink}; border-right: 1.5px solid ${color.ink}; background-repeat: repeat; }
 .idx { position: absolute; top: 6px; left: 3px; right: 3px; text-align: center; background: ${color.paper}; border: 1px solid ${color.ink}; font-family: Mono, monospace; font-size: 7px; line-height: 11px; }
 .bandBody { flex: 1; padding: 8px 0 8px 12px; }
 .row { display: flex; justify-content: space-between; gap: 8px; }
 .base { justify-content: flex-start; align-items: baseline; }
-.reading { font-weight: 700; font-size: 26px; line-height: 1.1; letter-spacing: -.02em; }
+.reading { font-family: Stencil, sans-serif; font-weight: 800; font-size: 32px; line-height: 1.06; text-transform: uppercase; }
 .stamp { display: inline-block; border: 1.5px dashed ${color.ink}; padding: 2px 6px; margin: 4px 0; }
 .heading { font-weight: 600; font-size: 13px; }
 .small { color: ${color.inkMuted}; }
@@ -111,12 +111,12 @@ h2:before { content: ''; width: 7px; height: 7px; background: ${color.accent}; b
 .chip { display: inline-block; border: 1px solid ${color.line}; border-left: 3px solid ${color.inkMuted}; padding: 1px 8px; margin-top: 6px; font-size: 7px; }
 .cant { border: 1.5px dashed ${color.ink}; background: ${color.paper}; padding: 10px 12px; margin-top: 12px; page-break-inside: avoid; }
 ol { padding-left: 22px; margin: 4px 0; } li { margin: 3px 0; }
-.q li::marker { font-weight: 700; color: ${color.accentText}; }
+.q li::marker { font-family: Stencil, sans-serif; font-weight: 800; color: ${color.accentText}; }
 .foot { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; border-top: 2px solid ${color.ink}; padding-top: 8px; gap: 16px; }
 .photos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 figure { margin: 0; } figure img { width: 100%; border: 1px solid ${color.ink}; } figcaption { margin-top: 2px; font-size: 7px; }
 .page { page-break-before: always; }
-.teaser { font-size: 15px; line-height: 1.3; color: ${color.accentText}; }
+.teaser { font-family: Stencil, sans-serif; font-weight: 600; font-size: 17px; line-height: 1.15; text-transform: uppercase; color: ${color.accentText}; }
 </style></head><body>
 <div class="top"><div><div class="wordmark">TEMEN</div><div class="mono">what the ground remembers</div><div class="staff" style="width:120px"></div></div><div class="mono ink" style="text-align:right">CORE ${esc(r.id.toUpperCase())}<br/>${esc(r.createdAt.slice(0, 16).replace('T', ' · '))} UTC</div></div>
 <div class="mono" style="margin-top:8px">${crumbs}</div>
