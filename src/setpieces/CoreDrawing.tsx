@@ -9,9 +9,22 @@ export interface Band {
   status?: string;
 }
 
-export function bandColor(b: Band): string {
-  if (b.status === 'error') return fills.error;
-  return fills[(b.hatch as StrataKey) in fills ? (b.hatch as StrataKey) : 'ground'];
+type Fills = Record<StrataKey, string>;
+
+/** Ink, paper and band fills for a light; the print palette by default (headless renders, the PDF). */
+export interface CoreColors {
+  ink: string;
+  inkMuted: string;
+  paper: string;
+  laterite: string;
+  fills: Fills;
+}
+
+const PRINT: CoreColors = { ink: color.ink, inkMuted: color.inkMuted, paper: color.paper, laterite: color.laterite, fills };
+
+export function bandColor(b: Band, f: Fills = fills): string {
+  if (b.status === 'error') return f.error;
+  return f[(b.hatch as StrataKey) in f ? (b.hatch as StrataKey) : 'ground'];
 }
 
 /** Front-facing band between two seams of a cylinder seen slightly from above. */
@@ -55,6 +68,7 @@ export function CoreDrawing({
   transform,
   x = 0,
   y = 0,
+  colors = PRINT,
 }: {
   width: number;
   height: number;
@@ -64,6 +78,7 @@ export function CoreDrawing({
   transform?: Transforms3d | SharedValue<Transforms3d>;
   x?: number;
   y?: number;
+  colors?: CoreColors;
 }) {
   const g = coreGeometry(width, height, tilt, ghost);
   const { x0, x1, top, bottom, ry, ghostH } = g;
@@ -73,7 +88,7 @@ export function CoreDrawing({
   let cursor = top;
   const shapes = solid.map((b) => {
     const h = ((0.35 + b.significance) / total) * colH;
-    const s = { path: bandPath(x0, x1, cursor, cursor + h, ry), color: bandColor(b), seam: cursor };
+    const s = { path: bandPath(x0, x1, cursor, cursor + h, ry), color: bandColor(b, colors.fills), seam: cursor };
     cursor += h;
     return s;
   });
@@ -87,7 +102,7 @@ export function CoreDrawing({
   return (
     <Group transform={[{ translateX: x }, { translateY: y }]}>
       {ghost ? (
-        <Path path={ghostPath} style="stroke" strokeWidth={1} color={color.inkMuted} opacity={0.7}>
+        <Path path={ghostPath} style="stroke" strokeWidth={1} color={colors.inkMuted} opacity={0.7}>
           <DashPathEffect intervals={[3, 3]} />
         </Path>
       ) : null}
@@ -104,10 +119,10 @@ export function CoreDrawing({
             colors={['rgba(0,0,0,0.30)', 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.38)']}
           />
         </Path>
-        <Path path={outline} style="stroke" strokeWidth={1} color={color.ink} />
-        <Oval rect={cap} color={color.paper} />
-        <Oval rect={cap} style="stroke" strokeWidth={1} color={color.ink} />
-        <Oval rect={{ x: x0 + (x1 - x0) * 0.38, y: top - ry * 0.24, width: (x1 - x0) * 0.24, height: ry * 0.48 }} color={color.laterite} />
+        <Path path={outline} style="stroke" strokeWidth={1} color={colors.ink} />
+        <Oval rect={cap} color={colors.paper} />
+        <Oval rect={cap} style="stroke" strokeWidth={1} color={colors.ink} />
+        <Oval rect={{ x: x0 + (x1 - x0) * 0.38, y: top - ry * 0.24, width: (x1 - x0) * 0.24, height: ry * 0.48 }} color={colors.laterite} />
       </Group>
     </Group>
   );

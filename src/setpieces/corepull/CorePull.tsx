@@ -7,6 +7,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { haptic, motion } from '@/theme';
 
 import { CoreDrawing, coreGeometry, type Band } from '../CoreDrawing';
+import { useCoreColors } from '@/theme/coreColors';
 
 const W = 46;
 const H = 150;
@@ -31,6 +32,7 @@ export function CorePull({
   height: number;
   onDone: () => void;
 }) {
+  const colors = useCoreColors();
   const extrude = useSharedValue(0);
   const lift = useSharedValue(0);
   const g = coreGeometry(W, H, 0.2, false);
@@ -63,7 +65,7 @@ export function CorePull({
   return (
     <Canvas style={[StyleSheet.absoluteFill, { width, height }]} pointerEvents="none">
       <Group transform={outer} opacity={opacity}>
-        <CoreDrawing width={W} height={H} bands={bands} ghost={false} tilt={0.2} transform={inner} />
+        <CoreDrawing width={W} height={H} bands={bands} ghost={false} tilt={0.2} transform={inner} colors={colors} />
       </Group>
     </Canvas>
   );
