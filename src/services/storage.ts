@@ -6,6 +6,7 @@ export const KEYS = {
   report: (id: string) => `reports:${id}`,
   unlocks: 'unlocks',
   watch: 'watch',
+  watchMuted: 'watch:muted',
   settings: 'settings',
   siteKit: (id: string) => `sitekit:${id}`,
   readingCache: (k: string) => `cache:${k}`,

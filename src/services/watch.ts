@@ -5,6 +5,8 @@ import { Platform } from 'react-native';
 
 import { RAIN_RULES, type ForecastReading } from 'ground-memory';
 
+import { alertDue } from '@/features/watch/alerts';
+
 import { forecast } from './ground';
 import { KEYS, readJson, writeJson } from './storage';
 
@@ -36,6 +38,18 @@ export function lastReadings(): Last {
   return readJson<Last>(KEYS.watch, {});
 }
 
+/** Places whose heavy-rain alerts are off (their forecast is still read and shown). */
+export function mutedPlaces(): string[] {
+  return readJson<string[]>(KEYS.watchMuted, []);
+}
+
+export async function setMuted(id: string, muted: boolean): Promise<string[]> {
+  const next = mutedPlaces().filter((x) => x !== id);
+  if (muted) next.push(id);
+  await writeJson(KEYS.watchMuted, next);
+  return next;
+}
+
 export async function setupNotifications(): Promise<boolean> {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
@@ -61,11 +75,12 @@ export async function setupNotifications(): Promise<boolean> {
 export async function runWatch(notify = true): Promise<Last> {
   const places = watchedPlaces();
   const last = lastReadings();
+  const muted = new Set(mutedPlaces());
   const today = new Date().toISOString().slice(0, 10);
   for (const p of places) {
     const r = await forecast(p);
     const entry: Last[string] = { at: new Date().toISOString(), reading: r.ok ? r.value : null, error: r.ok ? null : r.error, notified: last[p.id]?.notified };
-    if (notify && r.ok && r.value.heavy && entry.notified !== today) {
+    if (notify && r.ok && alertDue({ heavy: r.value.heavy, notified: entry.notified, today, muted: muted.has(p.id) })) {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `Heavy rain forecast · ${p.name}`,
@@ -91,6 +106,10 @@ TaskManager.defineTask(WATCH_TASK, async () => {
     return BackgroundTask.BackgroundTaskResult.Failed;
   }
 });
+
+export async function isBackgroundWatchOn(): Promise<boolean> {
+  return TaskManager.isTaskRegisteredAsync(WATCH_TASK).catch(() => false);
+}
 
 export async function enableBackgroundWatch(on: boolean) {
   const registered = await TaskManager.isTaskRegisteredAsync(WATCH_TASK).catch(() => false);
