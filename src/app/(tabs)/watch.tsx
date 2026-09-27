@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { FORECAST_SOURCE, RAIN_RULES } from 'ground-memory';
+import { FORECAST_SOURCE, RAIN_RULES, hourlyStrip } from 'ground-memory';
 
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
@@ -15,6 +15,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { ProBadge } from '@/components/ProBadge';
 import { RollingNumber } from '@/components/RollingNumber';
 import { Screen } from '@/components/Screen';
+import { RegMarks } from '@/components/Staff';
 import { T } from '@/components/T';
 import { Toggle } from '@/components/Toggle';
 import { useT } from '@/i18n';
@@ -46,14 +47,21 @@ export default function Watch() {
   };
 
   return (
-    <Screen>
+    <Screen seed={23}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Header variant="large" eyebrow={isPro ? t('watch.next24') : t('common.pro')} title={t('watch.title')} right={!isPro ? <ProBadge /> : null} />
+        <Header
+          variant="large"
+          eyebrow={isPro ? t('watch.next24') : t('common.pro')}
+          title={t('watch.title')}
+          measure={['NOW', '+12 H', '+24 H']}
+          right={!isPro ? <ProBadge /> : null}
+        />
         <View style={styles.body}>
           <T kind="small">{t('watch.lede')}</T>
 
           {!isPro ? (
             <Animated.View entering={FadeInDown.duration(motion.dur.ui)} style={styles.card}>
+              <RegMarks />
               <T kind="heading">{t('watch.pro')}</T>
               <Button label={t('common.seePro')} glyph="star" onPress={() => router.push('/paywall')} />
             </Animated.View>
@@ -66,42 +74,47 @@ export default function Watch() {
               <Hairline strong />
               {places.map((p, i) => {
                 const r = last[p.id];
-                const mm = r?.reading?.next24hMm ?? null;
-                const heavy = !!r?.reading?.heavy;
-                const share = mm === null ? 0 : Math.min(1, mm / (RAIN_RULES.heavyMm * 1.5));
+                const reading = r?.reading ?? null;
+                const mm = reading?.next24hMm ?? null;
+                const heavy = !!reading?.heavy;
                 const tint = heavy ? c.lateriteText : c.ink;
+                const strip = reading && r ? hourlyStrip(reading, new Date(r.at)) : null;
+                const peak = strip ? Math.max(...strip) : 0;
+                const status = r?.error ? r.error : mm === null ? t('watch.notChecked') : heavy ? t('watch.heavy') : mm > 0 ? t('watch.calm') : t('watch.dry');
+                const meta = [
+                  r ? t('watch.checked', { time: clock(r.at) }) : null,
+                  reading?.updatedAt ? t('watch.run', { time: clock(reading.updatedAt) }) : null,
+                  peak > 0 ? t('watch.peak', { mm: mmText(peak) }) : null,
+                ].filter(Boolean);
                 return (
                   <Animated.View key={p.id} entering={FadeInDown.delay(i * motion.stagger).duration(motion.dur.ui)}>
                     <PressableScale
                       onPress={() => openSaved(p.id)}
                       scaleTo={0.985}
                       style={styles.row}
-                      accessibilityLabel={`${p.name}. ${mm === null ? t('watch.notChecked') : t('watch.mmA11y', { n: Math.round(mm) })}`}
+                      accessibilityLabel={`${p.name}. ${status}. ${mm === null ? '' : t('watch.mmA11y', { n: mmText(mm) })}`}
                     >
                       <View style={styles.rowTop}>
                         <Glyph name={heavy ? 'wave' : 'pin'} color={heavy ? c.lateriteText : c.inkMuted} />
                         <View style={styles.flex}>
-                          <T kind="heading" numberOfLines={1}>
+                          <T kind="title" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.place}>
                             {p.name}
                           </T>
                           <T kind="small" color={heavy ? c.lateriteText : c.inkMuted}>
-                            {r?.error ? r.error : mm === null ? t('watch.notChecked') : heavy ? t('watch.heavy') : t('watch.calm')}
+                            {status}
                           </T>
                         </View>
                         <View style={styles.mm}>
-                          {mm === null ? (
-                            <T kind="title">—</T>
-                          ) : (
-                            <RollingNumber value={`${Math.round(mm)}`} kind="title" color={tint} />
-                          )}
-                          <T kind="mono">MM</T>
+                          {mm === null ? <T kind="display">—</T> : <RollingNumber value={mmText(mm)} kind="display" color={tint} />}
+                          <T kind="mono">MM · 24 H</T>
                         </View>
                       </View>
-                      {/* rain gauge: fills towards the IMD heavy line */}
-                      <View style={styles.gauge}>
-                        <View style={[styles.gaugeFill, { width: `${share * 100}%`, backgroundColor: heavy ? c.laterite : c.lake }]} />
-                        <View style={styles.gaugeMark} />
-                      </View>
+                      {strip ? <RainStrip hours={strip} heavy={heavy} label={t('watch.stripA11y', { mm: mmText(peak) })} /> : null}
+                      {meta.length ? (
+                        <T kind="mono" numberOfLines={2} style={styles.meta}>
+                          {meta.join(' · ')}
+                        </T>
+                      ) : null}
                     </PressableScale>
                     <Hairline />
                   </Animated.View>
@@ -109,6 +122,13 @@ export default function Watch() {
               })}
             </View>
           )}
+
+          <View style={styles.note}>
+            <View style={styles.noteMark} />
+            <T kind="small" color={c.ink} style={styles.flex}>
+              {t('watch.lookAhead')} {t('watch.notPrediction')}
+            </T>
+          </View>
 
           <Button label={t('watch.check')} glyph="refresh" loading={busy} onPress={check} disabled={busy || places.length === 0 || !isPro} />
           <ListRow
@@ -128,7 +148,7 @@ export default function Watch() {
             }
           />
           <T kind="caption">
-            {t('watch.footnote', { mm: RAIN_RULES.heavyMm })} {FORECAST_SOURCE.name} · {FORECAST_SOURCE.licence}. {t('watch.notPrediction')}
+            {t('watch.footnote', { mm: RAIN_RULES.heavyMm })} {FORECAST_SOURCE.name} · {FORECAST_SOURCE.licence}.
           </T>
         </View>
       </ScrollView>
@@ -136,15 +156,57 @@ export default function Watch() {
   );
 }
 
+/** 0.3 under 10 mm, whole millimetres above. */
+function mmText(mm: number): string {
+  return mm > 0 && mm < 10 ? mm.toFixed(1) : String(Math.round(mm));
+}
+
+/** Local HH:MM, without leaning on Intl. */
+function clock(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/** Full height at 10 mm in an hour (a downpour). */
+const STRIP_FULL_MM = 10;
+
+/** The next 24 hours as rain bars: a baseline tick for a dry hour, a bar for a wet one. */
+function RainStrip({ hours, heavy, label }: { hours: number[]; heavy: boolean; label: string }) {
+  const { c } = useTheme();
+  const styles = useStyles();
+  return (
+    <View style={styles.strip} accessible accessibilityLabel={label}>
+      {hours.map((mm, i) => (
+        <View key={i} style={styles.hour}>
+          <View
+            style={[
+              styles.bar,
+              mm > 0
+                ? { height: Math.max(3, Math.min(1, mm / STRIP_FULL_MM) * 34), backgroundColor: heavy ? c.laterite : c.lake }
+                : { height: i % 6 === 0 ? 6 : 2, backgroundColor: c.inkMuted },
+            ]}
+          />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const useStyles = makeStyles((c) => ({
   flex: { flex: 1, gap: 2 },
   scroll: { paddingBottom: space.xxxl },
   body: { paddingHorizontal: space.gutter, gap: space.lg },
-  card: { borderWidth: 1, borderColor: c.dark ? c.line : c.ink, borderRadius: radius.sm, padding: space.lg, gap: space.md, backgroundColor: c.paper },
-  row: { paddingVertical: space.md },
+  card: { borderWidth: 1.5, borderColor: c.ink, borderRadius: radius.none, padding: space.lg, gap: space.md, backgroundColor: c.paper },
+  row: { paddingVertical: space.md, gap: space.sm },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  place: { fontSize: 27, lineHeight: 30 },
   mm: { alignItems: 'flex-end' },
-  gauge: { height: 3, backgroundColor: c.hairline, marginTop: space.sm },
-  gaugeFill: { height: 3 },
-  gaugeMark: { position: 'absolute', left: `${(1 / 1.5) * 100}%`, top: -3, width: 1, height: 9, backgroundColor: c.ink },
+  strip: { flexDirection: 'row', alignItems: 'flex-end', height: 38, gap: 2, borderBottomWidth: 1.5, borderBottomColor: c.ink },
+  hour: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+  bar: { width: '100%' },
+  // small mono sets its own tracking
+  meta: { fontSize: 8.5, lineHeight: 13, letterSpacing: 1.1 },
+  note: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start', borderLeftWidth: 3, borderLeftColor: c.accent, paddingLeft: space.md, paddingVertical: space.xs },
+  noteMark: { width: 8, height: 8, marginTop: 6, backgroundColor: c.accent, borderWidth: 1, borderColor: c.ink },
 }));

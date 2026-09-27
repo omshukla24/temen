@@ -63,7 +63,7 @@
   "watch.empty": "Save a core to watch it. Tap Save on any check.",
   "watch.check": "Check now",
   "watch.heavy": "Heavy rain ahead",
-  "watch.calm": "No heavy rain in the next 24 h",
+  "watch.calm": "Some rain, not heavy, in the next 24 h",
   "watch.background": "Check in the background",
   "watch.pro": "Monsoon Watch is part of Pro.",
   "kit.title": "Site kit",
@@ -124,7 +124,7 @@
   "watch.next24": "Next 24 h",
   "watch.notChecked": "Not checked yet",
   "watch.mmA11y": "{n} millimetres in the next 24 hours",
-  "watch.footnote": "Tick marks the IMD \"heavy\" line: {mm} mm in a day. Background checks run when Android allows, at most hourly.",
+  "watch.footnote": "Bars show rain per hour; a full bar is 10 mm in an hour. IMD calls {mm} mm in a day heavy, and an alert fires past it. Background checks run when Android allows, at most hourly.",
   "watch.notPrediction": "A forecast, not a flood prediction.",
   "compare.none": "none",
   "compare.notable": "Most notable in this row.",
@@ -136,5 +136,11 @@
   "stratum.hint": "Shows the numbers behind this reading",
   "stratum.hintSealed": "Opens the unlock options",
   "stratum.noReading": "No reading · pull to re-core",
-  "stratum.notModelled": "Not modelled here"
+  "stratum.notModelled": "Not modelled here",
+  "watch.dry": "No rain forecast for the next 24 h",
+  "watch.lookAhead": "Looks ahead, not back: rain that already fell is not counted here.",
+  "watch.checked": "Checked {time}",
+  "watch.run": "Forecast made {time}",
+  "watch.peak": "Peak {mm} mm in an hour",
+  "watch.stripA11y": "Rain hour by hour for the next 24 hours, peak {mm} millimetres"
 }
