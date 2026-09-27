@@ -1,6 +1,8 @@
-// Design lock v2 "Core Sample, day and night" (DESIGN.md §0). The paper follows
-// the sun: a rose-limestone dawn, limestone day, amber dusk and charcoal night.
-// Every palette keeps body text at WCAG AA on its ground.
+// Design lock v3 "Field Instrument" (DESIGN.md §0). TEMEN is a survey
+// instrument for the ground: chalk paper by day, aquifer dark by night,
+// survey-yellow instrument marks, earth and water for the strata. The paper
+// still follows the sun (dawn, day, dusk, night). Every text pairing passes
+// WCAG AA on its ground; the yellow is a fill (ink on it), never thin text on chalk.
 
 export type Phase = 'dawn' | 'day' | 'dusk' | 'night';
 
@@ -18,18 +20,28 @@ export interface Palette {
   line: string;
   hairline: string;
   scrim: string;
-  /** Accent fill (buttons, the pin, flags). Text on it uses `onLaterite`. */
+  /** Survey yellow: primary actions, the pin, the staff, PRO. A fill; text on it uses `onAccent`. */
+  accent: string;
+  onAccent: string;
+  /** The accent as text or thin marks on `ground` (AA): dark ochre by day, yellow by night. */
+  accentText: string;
+  /** Laterite: caution — flags, the buffer rule, heavy rain, danger. Text on it uses `onLaterite`. */
   laterite: string;
   onLaterite: string;
-  /** Accent as small text or strokes on `ground` (AA). */
+  /** Laterite as small text or strokes on `ground` (AA). */
   lateriteText: string;
   lake: string;
   lakeText: string;
   lakeMemory: string;
   silt: string;
   crimsonEgg: string;
-  /** Ground at ~90% over the map, for HUDs and headers that sit on it. */
+  /** Ground at ~90% over the map, for headers that sit on it. */
   veil: string;
+  /** Instrument panels (HUD chips on the map, the loader): aquifer in every light. */
+  panel: string;
+  onPanel: string;
+  /** Contour lines of the terrain behind every screen (drawn at low opacity). */
+  topo: string;
   /** OpenFreeMap style for this light. */
   mapStyle: string;
 }
@@ -37,73 +49,97 @@ export interface Palette {
 const MAP_LIGHT = 'https://tiles.openfreemap.org/styles/positron';
 const MAP_DARK = 'https://tiles.openfreemap.org/styles/dark';
 
+const AQUIFER = '#0C1719';
+const CHALK = '#E9EFE8';
+const YELLOW = '#F2BE22';
+
 const day: Palette = {
   phase: 'day',
   dark: false,
-  ground: '#F2EDE4',
-  groundDeep: '#E8E1D4',
-  paper: '#F7F3EC',
-  ink: '#1C1B19',
-  inkMuted: '#5E5A52',
-  line: '#D9D1C3',
-  hairline: 'rgba(28,27,25,0.12)',
-  scrim: 'rgba(28,27,25,0.38)',
-  laterite: '#A5482A',
-  onLaterite: '#F7F3EC',
-  lateriteText: '#A5482A',
-  lake: '#1D5A7A',
-  lakeText: '#1D5A7A',
-  lakeMemory: '#7FA6BA',
-  silt: '#8A7A62',
-  crimsonEgg: '#8E1B1B',
-  veil: 'rgba(242,237,228,0.9)',
+  ground: '#ECEFE8',
+  groundDeep: '#E0E5DD',
+  paper: '#F7F8F4',
+  ink: AQUIFER,
+  inkMuted: '#4B5C5A',
+  line: '#CBD3CC',
+  hairline: 'rgba(12,23,25,0.12)',
+  scrim: 'rgba(12,23,25,0.42)',
+  accent: YELLOW,
+  onAccent: AQUIFER,
+  accentText: '#875800',
+  laterite: '#C4411F',
+  onLaterite: '#F7F8F4',
+  lateriteText: '#B23A1B',
+  lake: '#1B6EA8',
+  lakeText: '#1B6EA8',
+  lakeMemory: '#86B3CB',
+  silt: '#94764A',
+  crimsonEgg: '#9E1B22',
+  veil: 'rgba(236,239,232,0.92)',
+  panel: AQUIFER,
+  onPanel: CHALK,
+  topo: AQUIFER,
   mapStyle: MAP_LIGHT,
 };
 
+// Dawn: the chalk cools towards blue.
 const dawn: Palette = {
   ...day,
   phase: 'dawn',
-  ground: '#F3EAE4',
-  groundDeep: '#E9DDD5',
-  paper: '#F8F2EE',
-  line: '#DCCEC5',
-  inkMuted: '#5F5853',
-  veil: 'rgba(243,234,228,0.9)',
+  ground: '#E9EDEC',
+  groundDeep: '#DDE3E2',
+  paper: '#F6F8F7',
+  inkMuted: '#4A5B5C',
+  line: '#C9D2D1',
+  accentText: '#855700',
+  lateriteText: '#B03A1B',
+  veil: 'rgba(233,237,236,0.92)',
 };
 
+// Dusk: the chalk greys towards evening and the yellow warms.
 const dusk: Palette = {
   ...day,
   phase: 'dusk',
-  ground: '#EFE4D3',
-  groundDeep: '#E4D6C0',
-  paper: '#F5ECDD',
-  line: '#D5C5AC',
-  inkMuted: '#5A5245',
-  laterite: '#9C4225',
-  lateriteText: '#9C4225',
-  veil: 'rgba(239,228,211,0.9)',
+  ground: '#E6E9E0',
+  groundDeep: '#D9DED3',
+  paper: '#F3F5EF',
+  inkMuted: '#4A5953',
+  line: '#C6CDC2',
+  accent: '#F0B41E',
+  accentText: '#825300',
+  laterite: '#BD3D1C',
+  lateriteText: '#AD3819',
+  lakeText: '#1B6AA2',
+  veil: 'rgba(230,233,224,0.92)',
 };
 
+// Night: aquifer — the ground seen from inside the borehole.
 const night: Palette = {
   phase: 'night',
   dark: true,
-  ground: '#151412',
-  groundDeep: '#0E0D0C',
-  paper: '#1F1D1A',
-  ink: '#ECE5D8',
-  inkMuted: '#A39B8D',
-  line: '#36322C',
-  hairline: 'rgba(236,229,216,0.14)',
-  scrim: 'rgba(0,0,0,0.55)',
-  laterite: '#C8603D',
-  onLaterite: '#140F0C',
-  lateriteText: '#E07B57',
-  lake: '#4F90B6',
-  lakeText: '#7DB4D6',
-  lakeMemory: '#3E6377',
-  silt: '#9A8A70',
-  crimsonEgg: '#C4403F',
-  veil: 'rgba(21,20,18,0.86)',
+  ground: AQUIFER,
+  groundDeep: '#081012',
+  paper: '#132327',
+  ink: CHALK,
+  inkMuted: '#93A7A3',
+  line: '#24383C',
+  hairline: 'rgba(233,239,232,0.13)',
+  scrim: 'rgba(0,0,0,0.6)',
+  accent: YELLOW,
+  onAccent: AQUIFER,
+  accentText: YELLOW,
+  laterite: '#F0643C',
+  onLaterite: AQUIFER,
+  lateriteText: '#FF7A55',
+  lake: '#3FA2E0',
+  lakeText: '#6DBDF0',
+  lakeMemory: '#2D5A70',
+  silt: '#B79363',
+  crimsonEgg: '#E0323A',
+  veil: 'rgba(12,23,25,0.88)',
+  panel: '#132327',
+  onPanel: CHALK,
+  topo: CHALK,
   mapStyle: MAP_DARK,
 };
 
@@ -115,9 +151,9 @@ export function strataFills(c: Palette) {
     water: c.lake,
     lostWater: c.lakeMemory,
     ground: c.silt,
-    rain: c.dark ? 'rgba(79,144,182,0.42)' : 'rgba(29,90,122,0.3)',
+    rain: c.dark ? 'rgba(63,162,224,0.5)' : 'rgba(27,110,168,0.42)',
     quakes: c.laterite,
-    soil: c.dark ? 'rgba(154,138,112,0.7)' : 'rgba(138,122,98,0.62)',
+    soil: c.dark ? 'rgba(183,147,99,0.62)' : 'rgba(148,118,74,0.55)',
     cantSee: 'transparent',
     egg: c.crimsonEgg,
     error: c.line,

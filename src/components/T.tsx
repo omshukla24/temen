@@ -15,7 +15,7 @@ export interface TProps extends TextProps {
  */
 export function T({ kind = 'body', color, align, italic, style, maxFontSizeMultiplier, ...rest }: TProps) {
   const { c } = useTheme();
-  const isDisplay = kind === 'displayXl' || kind === 'display' || kind === 'title';
+  const isDisplay = kind === 'hero' || kind === 'displayXl' || kind === 'display' || kind === 'title';
   return (
     <Text
       {...rest}
@@ -23,7 +23,8 @@ export function T({ kind = 'body', color, align, italic, style, maxFontSizeMulti
       style={[
         roles[kind],
         { color: color ?? (MUTED_ROLES.has(kind) ? c.inkMuted : c.ink) },
-        italic && kind !== 'mono' && kind !== 'monoWide' ? { fontFamily: font.displayItalic } : null,
+        // the second voice: the lighter stencil (there is no italic in an instrument's labels)
+        italic && kind !== 'mono' && kind !== 'monoWide' ? { fontFamily: font.displayAlt, textTransform: 'uppercase' } : null,
         align ? { textAlign: align } : null,
         style,
       ]}

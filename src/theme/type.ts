@@ -1,40 +1,44 @@
 import type { TextStyle } from 'react-native';
 
 // Per-weight entry points: the package index would ship every weight in the APK.
-import { HankenGrotesk_400Regular } from '@expo-google-fonts/hanken-grotesk/400Regular';
-import { HankenGrotesk_500Medium } from '@expo-google-fonts/hanken-grotesk/500Medium';
-import { HankenGrotesk_600SemiBold } from '@expo-google-fonts/hanken-grotesk/600SemiBold';
-import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif/400Regular';
-import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument-serif/400Regular_Italic';
+import { BigShouldersStencil_600SemiBold } from '@expo-google-fonts/big-shoulders-stencil/600SemiBold';
+import { BigShouldersStencil_800ExtraBold } from '@expo-google-fonts/big-shoulders-stencil/800ExtraBold';
+import { Geologica_400Regular } from '@expo-google-fonts/geologica/400Regular';
+import { Geologica_500Medium } from '@expo-google-fonts/geologica/500Medium';
+import { Geologica_600SemiBold } from '@expo-google-fonts/geologica/600SemiBold';
 import { MartianMono_300Light } from '@expo-google-fonts/martian-mono/300Light';
 import { MartianMono_400Regular } from '@expo-google-fonts/martian-mono/400Regular';
 
 export const fontAssets = {
-  InstrumentSerif_400Regular,
-  InstrumentSerif_400Regular_Italic,
-  HankenGrotesk_400Regular,
-  HankenGrotesk_500Medium,
-  HankenGrotesk_600SemiBold,
+  BigShouldersStencil_600SemiBold,
+  BigShouldersStencil_800ExtraBold,
+  Geologica_400Regular,
+  Geologica_500Medium,
+  Geologica_600SemiBold,
   MartianMono_300Light,
   MartianMono_400Regular,
 };
 
+// Display: a condensed stencil, the way core boxes and survey kit are
+// labelled. Body: Geologica. Mono: Martian Mono, the instrument's readout.
 export const font = {
-  display: 'InstrumentSerif_400Regular',
-  displayItalic: 'InstrumentSerif_400Regular_Italic',
-  body: 'HankenGrotesk_400Regular',
-  bodyMedium: 'HankenGrotesk_500Medium',
-  bodySemi: 'HankenGrotesk_600SemiBold',
+  display: 'BigShouldersStencil_800ExtraBold',
+  /** The lighter stencil, for a second voice next to the display (teasers, units). */
+  displayAlt: 'BigShouldersStencil_600SemiBold',
+  body: 'Geologica_400Regular',
+  bodyMedium: 'Geologica_500Medium',
+  bodySemi: 'Geologica_600SemiBold',
   monoLight: 'MartianMono_300Light',
   mono: 'MartianMono_400Regular',
 } as const;
 
-// Scale in pt (DESIGN.md §0).
+// Scale in pt (DESIGN.md §0). The stencil is condensed, so it runs larger.
 export const size = {
-  displayXl: 48,
-  display: 40,
-  title: 28,
-  heading: 20,
+  hero: 72,
+  displayXl: 56,
+  display: 44,
+  title: 30,
+  heading: 19,
   body: 16,
   small: 14,
   caption: 13,
@@ -44,30 +48,28 @@ export const size = {
 // Tracking is size-specific: tighten large serif, open up small mono caps.
 const track = (em: number, pt: number) => em * pt;
 
+// The stencil's caps sit 0.80 em tall over a 0.21 em descent: Android clips the
+// caps if a line is shorter than ~1.02 em, so display lines stay at 1.06 em.
+const STENCIL_LH = 1.06;
+
+const stencil = (pt: number, em = 0.005): TextStyle => ({
+  fontFamily: font.display,
+  fontSize: pt,
+  lineHeight: Math.round(pt * STENCIL_LH),
+  letterSpacing: track(em, pt),
+  textTransform: 'uppercase',
+});
+
 export const type = {
-  displayXl: {
-    fontFamily: font.display,
-    fontSize: size.displayXl,
-    lineHeight: size.displayXl * 1.12, // room for italic descenders (the g in "ground")
-    letterSpacing: track(-0.02, size.displayXl),
-  },
-  display: {
-    fontFamily: font.display,
-    fontSize: size.display,
-    lineHeight: size.display * 1.12,
-    letterSpacing: track(-0.02, size.display),
-  },
-  title: {
-    fontFamily: font.display,
-    fontSize: size.title,
-    lineHeight: size.title * 1.18,
-    letterSpacing: track(-0.015, size.title),
-  },
+  hero: stencil(size.hero, 0),
+  displayXl: stencil(size.displayXl, 0),
+  display: stencil(size.display),
+  title: stencil(size.title, 0.01),
   heading: {
     fontFamily: font.bodySemi,
     fontSize: size.heading,
-    lineHeight: size.heading * 1.25,
-    letterSpacing: track(-0.005, size.heading),
+    lineHeight: size.heading * 1.3,
+    letterSpacing: track(-0.01, size.heading),
   },
   body: {
     fontFamily: font.body,
@@ -105,8 +107,9 @@ export const type = {
   },
   wordmark: {
     fontFamily: font.display,
-    fontSize: size.title,
-    letterSpacing: track(0.08, size.title),
+    fontSize: 24,
+    lineHeight: Math.round(24 * STENCIL_LH),
+    letterSpacing: track(0.16, 24),
   },
 } satisfies Record<string, TextStyle>;
 
