@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Glyph, type GlyphName } from '@/components/Glyph';
 import { Screen } from '@/components/Screen';
+import { RegMarks, Staff } from '@/components/Staff';
 import { T } from '@/components/T';
 import { useT } from '@/i18n';
 import { permission } from '@/services/location';
@@ -22,7 +23,11 @@ const SAMPLE = [
   { hatch: 'soil', significance: 0.4, status: 'ok' },
 ];
 
-/** First run: three short pages and the location ask. The only place the tagline is shown large. */
+/**
+ * First run: three short pages and the location ask. The only place the
+ * tagline is shown large. Every page keeps one key at the same spot at the
+ * bottom; "Not now" on the last page sits where "Skip" was.
+ */
 export default function Onboarding() {
   const { t } = useT();
   const { c } = useTheme();
@@ -64,13 +69,16 @@ export default function Onboarding() {
     { glyph: 'crosshair', title: t('onboard.locTitle'), body: t('onboard.locBody') },
   ];
 
+  const last = page === PAGES - 1;
   return (
-    <Screen>
+    <Screen seed={3} drift>
       <View style={[styles.top, { paddingTop: insets.top + space.sm }]}>
         <T kind="wordmark">TEMEN</T>
-        {page < PAGES - 1 ? (
+        {last ? (
+          <Button label={t('onboard.locLater')} variant="quiet" compact onPress={finish} style={styles.skip} />
+        ) : (
           <Button label={t('onboard.skip')} variant="quiet" compact onPress={() => go(PAGES - 1)} style={styles.skip} />
-        ) : null}
+        )}
       </View>
       <ScrollView
         ref={pager}
@@ -86,22 +94,24 @@ export default function Onboarding() {
           <View key={i} style={[styles.page, { width }]} accessibilityLabel={t('onboard.page', { n: i + 1, total: PAGES })}>
             <View style={styles.hero}>
               {p.hero === 'core' ? (
-                <Animated.View entering={FadeIn.duration(motion.dur.corePull)}>
-                  <CoreCylinder width={86} height={230} bands={SAMPLE} tilt={0.2} />
+                <Animated.View entering={FadeIn.duration(motion.dur.corePull)} style={styles.coreWrap}>
+                  <CoreCylinder width={96} height={250} bands={SAMPLE} tilt={0.2} />
+                  <RegMarks inset={-18} />
                 </Animated.View>
               ) : p.glyph ? (
-                <View style={styles.disc}>
-                  <Glyph name={p.glyph} size={44} color={c.lateriteText} weight={1.4} />
+                <View style={styles.window}>
+                  <Glyph name={p.glyph} size={48} color={c.ink} weight={1.6} />
+                  <View style={styles.windowMark} />
+                  <RegMarks inset={-9} />
                 </View>
               ) : null}
             </View>
-            {i === 0 ? (
-              <T kind="monoWide" style={styles.tagline}>
-                {t('tagline')}
-              </T>
-            ) : null}
+            <T kind="mono" color={i === 0 ? c.accentText : c.inkMuted} style={styles.tagline}>
+              {String(i + 1).padStart(2, '0')} / {String(PAGES).padStart(2, '0')}
+              {i === 0 ? `  ·  ${t('tagline')}` : ''}
+            </T>
             <Animated.View entering={FadeInDown.delay(120).duration(motion.dur.ui)}>
-              <T kind="display" accessibilityRole="header">
+              <T kind="displayXl" accessibilityRole="header">
                 {p.title}
               </T>
             </Animated.View>
@@ -118,13 +128,11 @@ export default function Onboarding() {
             <Dot key={i} i={i} x={x} />
           ))}
         </View>
-        {page < PAGES - 1 ? (
-          <Button label={t('onboard.next')} trailing="arrow" onPress={() => go(page + 1)} />
+        <Staff ticks={40} />
+        {last ? (
+          <Button label={t('onboard.locAllow')} glyph="crosshair" onPress={allow} />
         ) : (
-          <View style={styles.stack}>
-            <Button label={t('onboard.locAllow')} glyph="crosshair" onPress={allow} />
-            <Button label={t('onboard.locLater')} variant="quiet" onPress={finish} style={styles.later} />
-          </View>
+          <Button label={t('onboard.next')} trailing="arrow" onPress={() => go(page + 1)} />
         )}
       </View>
     </Screen>
@@ -135,7 +143,7 @@ function Dot({ i, x }: { i: number; x: SharedValue<number> }) {
   const styles = useStyles();
   const style = useAnimatedStyle(() => {
     const d = Math.min(1, Math.abs(x.value - i));
-    return { width: withSpring(8 + (1 - d) * 16, motion.spring.press), opacity: 0.35 + (1 - d) * 0.65 };
+    return { width: withSpring(10 + (1 - d) * 26, motion.spring.press), opacity: 0.4 + (1 - d) * 0.6 };
   });
   return <Animated.View style={[styles.dot, style]} />;
 }
@@ -146,12 +154,12 @@ const useStyles = makeStyles((c) => ({
   skip: { paddingHorizontal: space.md },
   page: { paddingHorizontal: space.gutter, justifyContent: 'flex-end', paddingBottom: space.xl, gap: space.md },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  disc: { width: 120, height: 120, borderRadius: 60, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center', backgroundColor: c.paper },
-  tagline: { color: c.lateriteText },
+  coreWrap: { padding: space.lg },
+  window: { width: 132, height: 132, borderWidth: 1.5, borderColor: c.ink, alignItems: 'center', justifyContent: 'center', backgroundColor: c.paper },
+  windowMark: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 8, backgroundColor: c.accent, borderTopWidth: 1.5, borderColor: c.ink },
+  tagline: { marginBottom: -space.xs },
   body: { maxWidth: 420 },
-  bottom: { paddingHorizontal: space.gutter, gap: space.lg },
+  bottom: { paddingHorizontal: space.gutter, gap: space.md },
   dots: { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  dot: { height: 4, borderRadius: 2, backgroundColor: c.ink },
-  stack: { gap: space.xs },
-  later: { alignSelf: 'center', paddingHorizontal: space.lg },
+  dot: { height: 6, backgroundColor: c.accent, borderWidth: 1, borderColor: c.ink },
 }));
