@@ -122,7 +122,6 @@ export default function TimeMachine() {
               }}
               onError={() => setFailed(true)}
               onHttpError={(e) => e.nativeEvent.statusCode >= 400 && setFailed(true)}
-              onTouchStart={touch}
               allowsInlineMediaPlayback
               mediaPlaybackRequiresUserAction={false}
               setSupportMultipleWindows={false}
@@ -138,7 +137,7 @@ export default function TimeMachine() {
             <T kind="mono">
               {TIMELAPSE_YEARS.first}–{TIMELAPSE_YEARS.last}
             </T>
-            <RollingNumber value={year} kind="displayXl" still />
+            <RollingNumber value={year} kind="displayXl" still duration={140} stagger={0} />
           </View>
           {probe?.play ? (
             <IconButton

@@ -21,6 +21,7 @@ export function RollingNumber({
   containerStyle,
   stagger = 28,
   still = false,
+  duration = ROLL_MS,
 }: {
   value: string | number;
   kind?: TypeRole;
@@ -31,6 +32,8 @@ export function RollingNumber({
   stagger?: number;
   /** Skip the roll-in on first mount. */
   still?: boolean;
+  /** ms for one character's roll; keep it under the gap between changes (fast feeds like playback). */
+  duration?: number;
 }) {
   const text = String(value);
   const role = roles[kind] as TextStyle;
@@ -41,21 +44,21 @@ export function RollingNumber({
       <LayoutAnimationConfig skipEntering={still}>
         {chars.map((ch, i) => (
           // slots are keyed from the right, so 999 → 1000 keeps the units in place
-          <Slot key={chars.length - i} ch={ch} lh={lh} delay={i * stagger} kind={kind} color={color} style={style} />
+          <Slot key={chars.length - i} ch={ch} lh={lh} delay={i * stagger} ms={duration} kind={kind} color={color} style={style} />
         ))}
       </LayoutAnimationConfig>
     </View>
   );
 }
 
-function Slot({ ch, lh, delay, kind, color, style }: { ch: string; lh: number; delay: number; kind: TypeRole; color?: string; style?: StyleProp<TextStyle> }) {
+function Slot({ ch, lh, delay, ms, kind, color, style }: { ch: string; lh: number; delay: number; ms: number; kind: TypeRole; color?: string; style?: StyleProp<TextStyle> }) {
   const enter: EntryExitAnimationFunction = () => {
     'worklet';
     return {
       initialValues: { opacity: 0, transform: [{ translateY: lh * 0.9 }] },
       animations: {
-        opacity: withDelay(delay, withTiming(1, { duration: ROLL_MS * 0.7 })),
-        transform: [{ translateY: withDelay(delay, withTiming(0, { duration: ROLL_MS, easing: motion.ease.out })) }],
+        opacity: withDelay(delay, withTiming(1, { duration: ms * 0.7 })),
+        transform: [{ translateY: withDelay(delay, withTiming(0, { duration: ms, easing: motion.ease.out })) }],
       },
     };
   };
@@ -64,8 +67,8 @@ function Slot({ ch, lh, delay, kind, color, style }: { ch: string; lh: number; d
     return {
       initialValues: { opacity: 1, transform: [{ translateY: 0 }] },
       animations: {
-        opacity: withDelay(delay, withTiming(0, { duration: ROLL_MS * 0.6 })),
-        transform: [{ translateY: withDelay(delay, withTiming(-lh * 0.9, { duration: ROLL_MS, easing: motion.ease.out })) }],
+        opacity: withDelay(delay, withTiming(0, { duration: ms * 0.6 })),
+        transform: [{ translateY: withDelay(delay, withTiming(-lh * 0.9, { duration: ms, easing: motion.ease.out })) }],
       },
     };
   };
