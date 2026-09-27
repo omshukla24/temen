@@ -21,6 +21,17 @@ export function dialPaths(from: number, to: number, spacing: number, h: number) 
  * The Year Dial: a ruler that slides under a fixed laterite index. `offset`
  * is the ruler's x translation; the centre of the view reads the year.
  */
+export interface DialColors {
+  ink: string;
+  inkMuted: string;
+  hairline: string;
+  /** Hex, so the edge fades can append an alpha. */
+  ground: string;
+  laterite: string;
+}
+
+const PRINT_DIAL: DialColors = { ink: color.ink, inkMuted: color.inkMuted, hairline: color.hairline, ground: color.ground, laterite: color.laterite };
+
 export function DialDrawing({
   width,
   height = DIAL.height,
@@ -29,8 +40,10 @@ export function DialDrawing({
   from = DIAL.from,
   to = DIAL.to,
   spacing = DIAL.spacing,
+  colors = PRINT_DIAL,
 }: {
   width: number;
+  colors?: DialColors;
   height?: number;
   offset: number | SharedValue<Transforms3d>;
   font: SkFont | null;
@@ -55,25 +68,25 @@ export function DialDrawing({
     .build();
   return (
     <Group>
-      <Line p1={vec(0, height * 0.18)} p2={vec(width, height * 0.18)} color={color.hairline} strokeWidth={1} />
+      <Line p1={vec(0, height * 0.18)} p2={vec(width, height * 0.18)} color={colors.hairline} strokeWidth={1} />
       <Group transform={transform}>
-        <Path path={minor} style="stroke" strokeWidth={1} color={color.inkMuted} />
-        <Path path={major} style="stroke" strokeWidth={1.5} color={color.ink} />
+        <Path path={minor} style="stroke" strokeWidth={1} color={colors.inkMuted} />
+        <Path path={major} style="stroke" strokeWidth={1.5} color={colors.ink} />
         {font
           ? labels.map((l) => (
-              <Text key={l.text} x={l.x - font.getTextWidth(l.text) / 2} y={height * 0.86} text={l.text} font={font} color={color.ink} />
+              <Text key={l.text} x={l.x - font.getTextWidth(l.text) / 2} y={height * 0.86} text={l.text} font={font} color={colors.ink} />
             ))
           : null}
       </Group>
       {/* soft edges: the ruler runs under the paper */}
       <Rect x={0} y={0} width={fade} height={height}>
-        <LinearGradient start={vec(0, 0)} end={vec(fade, 0)} colors={[color.ground, 'rgba(242,237,228,0)']} />
+        <LinearGradient start={vec(0, 0)} end={vec(fade, 0)} colors={[colors.ground, `${colors.ground}00`]} />
       </Rect>
       <Rect x={width - fade} y={0} width={fade} height={height}>
-        <LinearGradient start={vec(width - fade, 0)} end={vec(width, 0)} colors={['rgba(242,237,228,0)', color.ground]} />
+        <LinearGradient start={vec(width - fade, 0)} end={vec(width, 0)} colors={[`${colors.ground}00`, colors.ground]} />
       </Rect>
-      <Line p1={vec(width / 2, 0)} p2={vec(width / 2, height * 0.66)} color={color.laterite} strokeWidth={2} />
-      <Path path={tri} color={color.laterite} />
+      <Line p1={vec(width / 2, 0)} p2={vec(width / 2, height * 0.66)} color={colors.laterite} strokeWidth={2} />
+      <Path path={tri} color={colors.laterite} />
     </Group>
   );
 }

@@ -16,6 +16,7 @@ import { motion } from '@/theme';
 
 import { buildContourPaths, ContoursDrawing } from './ContoursDrawing';
 import { useReducedMotion } from '@/theme/reduced';
+import { useTheme } from '@/theme';
 
 /**
  * The place's real contour lines as the result background. They drift a few
@@ -23,6 +24,7 @@ import { useReducedMotion } from '@/theme/reduced';
  */
 export function LiveContours({ lines, width, height }: { lines: ContourLine[]; width: number; height: number }) {
   const reduced = useReducedMotion();
+  const { c } = useTheme();
   const paths = useMemo(() => buildContourPaths(lines, width + 24, height + 24), [lines, width, height]);
   const sensor = useAnimatedSensor(SensorType.ROTATION, { interval: 32 });
   const dx = useSharedValue(0);
@@ -42,7 +44,7 @@ export function LiveContours({ lines, width, height }: { lines: ContourLine[]; w
   const transform = useDerivedValue<Transforms3d>(() => [{ translateX: -12 + dx.value }, { translateY: -12 + dy.value }]);
   return (
     <Canvas style={[StyleSheet.absoluteFill, { width, height }]} pointerEvents="none">
-      <ContoursDrawing paths={paths} transform={transform} />
+      <ContoursDrawing paths={paths} transform={transform} ink={c.ink} />
     </Canvas>
   );
 }

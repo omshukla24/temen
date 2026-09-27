@@ -5,7 +5,7 @@ import { useDerivedValue, useFrameCallback, useSharedValue, type SharedValue } f
 
 import { lonLatToGlobalPx, type WaterMask } from 'ground-memory';
 
-import { color } from '@/theme/tokens';
+import { useTheme } from '@/theme';
 
 import { maskPlacement, maskTexels } from './mask';
 import { RisingDrawing } from './RisingDrawing';
@@ -17,8 +17,6 @@ const rgba = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255, 1];
 };
-const LAKE = rgba(color.lake);
-const MEMORY = rgba(color.lakeMemory);
 
 /**
  * The Rising over the map. `rise` 0..1 moves the water table from the bottom
@@ -71,6 +69,9 @@ export function Rising({
     frame.setActive(live);
   }, [live, frame]);
 
+  const { c } = useTheme();
+  const lake = useMemo(() => rgba(c.lake), [c.lake]);
+  const memory = useMemo(() => rgba(c.lakeMemory), [c.lakeMemory]);
   const uniforms = useDerivedValue<Uniforms>(() => {
     const t = time.value;
     return {
@@ -80,8 +81,8 @@ export function Rising({
       level: height * (1 - rise.value) - 1,
       time: t,
       drain: drain.value,
-      lake: LAKE,
-      memory: MEMORY,
+      lake,
+      memory,
       still: 0,
     };
   });

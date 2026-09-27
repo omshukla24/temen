@@ -31,15 +31,18 @@ export function ContoursDrawing({
   paths,
   transform,
   opacity = 1,
+  ink = color.ink,
 }: {
   paths: ContourPaths;
+  /** Line colour: the live ink on screen, print ink by default. */
+  ink?: string;
   transform?: Transforms3d | SharedValue<Transforms3d>;
   opacity?: number | SharedValue<number>;
 }) {
   return (
     <Group {...(transform ? { transform } : null)} opacity={opacity}>
-      <Path path={paths.minor} style="stroke" strokeWidth={0.8} color={color.ink} opacity={0.08} />
-      <Path path={paths.major} style="stroke" strokeWidth={1.1} color={color.ink} opacity={0.14} />
+      <Path path={paths.minor} style="stroke" strokeWidth={0.8} color={ink} opacity={0.08} />
+      <Path path={paths.major} style="stroke" strokeWidth={1.1} color={ink} opacity={0.14} />
     </Group>
   );
 }

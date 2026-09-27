@@ -1,5 +1,5 @@
 import { Canvas, type Transforms3d } from '@shopify/react-native-skia';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
@@ -11,7 +11,7 @@ import {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { haptic } from '@/theme';
+import { haptic, useTheme } from '@/theme';
 
 import { useMonoFont } from '../fonts';
 import { DIAL, DialDrawing } from './DialDrawing';
@@ -48,6 +48,8 @@ export function YearDial({
   to?: number;
 }) {
   const reduced = useReducedMotion();
+  const { c } = useTheme();
+  const dialColors = useMemo(() => ({ ink: c.ink, inkMuted: c.inkMuted, hairline: c.hairline, ground: c.ground, laterite: c.laterite }), [c]);
   const font = useMonoFont(9);
   const [width, setWidth] = useState(0);
   const sp = DIAL.spacing;
@@ -133,7 +135,7 @@ export function YearDial({
       >
         {width ? (
           <Canvas style={{ width, height: DIAL.height }}>
-            <DialDrawing width={width} offset={transform} font={font} from={from} to={to} />
+            <DialDrawing width={width} offset={transform} font={font} from={from} to={to} colors={dialColors} />
           </Canvas>
         ) : null}
       </View>
