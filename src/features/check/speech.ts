@@ -1,17 +1,18 @@
 import * as Speech from 'expo-speech';
 import { useCallback, useEffect } from 'react';
 
-import { summarise, type GroundReport } from 'ground-memory';
+import type { GroundReport } from 'ground-memory';
 
 import { memory, useStore } from '@/state/store';
+
+import { spokenScript } from './speakable';
 
 /** Which core is being read aloud, if any. One voice at a time, app-wide. */
 const speaking = memory<string | null>(null);
 
-/** What the voice says: the headline and each reading, in the app's language. */
-export function spokenText(report: GroundReport, hindi: boolean, tl: (s: string) => string): string {
-  if (!hindi) return summarise(report);
-  return [tl(report.headline), ...report.strata.filter((s) => s.status === 'ok' && s.key !== 'cantSee').map((s) => `${tl(s.title)}: ${tl(s.headline)}`)].join('। ');
+/** What the voice says: the place, the headline and each reading, in the app's language, written out for speech. */
+export function spokenText(report: GroundReport, lang: 'en' | 'hi', tl: (s: string) => string, place: string | null, cantSee: string): string {
+  return spokenScript(report, { lang, tl, place, cantSee });
 }
 
 export function stopSpeaking(): void {
