@@ -1,38 +1,48 @@
 import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, ScrollView, StyleSheet, View, type TextInput } from 'react-native';
-import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
+import { ActivityIndicator, Keyboard, ScrollView, View, type TextInput } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { formatHemisphere, parseLocation } from 'ground-memory';
-
-import { Button } from '@/components/Button';
 import { CoreSliver } from '@/components/CoreSliver';
 import { Field } from '@/components/Field';
-import { Glyph } from '@/components/Glyph';
+import { Glyph, type GlyphName } from '@/components/Glyph';
 import { Hairline } from '@/components/Hairline';
+import { IconButton } from '@/components/IconButton';
 import { PressableScale } from '@/components/PressableScale';
+import { ProBadge } from '@/components/ProBadge';
 import { Screen } from '@/components/Screen';
 import { T } from '@/components/T';
+import { directRow, EGG, EGG_FALLBACK, firstName, fixText, greetingKey, latestCore, savedCores, shouldSearch } from '@/features/home/logic';
+import { placeLabel } from '@/features/placeLabel';
 import { useDebounced } from '@/hooks/useDebounced';
 import { useFix } from '@/hooks/useFix';
 import { useT } from '@/i18n';
-import { searchPlaces, type Place } from '@/services/geocode';
+import { CoreCylinder } from '@/setpieces/CoreCylinder';
+import { useAccount } from '@/services/account';
+import { placeName, searchPlaces, type Place } from '@/services/geocode';
 import { relief } from '@/services/ground';
 import { currentFix, permission } from '@/services/location';
 import { openCheck, openSaved } from '@/services/nav';
 import { resolveShared } from '@/services/share-in';
-import { useCores } from '@/state/reports';
+import { useIsPro } from '@/state/entitlements';
+import { useCores, type CoreSummary } from '@/state/reports';
 import { updateSettings, useSettings } from '@/state/settings';
-import { color, haptic, space } from '@/theme';
+import { haptic, makeStyles, motion, radius, space, useTheme } from '@/theme';
 
-const EGG = /temen[\s-]*ni[\s-]*gru/i;
+const enter = (i: number) => FadeInDown.delay(i * motion.stagger * 2).duration(motion.dur.ui).easing(motion.ease.out);
+/** Re-name where you are only after moving this far (m, roughly). */
+const RENAME_M = 250;
 
 export default function Home() {
   const insets = useSafeAreaInsets();
-  const { t } = useT();
+  const { t, tl } = useT();
+  const { c } = useTheme();
+  const styles = useStyles();
   const cores = useCores();
+  const isPro = useIsPro();
+  const { user } = useAccount();
   const { shareHintSeen } = useSettings();
   const [focused, setFocused] = useState(true);
   useFocusEffect(
@@ -42,36 +52,51 @@ export default function Home() {
     }, []),
   );
   const fix = useFix(focused);
+  const [here, setHere] = useState<{ name: string; town: string | null } | null>(null);
+  const named = useRef<{ lat: number; lon: number } | null>(null);
   const [q, setQ] = useState('');
   const [results, setResults] = useState<Place[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState('');
   const [locating, setLocating] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [reliefNear, setReliefNear] = useState<string | null>(null);
   const input = useRef<TextInput>(null);
   const dq = useDebounced(q, 400);
+  const direct = useMemo(() => directRow(q), [q]);
 
-  const direct = useMemo(() => (q.trim() ? parseLocation(q) : { kind: 'none' as const }), [q]);
-  const egg = EGG.test(q);
-
-  // Photon search for anything that isn't already a location.
+  // Photon search for anything that isn't already a pin, a link or the egg.
   useEffect(() => {
     const text = dq.trim();
-    if (text.length < 3 || parseLocation(text).kind !== 'none' || EGG.test(text)) {
+    if (!shouldSearch(text)) {
       setResults([]);
+      setSearched('');
       return;
     }
     const ctrl = new AbortController();
     setSearching(true);
     searchPlaces(text, fix.status === 'ok' ? fix.fix : undefined, ctrl.signal)
-      .then(setResults)
+      .then((r) => {
+        setResults(r);
+        setSearched(text);
+      })
       .catch(() => setResults([]))
       .finally(() => setSearching(false));
     return () => ctrl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dq]);
 
-  // Relief mode: is there an active flood near where the user is?
+  // Name where you stand: the locality large, the town small.
+  useEffect(() => {
+    if (fix.status !== 'ok') return;
+    const { lat, lon } = fix.fix;
+    const last = named.current;
+    if (last && Math.hypot((lat - last.lat) * 111_000, (lon - last.lon) * 111_000 * Math.cos((lat * Math.PI) / 180)) < RENAME_M) return;
+    named.current = { lat, lon };
+    placeName(lat, lon).then((n) => n && setHere({ name: n.name, town: n.trail[0] ?? null }));
+  }, [fix]);
+
+  // Relief mode: an active flood near where you are.
   const reliefAsked = useRef(false);
   useEffect(() => {
     if (fix.status !== 'ok' || reliefAsked.current) return;
@@ -91,10 +116,10 @@ export default function Home() {
         haptic.fail();
         return;
       }
-      const f = await currentFix();
-      openCheck({ lat: f.lat, lon: f.lon });
-    } catch (e) {
-      setNote(e instanceof Error ? e.message : t('home.fixOff'));
+      const f = fix.status === 'ok' && Date.now() - fix.fix.at < 60_000 ? fix.fix : await currentFix();
+      openCheck({ lat: f.lat, lon: f.lon, label: here?.name });
+    } catch {
+      setNote(t('home.fixSlow'));
       haptic.fail();
     } finally {
       setLocating(false);
@@ -103,96 +128,101 @@ export default function Home() {
 
   const openDirect = async () => {
     Keyboard.dismiss();
-    if (egg) {
-      const at = fix.status === 'ok' ? fix.fix : { lat: 12.9442, lon: 80.2292 };
+    if (direct?.kind === 'egg') {
+      const at = fix.status === 'ok' ? fix.fix : EGG_FALLBACK;
       router.push({ pathname: '/check/[id]', params: { id: 'new', lat: String(at.lat), lon: String(at.lon), label: 'Temen-ni-gru', egg: '1' } });
       return;
     }
     const r = await resolveShared(q, fix.status === 'ok' ? fix.fix : undefined);
     if ('error' in r) {
-      setNote(r.error);
+      setNote(t('home.shareNone'));
       haptic.fail();
     } else openCheck(r);
   };
 
   const paste = async () => {
     const text = await Clipboard.getStringAsync();
-    if (text) setQ(text.trim());
+    if (!text) {
+      setNote(t('home.clipEmpty'));
+      return;
+    }
+    setQ(text.trim());
     input.current?.focus();
   };
 
-  const fixLine =
-    fix.status === 'ok'
-      ? `${formatHemisphere(fix.fix.lat, fix.fix.lon, 6)}${fix.fix.accuracyM ? `  ±${Math.round(fix.fix.accuracyM)} M` : ''}`
-      : fix.status === 'off'
-        ? t('home.fixOff')
-        : fix.status === 'denied'
-          ? t('home.fixDenied')
-          : t('home.fixWaiting');
+  const hour = new Date().getHours();
+  const name = firstName(user?.name);
+  const greeting = name ? t('home.greetName', { greeting: t(greetingKey(hour)), name }) : t(greetingKey(hour));
+  const latest = latestCore(cores);
+  const saved = savedCores(cores).filter((s) => s.id !== latest?.id).slice(0, 8);
+  const typing = q.trim().length > 0;
 
-  const showDirect = direct.kind !== 'none' || egg;
+  const directTitle = !direct
+    ? ''
+    : direct.kind === 'egg'
+      ? 'TEMEN-NI-GRU'
+      : direct.kind === 'link'
+        ? t('home.sharedLink')
+        : direct.title;
 
   return (
     <Screen>
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + space.md }]}
+        showsVerticalScrollIndicator={false}
       >
-        {/* masthead */}
-        <View style={styles.masthead}>
-          <View style={{ flex: 1 }}>
-            <T kind="wordmark" accessibilityRole="header">
-              TEMEN
+        {/* masthead: the greeting and membership, nothing to read twice */}
+        <Animated.View entering={enter(0)} style={styles.masthead}>
+          <T kind="mono" color={c.ink} numberOfLines={1} style={styles.flex}>
+            {greeting}
+          </T>
+          {isPro ? (
+            <ProBadge />
+          ) : (
+            <PressableScale onPress={() => router.push('/paywall')} style={styles.goPro} accessibilityLabel={t('home.goPro')}>
+              <T kind="mono" color={c.lateriteText} style={styles.goProText}>
+                {t('home.goPro').toUpperCase()}
+              </T>
+            </PressableScale>
+          )}
+        </Animated.View>
+
+        {/* where you stand */}
+        <Animated.View entering={enter(1)} style={styles.where}>
+          <T kind="display" numberOfLines={2} accessibilityRole="header">
+            {here?.name ?? t('home.whereTo')}
+          </T>
+          <View style={styles.fixRow} accessibilityLiveRegion="polite">
+            <View style={[styles.dot, fix.status === 'ok' && styles.dotOn]} />
+            <T kind="mono" numberOfLines={1} style={styles.flex}>
+              {fix.status === 'ok'
+                ? [here?.town, fixText(fix.fix)].filter(Boolean).join(' · ')
+                : fix.status === 'off'
+                  ? t('home.fixOff')
+                  : fix.status === 'denied'
+                    ? t('home.fixDenied')
+                    : t('home.fixWaiting')}
             </T>
-            <T kind="monoWide">{t('tagline')}</T>
           </View>
-          <PressableScale accessibilityLabel={t('home.compare')} onPress={() => router.push('/compare')} style={styles.iconBtn}>
-            <Glyph name="tray" />
-          </PressableScale>
-          <PressableScale accessibilityLabel={t('home.watch')} onPress={() => router.push('/watch')} style={styles.iconBtn}>
-            <Glyph name="bell" />
-          </PressableScale>
-          <PressableScale accessibilityLabel={t('home.settings')} onPress={() => router.push('/settings')} style={styles.iconBtn}>
-            <Glyph name="sliders" />
-          </PressableScale>
-        </View>
+        </Animated.View>
 
         {reliefNear ? (
           <Animated.View entering={FadeIn} style={styles.relief}>
-            <Glyph name="wave" color={color.ground} size={18} />
-            <T kind="small" color={color.ground} style={{ flex: 1 }}>
-              {t('home.relief')} ({reliefNear})
-            </T>
+            <Glyph name="wave" color={c.onLaterite} size={18} />
+            <View style={styles.flex}>
+              <T kind="mono" color={c.onLaterite}>
+                {t('home.reliefTitle')}
+              </T>
+              <T kind="small" color={c.onLaterite}>
+                {t('home.relief')} ({reliefNear})
+              </T>
+            </View>
           </Animated.View>
         ) : null}
 
-        {/* lede */}
-        <View style={styles.lede}>
-          <T kind="displayXl">{t('home.lede')}</T>
-          <T kind="displayXl" italic color={color.laterite}>
-            {t('home.ledeItalic')}
-          </T>
-        </View>
-
-        <View style={styles.fix} accessibilityLiveRegion="polite">
-          <View style={[styles.dot, fix.status === 'ok' ? styles.dotOn : null]} />
-          <T kind="mono" color={color.ink} numberOfLines={1} style={{ flex: 1 }}>
-            {fixLine}
-          </T>
-        </View>
-
-        <Button
-          label={t('home.core')}
-          sub={t('home.coreSub')}
-          glyph="drill"
-          trailing={locating ? undefined : 'arrow'}
-          onPress={coreHere}
-          disabled={locating}
-          accessibilityHint="Checks the ground where you are standing"
-        />
-        {locating ? <ActivityIndicator color={color.laterite} style={{ marginTop: -38, alignSelf: 'flex-end', marginRight: space.lg }} /> : null}
-
-        <View style={styles.searchBlock}>
+        {/* search */}
+        <Animated.View entering={enter(2)}>
           <Field
             ref={input}
             value={q}
@@ -202,101 +232,198 @@ export default function Home() {
             }}
             placeholder={t('home.search')}
             returnKeyType="go"
-            onSubmitEditing={() => (showDirect ? openDirect() : results[0] && openCheck(results[0]))}
+            onSubmitEditing={() => (direct ? openDirect() : results[0] && openCheck({ lat: results[0].lat, lon: results[0].lon, label: results[0].name }))}
             autoCorrect={false}
             accessibilityLabel={t('home.search')}
+            accessibilityHint={t('home.searchHint')}
             right={
               q ? (
-                <PressableScale accessibilityLabel="Clear" onPress={() => setQ('')} style={styles.fieldBtn}>
-                  <Glyph name="close" size={18} color={color.inkMuted} />
-                </PressableScale>
+                <IconButton glyph="close" size={18} color={c.inkMuted} label={t('home.clear')} onPress={() => setQ('')} />
               ) : (
-                <PressableScale accessibilityLabel="Paste" onPress={paste} style={styles.fieldBtn}>
-                  <Glyph name="paste" size={18} color={color.inkMuted} />
-                </PressableScale>
+                <IconButton glyph="paste" size={18} color={c.inkMuted} label={t('home.paste')} onPress={paste} />
               )
             }
           />
-
-          {showDirect ? (
+          {direct ? (
             <Animated.View entering={FadeIn} exiting={FadeOut}>
               <ResultRow
-                title={egg ? 'TEMEN-NI-GRU' : direct.kind === 'point' ? formatHemisphere(direct.lat, direct.lon, 5) : direct.kind === 'resolve' ? 'Shared link' : direct.kind === 'shortPlusCode' ? direct.code : direct.kind === 'query' ? direct.text : ''}
-                sub={egg ? 'Drill past bedrock' : 'Core this point'}
-                crimson={egg}
+                title={directTitle}
+                sub={direct.kind === 'egg' ? t('home.eggSub') : t('home.pointSub')}
+                crimson={direct.kind === 'egg'}
                 onPress={openDirect}
               />
             </Animated.View>
           ) : null}
-          {searching ? <ActivityIndicator color={color.inkMuted} style={{ marginTop: space.md }} /> : null}
+          {searching ? <ActivityIndicator color={c.inkMuted} style={styles.spinner} /> : null}
           {results.map((p) => (
             <Animated.View key={p.id} entering={FadeIn} exiting={FadeOut} layout={LinearTransition}>
               <ResultRow title={p.name} sub={p.context} onPress={() => openCheck({ lat: p.lat, lon: p.lon, label: p.name })} />
             </Animated.View>
           ))}
+          {!searching && searched && !results.length && !direct ? (
+            <T kind="small" style={styles.note}>
+              {t('home.noResults')}
+            </T>
+          ) : null}
           {note ? (
-            <T kind="small" color={color.laterite} style={{ marginTop: space.sm }} accessibilityLiveRegion="assertive">
+            <T kind="small" color={c.lateriteText} style={styles.note} accessibilityLiveRegion="assertive">
               {note}
             </T>
           ) : null}
-        </View>
+        </Animated.View>
 
-        <Button label={t('home.pin')} glyph="crosshair" variant="secondary" onPress={() => router.push('/pick')} />
+        {!typing ? (
+          <>
+            {/* the two ways in */}
+            <Animated.View entering={enter(3)} style={styles.tiles}>
+              <Tile
+                primary
+                glyph="drill"
+                title={t('home.core')}
+                sub={t('home.coreTileSub')}
+                busy={locating}
+                onPress={coreHere}
+                hint={t('home.coreHint')}
+              />
+              <Tile glyph="crosshair" title={t('home.pin')} sub={t('home.pinTileSub')} onPress={() => router.push('/pick')} />
+            </Animated.View>
 
-        {!shareHintSeen ? (
-          <Animated.View exiting={FadeOut} style={styles.hint}>
-            <View style={{ flex: 1, gap: 4 }}>
-              <T kind="mono" color={color.ink}>
-                01 · {t('home.shareTitle')}
-              </T>
-              <T kind="small">{t('home.shareBody')}</T>
-            </View>
-            <PressableScale accessibilityLabel="Dismiss" onPress={() => updateSettings({ shareHintSeen: true })} style={styles.iconBtn}>
-              <Glyph name="close" size={18} color={color.inkMuted} />
-            </PressableScale>
-          </Animated.View>
+            {latest ? (
+              <Animated.View entering={enter(4)}>
+                <SectionHead label={t('home.continue')} />
+                <Hairline />
+                <View style={styles.bleed}>
+                  <CoreSliver core={latest} onPress={openSaved} />
+                </View>
+                <Hairline />
+              </Animated.View>
+            ) : null}
+
+            {saved.length ? (
+              <Animated.View entering={enter(5)}>
+                <SectionHead label={t('home.saved')} action={t('home.seeAll')} onAction={() => router.navigate({ pathname: '/places', params: { tab: 'saved' } })} />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip} style={styles.bleedStrip}>
+                  {saved.map((core) => (
+                    <SavedCard key={core.id} core={core} headline={tl(core.headline)} />
+                  ))}
+                </ScrollView>
+              </Animated.View>
+            ) : null}
+
+            {!shareHintSeen ? (
+              <Animated.View entering={enter(6)} exiting={FadeOut} style={styles.hint}>
+                <Glyph name="share" size={20} color={c.inkMuted} />
+                <View style={styles.hintText}>
+                  <T kind="bodyMedium">{t('home.shareTitle')}</T>
+                  <T kind="small">{t('home.tipBody')}</T>
+                </View>
+                <IconButton glyph="close" size={18} color={c.inkMuted} label={t('home.dismiss')} onPress={() => updateSettings({ shareHintSeen: true })} />
+              </Animated.View>
+            ) : null}
+          </>
         ) : null}
-
-        {/* recent cores */}
-        <View style={styles.sectionHead}>
-          <T kind="mono" color={color.ink}>
-            {t('home.recent')}
-          </T>
-          <T kind="mono">{String(cores.length).padStart(2, '0')}</T>
-        </View>
-        <Hairline />
-        {cores.length === 0 ? (
-          <T kind="small" style={{ paddingVertical: space.lg }}>
-            {t('home.empty')}
-          </T>
-        ) : (
-          cores.map((c, i) => (
-            <View key={c.id}>
-              <CoreSliver core={c} onPress={() => openSaved(c.id)} />
-              {i < cores.length - 1 ? <Hairline /> : null}
-            </View>
-          ))
-        )}
-        <Hairline />
-
-        <T kind="caption" style={styles.footer}>
-          {t('home.footer')}
-        </T>
-        <T kind="mono" style={{ marginTop: space.sm }}>
-          {t('home.honesty')}
-        </T>
       </ScrollView>
     </Screen>
   );
 }
 
+function Tile({
+  glyph,
+  title,
+  sub,
+  onPress,
+  primary,
+  busy,
+  hint,
+}: {
+  glyph: GlyphName;
+  title: string;
+  sub: string;
+  onPress: () => void;
+  primary?: boolean;
+  busy?: boolean;
+  hint?: string;
+}) {
+  const { c } = useTheme();
+  const styles = useStyles();
+  const fg = primary ? c.onLaterite : c.ink;
+  return (
+    <PressableScale
+      onPress={busy ? undefined : onPress}
+      hapticOnPress={primary ? 'tick' : null}
+      accessibilityLabel={`${title}. ${sub}`}
+      accessibilityHint={hint}
+      accessibilityState={{ busy: !!busy }}
+      style={[styles.tile, primary ? styles.tilePrimary : styles.tileQuiet]}
+    >
+      <View style={styles.tileTop}>
+        <Glyph name={glyph} size={26} color={fg} />
+        {busy ? <ActivityIndicator color={fg} /> : <Glyph name="arrow" size={18} color={fg} />}
+      </View>
+      <View style={styles.tileText}>
+        <T kind="heading" color={fg} numberOfLines={2}>
+          {title}
+        </T>
+        <T kind="mono" color={fg} numberOfLines={1} style={primary ? styles.dim : null}>
+          {sub}
+        </T>
+      </View>
+    </PressableScale>
+  );
+}
+
+function SectionHead({ label, action, onAction }: { label: string; action?: string; onAction?: () => void }) {
+  const { c } = useTheme();
+  const styles = useStyles();
+  return (
+    <View style={styles.sectionHead}>
+      <T kind="mono" color={c.ink} accessibilityRole="header">
+        {label}
+      </T>
+      {action && onAction ? (
+        <PressableScale onPress={onAction} accessibilityRole="link" accessibilityLabel={action} style={styles.sectionAction}>
+          <T kind="mono" color={c.lateriteText}>
+            {action}
+          </T>
+        </PressableScale>
+      ) : null}
+    </View>
+  );
+}
+
+function SavedCard({ core, headline }: { core: CoreSummary; headline: string }) {
+  const { c } = useTheme();
+  const styles = useStyles();
+  const label = placeLabel(core);
+  return (
+    <PressableScale onPress={() => openSaved(core.id)} scaleTo={0.96} style={styles.card} accessibilityLabel={`${label.title}. ${headline}`}>
+      <View style={styles.cardTop}>
+        <CoreCylinder width={16} height={44} bands={core.bands} tilt={0.22} />
+        <Glyph name="saved" size={14} color={c.lateriteText} />
+      </View>
+      <T kind="heading" numberOfLines={1} style={styles.cardTitle}>
+        {label.title}
+      </T>
+      <T kind="mono" numberOfLines={1} style={styles.cardSub}>
+        {label.subtitle}
+      </T>
+      <T kind="caption" numberOfLines={2}>
+        {headline}
+      </T>
+    </PressableScale>
+  );
+}
+
 function ResultRow({ title, sub, onPress, crimson }: { title: string; sub: string; onPress: () => void; crimson?: boolean }) {
+  const { c } = useTheme();
+  const styles = useStyles();
+  const tint = crimson ? c.crimsonEgg : c.ink;
   return (
     <PressableScale onPress={onPress} scaleTo={0.985} style={styles.result} accessibilityLabel={`${title}. ${sub}`}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-        <Glyph name="pin" size={18} color={crimson ? color.crimsonEgg : color.laterite} />
-        <View style={{ flex: 1 }}>
-          <T kind="bodyMedium" numberOfLines={1} color={crimson ? color.crimsonEgg : color.ink}>
+      <View style={styles.resultRow}>
+        <Glyph name="pin" size={18} color={crimson ? c.crimsonEgg : c.lateriteText} />
+        <View style={styles.flex}>
+          <T kind="bodyMedium" numberOfLines={1} color={tint}>
             {title}
           </T>
           {sub ? (
@@ -305,41 +432,45 @@ function ResultRow({ title, sub, onPress, crimson }: { title: string; sub: strin
             </T>
           ) : null}
         </View>
-        <Glyph name="arrow" size={18} color={color.inkMuted} />
+        <Glyph name="arrow" size={18} color={c.inkMuted} />
       </View>
     </PressableScale>
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { paddingHorizontal: space.gutter, gap: space.lg },
-  masthead: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  iconBtn: { width: 44, height: 44, alignItems: 'center' },
-  relief: {
-    flexDirection: 'row',
-    gap: space.md,
-    alignItems: 'center',
-    backgroundColor: color.lake,
-    padding: space.md,
-    borderRadius: 4,
-  },
-  lede: { marginTop: space.xl },
-  fix: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: -space.xs },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: color.line },
-  dotOn: { backgroundColor: color.laterite },
-  searchBlock: { gap: 0 },
-  fieldBtn: { width: 44, height: 44, alignItems: 'center' },
-  result: { paddingVertical: space.sm, borderBottomWidth: 1, borderBottomColor: color.hairline },
-  hint: {
-    flexDirection: 'row',
-    gap: space.md,
-    alignItems: 'flex-start',
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: color.inkMuted,
-    padding: space.md,
-    borderRadius: 4,
-  },
-  sectionHead: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.xl },
-  footer: { marginTop: space.lg },
-});
+const useStyles = makeStyles((c) => ({
+  scroll: { paddingHorizontal: space.gutter, paddingBottom: space.xxxl, gap: space.xl },
+  flex: { flex: 1, minWidth: 0 },
+  masthead: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 32 },
+  goPro: { borderWidth: 1, borderColor: c.lateriteText, borderRadius: radius.sm, paddingHorizontal: space.sm, paddingVertical: 4 },
+  // small mono sets its own tracking
+  goProText: { fontSize: 9.5, lineHeight: 14, letterSpacing: 1.4 },
+  where: { gap: space.sm, marginTop: -space.sm },
+  fixRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.line },
+  dotOn: { backgroundColor: c.laterite },
+  relief: { flexDirection: 'row', gap: space.md, alignItems: 'center', backgroundColor: c.lake, padding: space.md, borderRadius: radius.sm },
+  spinner: { marginTop: space.md },
+  note: { marginTop: space.sm },
+  result: { paddingVertical: space.sm, borderBottomWidth: 1, borderBottomColor: c.hairline },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 44 },
+  tiles: { flexDirection: 'row', gap: space.md },
+  tile: { flex: 1, minHeight: 148, borderRadius: radius.sm, padding: space.lg, justifyContent: 'space-between' },
+  tilePrimary: { backgroundColor: c.laterite },
+  tileQuiet: { borderWidth: 1, borderColor: c.dark ? c.line : c.ink, backgroundColor: c.paper },
+  tileTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  tileText: { gap: 4 },
+  dim: { opacity: 0.8 },
+  sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 32, marginBottom: space.xs },
+  sectionAction: { minHeight: 32, justifyContent: 'center', paddingLeft: space.md },
+  bleed: { marginHorizontal: -space.gutter },
+  bleedStrip: { marginHorizontal: -space.gutter },
+  strip: { paddingHorizontal: space.gutter, gap: space.md },
+  card: { width: 176, borderWidth: 1, borderColor: c.line, borderRadius: radius.sm, padding: space.md, gap: 4, backgroundColor: c.paper },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: space.xs },
+  cardTitle: { fontSize: 18, lineHeight: 23 },
+  // small mono sets its own tracking
+  cardSub: { fontSize: 9, lineHeight: 13, letterSpacing: 1.2 },
+  hint: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start', borderWidth: 1, borderStyle: 'dashed', borderColor: c.inkMuted, padding: space.md, borderRadius: radius.sm },
+  hintText: { flex: 1, gap: 2 },
+}));

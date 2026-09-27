@@ -31,5 +31,6 @@
   "pick.hintClose": "Move the map until the crosshair sits on the plot.",
   "pick.hintFar": "Zoom in to street level to place the crosshair.",
   "pick.locate": "Go to my location",
-  "pick.a11yCross": "Crosshair at the centre of the map"
+  "pick.a11yCross": "Crosshair at the centre of the map",
+  "home.whereTo": "Where to?"
 }
