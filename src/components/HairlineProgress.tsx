@@ -18,12 +18,15 @@ export function HairlineProgress({
   delay = 0,
   tint,
   run = true,
+  thick = false,
 }: {
   progress?: SharedValue<number>;
   duration?: number;
   delay?: number;
   tint?: string;
   run?: boolean;
+  /** 4 pt instead of a hairline, for the loader. */
+  thick?: boolean;
 }) {
   const { c } = useTheme();
   const styles = useStyles();
@@ -35,8 +38,8 @@ export function HairlineProgress({
   }, [progress, run, reduced, delay, duration, own]);
   const style = useAnimatedStyle(() => ({ transform: [{ scaleX: Math.max(0.0001, (progress ?? own).value) }] }));
   return (
-    <View style={styles.track} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <Animated.View style={[styles.fill, { backgroundColor: tint ?? c.ink }, style]} />
+    <View style={[styles.track, thick && styles.thick]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Animated.View style={[styles.fill, thick && styles.thick, { backgroundColor: tint ?? c.ink }, style]} />
     </View>
   );
 }
@@ -44,4 +47,5 @@ export function HairlineProgress({
 const useStyles = makeStyles((c) => ({
   track: { height: 1, backgroundColor: c.hairline, overflow: 'hidden', alignSelf: 'stretch' },
   fill: { height: 1, width: '100%', transformOrigin: 'left' },
+  thick: { height: 4 },
 }));

@@ -11,15 +11,16 @@ import { haptic, makeStyles, motion, space, useTheme } from '@/theme';
 
 import { Glyph, type GlyphName } from './Glyph';
 import { PressableScale } from './PressableScale';
+import { StaffBar } from './Staff';
 import { T } from './T';
 import { useReducedMotion } from '@/theme/reduced';
 
 const ICONS: Record<string, GlyphName> = { index: 'home', places: 'layers', watch: 'bell', account: 'user' };
-const MARK = 26;
+const MARK = 40;
 
 /**
- * The app's bottom bar: survey glyphs with mono labels, and a laterite mark
- * that slides to the open tab. Hides while the keyboard is up.
+ * The app's bottom bar: survey glyphs with mono labels, and a piece of
+ * levelling staff that slides to the open tab. Hides while the keyboard is up.
  */
 export function TabBar({ state, descriptors, navigation, insets }: BottomTabBarProps) {
   const { c } = useTheme();
@@ -49,7 +50,11 @@ export function TabBar({ state, descriptors, navigation, insets }: BottomTabBarP
   if (keyboard) return null;
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, space.sm) }]} onLayout={(e) => setW(e.nativeEvent.layout.width)} accessibilityRole="tablist">
-      {item ? <Animated.View style={[styles.mark, mark]} /> : null}
+      {item ? (
+        <Animated.View style={[styles.mark, mark]}>
+          <StaffBar width={MARK} height={5} />
+        </Animated.View>
+      ) : null}
       {state.routes.map((route, i) => {
         const { options } = descriptors[route.key];
         const focused = state.index === i;
@@ -90,11 +95,11 @@ export function TabBar({ state, descriptors, navigation, insets }: BottomTabBarP
 }
 
 const useStyles = makeStyles((c) => ({
-  bar: { flexDirection: 'row', backgroundColor: c.ground, borderTopWidth: 1, borderTopColor: c.hairline, paddingTop: space.sm },
-  mark: { position: 'absolute', top: -1, left: 0, width: MARK, height: 2, backgroundColor: c.laterite },
+  bar: { flexDirection: 'row', backgroundColor: c.ground, borderTopWidth: 1.5, borderTopColor: c.ink, paddingTop: space.sm + 2 },
+  mark: { position: 'absolute', top: -1.5, left: 0, width: MARK, height: 5 },
   item: { flex: 1, alignItems: 'center' },
   inner: { alignItems: 'center', gap: 4 },
   // small mono sets its own tracking
   label: { fontSize: 8.5, lineHeight: 12, letterSpacing: 1.2 },
-  dot: { position: 'absolute', top: -1, right: -4, width: 7, height: 7, borderRadius: 4, backgroundColor: c.laterite },
+  dot: { position: 'absolute', top: -1, right: -4, width: 7, height: 7, borderRadius: 4, backgroundColor: c.laterite, borderWidth: 1, borderColor: c.ground },
 }));

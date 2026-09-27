@@ -8,6 +8,7 @@ import { useT } from '@/i18n';
 import { makeStyles, space, useTheme } from '@/theme';
 
 import { IconButton } from './IconButton';
+import { Staff } from './Staff';
 import { T } from './T';
 
 export interface HeaderProps {
@@ -17,6 +18,8 @@ export interface HeaderProps {
   subtitle?: string;
   /** Mono label above the title (large variant only). */
   eyebrow?: string;
+  /** Readings under the large title's scale rule: left, middle, right. */
+  measure?: [string, string?, string?];
   /** Show the back button (default: true for bar/overlay, false for large). */
   back?: boolean;
   onBack?: () => void;
@@ -37,7 +40,7 @@ export const goBack = () => (router.canGoBack() ? router.back() : router.replace
  * in the serif, the town small in mono beneath, so long names never crowd the
  * bar or run off it.
  */
-export function Header({ title, subtitle, eyebrow, back, onBack, right, variant = 'bar', style }: HeaderProps) {
+export function Header({ title, subtitle, eyebrow, measure, back, onBack, right, variant = 'bar', style }: HeaderProps) {
   const insets = useSafeAreaInsets();
   const { t } = useT();
   const { c } = useTheme();
@@ -48,18 +51,22 @@ export function Header({ title, subtitle, eyebrow, back, onBack, right, variant 
       <View style={[styles.large, { paddingTop: insets.top + space.md }, style]}>
         <View style={styles.largeTop}>
           {back ? <IconButton glyph="back" label={t('common.back')} onPress={onBack ?? goBack} style={styles.backLarge} /> : null}
-          <T kind="mono" color={c.ink} style={styles.flex} numberOfLines={1}>
-            {eyebrow ?? ''}
-          </T>
+          <View style={styles.eyebrow}>
+            {eyebrow ? <View style={styles.mark} /> : null}
+            <T kind="mono" color={c.ink} style={styles.flex} numberOfLines={1}>
+              {eyebrow ?? ''}
+            </T>
+          </View>
           {right ? <View style={styles.right}>{right}</View> : null}
         </View>
         {title ? (
           <Animated.View entering={FadeIn.duration(260)}>
-            <T kind="display" accessibilityRole="header" numberOfLines={2}>
+            <T kind="displayXl" accessibilityRole="header" numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
               {title}
             </T>
           </Animated.View>
         ) : null}
+        <Staff labels={measure} style={styles.staff} />
         {subtitle ? <T kind="small">{subtitle}</T> : null}
       </View>
     );
@@ -91,15 +98,18 @@ export function Header({ title, subtitle, eyebrow, back, onBack, right, variant 
 
 const useStyles = makeStyles((c) => ({
   bar: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.sm, paddingBottom: space.sm, minHeight: 56 },
-  overlay: { backgroundColor: c.veil, borderBottomWidth: 1, borderBottomColor: c.hairline },
+  overlay: { backgroundColor: c.veil, borderBottomWidth: 1.5, borderBottomColor: c.ink },
   spacer: { width: space.sm },
   titles: { flex: 1, minWidth: 0, paddingHorizontal: space.xs },
-  title: { fontSize: 24, lineHeight: 29 },
+  title: { fontSize: 27, lineHeight: 30 },
   // small mono sets its own tracking (the role's is sized for 10.5 pt)
   subtitle: { fontSize: 9.5, lineHeight: 14, letterSpacing: 1.6 },
   right: { flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
   large: { paddingHorizontal: space.gutter, paddingBottom: space.md, gap: space.xs },
   largeTop: { flexDirection: 'row', alignItems: 'center', minHeight: 44, gap: space.sm },
+  eyebrow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  mark: { width: 8, height: 8, backgroundColor: c.accent, borderWidth: 1, borderColor: c.ink },
+  staff: { marginTop: space.xs },
   backLarge: { marginLeft: -space.md },
   flex: { flex: 1 },
 }));

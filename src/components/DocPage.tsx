@@ -28,7 +28,7 @@ export function DocSection({ index, title, children }: { index: number; title: s
   return (
     <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * motion.stagger).duration(motion.dur.ui)} style={styles.section}>
       <View style={styles.head}>
-        <T kind="mono" color={c.lateriteText}>
+        <T kind="mono" color={c.accentText}>
           {String(index + 1).padStart(2, '0')}
         </T>
         <T kind="heading" style={styles.flex} accessibilityRole="header">

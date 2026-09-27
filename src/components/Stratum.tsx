@@ -16,6 +16,8 @@ import { ReadingCounter } from './ReadingCounter';
 import { ConfidenceTicks, SourceChip } from './SourceChip';
 import { T } from './T';
 
+/** Width of the core column beside each stratum. */
+const COL = 34;
 
 function counterProps(s: StratumT): { value: number; format: 'int' | 'signed'; suffix: string; digits: number } | null {
   if (s.value === null || s.status !== 'ok') return null;
@@ -63,7 +65,13 @@ export function StratumBand({
       style={[styles.band, { minHeight: minH }]}
     >
       <View style={[styles.column, { backgroundColor: isEgg ? c.crimsonEgg : fill }]}>
-        {h > 0 ? <HatchFill kind={s.hatch} width={18} height={h} tint={s.hatch === 'lostWater' ? 'rgba(29,90,122,0.5)' : c.dark ? 'rgba(21,20,18,0.4)' : 'rgba(242,237,228,0.45)'} /> : null}
+        {h > 0 ? <HatchFill kind={s.hatch} width={COL} height={h} tint={s.hatch === 'lostWater' ? 'rgba(27,110,168,0.55)' : c.dark ? 'rgba(12,23,25,0.45)' : 'rgba(247,248,244,0.5)'} /> : null}
+        {/* the core-box label: which stratum this is */}
+        <View style={styles.boxLabel}>
+          <T kind="mono" color={c.ink} style={styles.boxIndex}>
+            {idx}
+          </T>
+        </View>
       </View>
       <PressableScale
         onPress={sealed ? onUnlock : () => setOpen((o) => !o)}
@@ -74,15 +82,15 @@ export function StratumBand({
       >
         <View style={styles.head}>
           <T kind="mono" color={isEgg ? c.crimsonEgg : c.ink}>
-            {idx} {tl(s.title).toUpperCase()}
+            {tl(s.title).toUpperCase()}
           </T>
           {!sealed && s.status === 'ok' ? <ConfidenceTicks level={s.confidence} /> : null}
         </View>
 
         {sealed ? (
           <View style={styles.sealed}>
-            <Glyph name="lock" size={18} color={c.lateriteText} />
-            <T kind="bodyMedium" color={c.lateriteText} style={styles.flex}>
+            <Glyph name="lock" size={18} color={c.ink} />
+            <T kind="bodyMedium" color={c.ink} style={styles.flex}>
               {t('check.sealedBand')}
             </T>
             <ProBadge variant="outline" />
@@ -100,14 +108,22 @@ export function StratumBand({
                   run={animate}
                   style={isEgg ? { color: c.crimsonEgg } : undefined}
                 />
+              ) : s.status !== 'ok' ? (
+                <View style={[styles.stamp, s.status === 'error' && styles.stampError]}>
+                  <T kind="mono" color={s.status === 'error' ? c.lateriteText : c.ink} style={styles.stampText}>
+                    {s.status === 'error' ? t('stratum.noReading') : t('stratum.notModelled')}
+                  </T>
+                </View>
               ) : (
                 <T kind="display" color={isEgg ? c.crimsonEgg : c.ink}>
                   {s.reading}
                 </T>
               )}
-              <T kind="mono" style={{ flexShrink: 1 }}>
-                {s.unit}
-              </T>
+              {s.status === 'ok' ? (
+                <T kind="mono" style={{ flexShrink: 1 }}>
+                  {s.unit}
+                </T>
+              ) : null}
             </View>
             <T kind="heading" color={isEgg ? c.crimsonEgg : c.ink}>
               {tl(s.headline)}
@@ -194,8 +210,14 @@ const useStyles = makeStyles((c) => ({
   flex: { flex: 1 },
   cantHead: { flexDirection: 'row', alignItems: 'center', minHeight: 28 },
   band: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: c.hairline },
-  column: { width: 18, overflow: 'hidden', borderLeftWidth: 1, borderRightWidth: 1, borderColor: c.ink },
+  // the column stretches the band's full height, however far the facts open
+  column: { width: COL, alignSelf: 'stretch', overflow: 'hidden', borderLeftWidth: 1.5, borderRightWidth: 1.5, borderColor: c.ink },
+  boxLabel: { position: 'absolute', top: 8, left: 3, right: 3, backgroundColor: c.paper, borderWidth: 1, borderColor: c.ink, alignItems: 'center', paddingVertical: 1 },
+  boxIndex: { fontSize: 9, lineHeight: 13, letterSpacing: 0.5 },
   body: { flex: 1, paddingVertical: space.md, paddingLeft: space.lg, gap: 4, justifyContent: 'flex-start' },
+  stamp: { borderWidth: 1.5, borderColor: c.ink, borderStyle: 'dashed', paddingHorizontal: space.sm, paddingVertical: 4, marginVertical: 6 },
+  stampError: { borderColor: c.lateriteText },
+  stampText: { letterSpacing: 2 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   readingRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm, flexWrap: 'wrap' },
   sealed: { flexDirection: 'row', gap: space.sm, alignItems: 'center', paddingVertical: space.md },
@@ -205,11 +227,12 @@ const useStyles = makeStyles((c) => ({
   factLabel: { width: 112 },
   foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.sm },
   cantSee: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: c.ink,
     padding: space.lg,
     gap: space.sm,
     marginTop: space.lg,
+    backgroundColor: c.paper,
   },
 }));
