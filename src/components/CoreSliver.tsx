@@ -9,7 +9,7 @@ import { CoreCylinder } from '@/setpieces/CoreCylinder';
 import type { CoreSummary } from '@/state/reports';
 import { makeStyles, motion, space, useTheme } from '@/theme';
 
-import { Glyph } from './Glyph';
+import { Glyph, type GlyphName } from './Glyph';
 import { IconButton } from './IconButton';
 import { PressableScale } from './PressableScale';
 import { T } from './T';
@@ -24,13 +24,25 @@ export interface CoreSliverProps {
   /** Choosing cores to compare: the row shows a check circle instead of ⋯. */
   selecting?: boolean;
   selected?: boolean;
+  /** Buttons in view under the row (save, card, compare, delete); hidden while choosing. */
+  actions?: SliverAction[];
+}
+
+export interface SliverAction {
+  key: string;
+  glyph: GlyphName;
+  label: string;
+  onPress: (id: string) => void;
+  /** Drawn in the accent: a saved core's bookmark. */
+  on?: boolean;
+  danger?: boolean;
 }
 
 /**
- * One drilled place in a list: a thin sliver of its strata, the locality in the
- * stencil with the town in mono beneath, the headline, and when it was cored.
+ * One drilled place in a list: a thin sliver of its strata, the locality in bold
+ * with the town in mono beneath, the headline, when it was cored and its buttons.
  */
-export const CoreSliver = memo(function CoreSliver({ core, onPress, onLongPress, onMore, selecting = false, selected = false }: CoreSliverProps) {
+export const CoreSliver = memo(function CoreSliver({ core, onPress, onLongPress, onMore, selecting = false, selected = false, actions }: CoreSliverProps) {
   const { c } = useTheme();
   const { t, tl } = useT();
   const when = useAgo();
@@ -41,45 +53,62 @@ export const CoreSliver = memo(function CoreSliver({ core, onPress, onLongPress,
   const spoken = [label.title, label.subtitle, headline, date, core.saved ? t('places.savedMark') : null].filter(Boolean).join('. ');
 
   return (
-    <View style={[styles.row, selected && styles.rowOn]}>
-      <PressableScale
-        onPress={() => onPress(core.id)}
-        onLongPress={onLongPress ? () => onLongPress(core.id) : undefined}
-        scaleTo={0.985}
-        accessibilityRole={selecting ? 'checkbox' : 'button'}
-        accessibilityState={selecting ? { checked: selected } : undefined}
-        accessibilityLabel={spoken}
-        accessibilityHint={selecting ? t('places.chooseHint') : t('places.openHint')}
-        style={styles.main}
-      >
-        <View style={styles.inner}>
-          <CoreCylinder width={22} height={64} bands={core.bands} tilt={0.22} />
-          <View style={styles.text}>
-            <View style={styles.top}>
-              <T kind="title" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
-                {label.title}
-              </T>
-              {core.saved ? <Glyph name="saved" size={14} color={c.accentText} /> : null}
-              <T kind="mono" numberOfLines={1} style={styles.small}>
-                {date}
+    <View style={selected ? styles.rowOn : null}>
+      <View style={styles.row}>
+        <PressableScale
+          onPress={() => onPress(core.id)}
+          onLongPress={onLongPress ? () => onLongPress(core.id) : undefined}
+          scaleTo={0.985}
+          accessibilityRole={selecting ? 'checkbox' : 'button'}
+          accessibilityState={selecting ? { checked: selected } : undefined}
+          accessibilityLabel={spoken}
+          accessibilityHint={selecting ? t('places.chooseHint') : t('places.openHint')}
+          style={styles.main}
+        >
+          <View style={styles.inner}>
+            <CoreCylinder width={22} height={64} bands={core.bands} tilt={0.22} />
+            <View style={styles.text}>
+              <View style={styles.top}>
+                <T kind="title" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
+                  {label.title}
+                </T>
+                {core.saved ? <Glyph name="saved" size={14} color={c.accentText} /> : null}
+                <T kind="mono" numberOfLines={1} style={styles.small}>
+                  {date}
+                </T>
+              </View>
+              {label.subtitle ? (
+                <T kind="mono" numberOfLines={1} style={styles.small}>
+                  {label.subtitle}
+                </T>
+              ) : null}
+              <T kind="small" color={c.ink} numberOfLines={2} style={styles.headline}>
+                {headline}
               </T>
             </View>
-            {label.subtitle ? (
-              <T kind="mono" numberOfLines={1} style={styles.small}>
-                {label.subtitle}
-              </T>
-            ) : null}
-            <T kind="small" color={c.ink} numberOfLines={2} style={styles.headline}>
-              {headline}
-            </T>
+            {selecting ? <CheckMark on={selected} /> : null}
           </View>
-          {selecting ? <CheckMark on={selected} /> : null}
+        </PressableScale>
+        {!selecting && onMore ? (
+          <Animated.View entering={FadeIn.duration(motion.dur.fade)}>
+            <IconButton glyph="more" label={t('places.more', { place: label.title })} onPress={() => onMore(core.id)} color={c.inkMuted} />
+          </Animated.View>
+        ) : null}
+      </View>
+      {!selecting && actions?.length ? (
+        <View style={styles.actions}>
+          {actions.map((a) => (
+            <IconButton
+              key={a.key}
+              glyph={a.glyph}
+              size={19}
+              label={`${a.label}, ${label.title}`}
+              color={a.on ? c.accentText : a.danger ? c.lateriteText : c.ink}
+              onPress={() => a.onPress(core.id)}
+              style={styles.action}
+            />
+          ))}
         </View>
-      </PressableScale>
-      {!selecting && onMore ? (
-        <Animated.View entering={FadeIn.duration(motion.dur.fade)}>
-          <IconButton glyph="more" label={t('places.more', { place: label.title })} onPress={() => onMore(core.id)} color={c.inkMuted} />
-        </Animated.View>
       ) : null}
     </View>
   );
@@ -100,16 +129,35 @@ function CheckMark({ on }: { on: boolean }) {
 }
 
 const useStyles = makeStyles((c) => ({
-  row: { flexDirection: 'row', alignItems: 'center', paddingLeft: space.gutter, paddingRight: space.sm },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: space.gutter,
+    paddingRight: space.sm,
+  },
   rowOn: { backgroundColor: c.groundDeep },
   main: { flex: 1, paddingVertical: space.md },
-  inner: { flexDirection: 'row', alignItems: 'center', gap: space.lg, paddingRight: space.sm },
+  inner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.lg,
+    paddingRight: space.sm,
+  },
   text: { flex: 1, minWidth: 0, gap: 2 },
   top: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   title: { flex: 1, minWidth: 0, fontSize: 20, lineHeight: 25 },
   // small mono sets its own tracking (the role's is sized for 10.5 pt)
   small: { fontSize: 9.5, lineHeight: 14, letterSpacing: 1.4 },
   headline: { marginTop: 2 },
+  // under the text, lined up with it (cylinder 22 + gap)
+  actions: {
+    flexDirection: 'row',
+    gap: space.xs,
+    paddingLeft: space.gutter + 22 + space.lg - 10,
+    marginTop: -space.sm,
+    paddingBottom: space.xs,
+  },
+  action: { width: 40, height: 40 },
   check: {
     width: 26,
     height: 26,
