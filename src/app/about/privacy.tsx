@@ -1,11 +1,21 @@
-import { Header } from '@/components/Header';
-import { Screen } from '@/components/Screen';
+import { DocPage, DocSection } from '@/components/DocPage';
+import { T } from '@/components/T';
+import { PRIVACY } from '@/features/legal/content';
+import { useT } from '@/i18n';
 
-/** Placeholder: replaced in the redesign. */
-export default function Placeholder() {
+export default function Privacy() {
+  const { t } = useT();
   return (
-    <Screen>
-      <Header title="privacy" />
-    </Screen>
+    <DocPage title={t('about.privacy')} eyebrow={t('about.updated', { date: PRIVACY.updated })}>
+      {PRIVACY.sections.map((s, i) => (
+        <DocSection key={s.title} index={i} title={s.title}>
+          {s.body.map((p) => (
+            <T key={p} kind="body">
+              {p}
+            </T>
+          ))}
+        </DocSection>
+      ))}
+    </DocPage>
   );
 }

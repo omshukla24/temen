@@ -1,11 +1,21 @@
-import { Header } from '@/components/Header';
-import { Screen } from '@/components/Screen';
+import { DocPage, DocSection } from '@/components/DocPage';
+import { T } from '@/components/T';
+import { TERMS } from '@/features/legal/content';
+import { useT } from '@/i18n';
 
-/** Placeholder: replaced in the redesign. */
-export default function Placeholder() {
+export default function Terms() {
+  const { t } = useT();
   return (
-    <Screen>
-      <Header title="terms" />
-    </Screen>
+    <DocPage title={t('about.terms')} eyebrow={t('about.updated', { date: TERMS.updated })}>
+      {TERMS.sections.map((s, i) => (
+        <DocSection key={s.title} index={i} title={s.title}>
+          {s.body.map((p) => (
+            <T key={p} kind="body">
+              {p}
+            </T>
+          ))}
+        </DocSection>
+      ))}
+    </DocPage>
   );
 }
