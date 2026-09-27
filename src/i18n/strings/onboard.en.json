@@ -14,5 +14,6 @@
   "onboard.page": "Page {n} of {total}",
   "onboard.bandWater": "Water",
   "onboard.bandGround": "Ground",
-  "onboard.bandRain": "Rain"
+  "onboard.bandRain": "Rain",
+  "onboard.p3Title": "Honest about its limits."
 }
