@@ -57,5 +57,18 @@
   "paywall.perkCompare": "Compare up to five places side by side",
   "paywall.perkWatch": "Monsoon Watch: heavy-rain alerts for saved places",
   "paywall.perkOffline": "Saved places open offline and back up to your account",
-  "watch.emptyTitle": "Nothing to watch yet"
+  "watch.emptyTitle": "Nothing to watch yet",
+  "watch.add": "Add a place",
+  "watch.addTitle": "Add a place to Watch",
+  "watch.addBody": "Watch follows your saved places. Pick one you've cored, or search a new one.",
+  "watch.addNone": "Every place you've cored is already watched.",
+  "watch.searchNew": "Search a new place",
+  "watch.added": "Watching {place}",
+  "watch.mute": "Turn alerts off",
+  "watch.unmute": "Turn alerts on",
+  "watch.muted": "Alerts off",
+  "watch.mutedToast": "Alerts off for {place}",
+  "watch.unmutedToast": "Alerts on for {place}",
+  "watch.remove": "Stop watching",
+  "watch.removed": "Stopped watching {place}"
 }
