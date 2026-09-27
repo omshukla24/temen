@@ -115,13 +115,13 @@ const useStyles = makeStyles((c) => ({
   panel: {
     maxHeight: '88%',
     backgroundColor: c.paper,
-    borderTopLeftRadius: radius.md + 4,
-    borderTopRightRadius: radius.md + 4,
-    borderTopWidth: 1,
-    borderColor: c.hairline,
+    borderTopLeftRadius: radius.none,
+    borderTopRightRadius: radius.none,
+    borderTopWidth: 1.5,
+    borderColor: c.ink,
   },
   grab: { alignItems: 'center', paddingTop: space.sm, paddingBottom: space.sm, paddingHorizontal: space.gutter },
-  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: c.line },
+  handle: { width: 40, height: 5, borderRadius: 0, backgroundColor: c.accent, borderWidth: 1, borderColor: c.ink },
   title: { alignSelf: 'flex-start', marginTop: space.md },
   content: { paddingHorizontal: space.gutter, gap: space.md },
 }));

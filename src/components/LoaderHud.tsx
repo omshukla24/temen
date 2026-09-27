@@ -9,7 +9,7 @@ import Animated, {
 import type { Progress } from 'ground-memory';
 
 import { useT, type Key } from '@/i18n';
-import { makeStyles, motion, space, type as roles, useTheme } from '@/theme';
+import { font, makeStyles, motion, space, type as roles, useTheme } from '@/theme';
 
 import { HairlineProgress } from './HairlineProgress';
 import { T } from './T';
@@ -58,14 +58,17 @@ export function LoaderHud({ progress, done }: { progress: Progress | null; done:
   return (
     <View style={styles.root} accessibilityLiveRegion="polite" accessibilityLabel={`${word} ${Math.round(fraction * 100)} percent`}>
       <AText editable={false} caretHidden underlineColorAndroid="transparent" animatedProps={props} style={[roles.mono, styles.readout]} />
-      <HairlineProgress progress={bar} tint={c.laterite} />
+      <HairlineProgress progress={bar} tint={c.accentText} thick />
       <View style={styles.sources}>
         {SOURCES.map((s) => {
           const ok = done.includes(s.key);
           return (
-            <T key={s.key} kind="mono" color={ok ? c.ink : c.inkMuted} style={{ opacity: ok ? 1 : 0.55 }}>
-              {ok ? '■' : '□'} {s.label}
-            </T>
+            <View key={s.key} style={styles.source}>
+              <View style={[styles.box, ok && styles.boxOn]} />
+              <T kind="mono" color={ok ? c.ink : c.inkMuted} style={{ opacity: ok ? 1 : 0.6 }}>
+                {s.label}
+              </T>
+            </View>
           );
         })}
       </View>
@@ -75,6 +78,9 @@ export function LoaderHud({ progress, done }: { progress: Progress | null; done:
 
 const useStyles = makeStyles((c) => ({
   root: { gap: space.sm },
-  readout: { color: c.ink, fontSize: 13, letterSpacing: 13 * 0.24, padding: 0 },
-  sources: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md, rowGap: 2 },
+  readout: { color: c.ink, fontFamily: font.display, fontSize: 34, lineHeight: 38, letterSpacing: 1, padding: 0, textTransform: 'uppercase' },
+  sources: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md, rowGap: 4 },
+  source: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  box: { width: 8, height: 8, borderWidth: 1, borderColor: c.inkMuted },
+  boxOn: { backgroundColor: c.accent, borderColor: c.ink },
 }));

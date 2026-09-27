@@ -70,7 +70,7 @@ export function Segmented<V extends string>({
 }
 
 const useStyles = makeStyles((c) => ({
-  bar: { flexDirection: 'row', borderWidth: 1, borderColor: c.dark ? c.line : c.ink, borderRadius: radius.sm, minHeight: 40, overflow: 'hidden' },
+  bar: { flexDirection: 'row', borderWidth: 1.5, borderColor: c.ink, borderRadius: radius.none, minHeight: 42, overflow: 'hidden', backgroundColor: c.paper },
   block: { position: 'absolute', top: 0, bottom: 0, left: 0, backgroundColor: c.ink },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 40, paddingHorizontal: 4 },
   // small mono sets its own tracking

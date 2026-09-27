@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { TextInput, View, type TextInputProps } from 'react-native';
 
-import { font, makeStyles, radius, size, space, useTheme } from '@/theme';
+import { font, makeStyles, radius, size, space, stroke, useTheme } from '@/theme';
 
 import { Glyph, type GlyphName } from './Glyph';
 
@@ -17,8 +17,8 @@ export const Field = forwardRef<TextInput, TextInputProps & { glyph?: GlyphName 
       <TextInput
         ref={ref}
         placeholderTextColor={c.inkMuted}
-        selectionColor={c.lateriteText}
-        cursorColor={c.lateriteText}
+        selectionColor={c.accentText}
+        cursorColor={c.accentText}
         underlineColorAndroid="transparent"
         keyboardAppearance={c.dark ? 'dark' : 'light'}
         style={[styles.input, style]}
@@ -34,9 +34,9 @@ const useStyles = makeStyles((c) => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    borderWidth: 1,
-    borderColor: c.dark ? c.line : c.ink,
-    borderRadius: radius.sm,
+    borderWidth: stroke.frame,
+    borderColor: c.ink,
+    borderRadius: radius.none,
     paddingLeft: space.md,
     paddingRight: space.xs,
     minHeight: 52,

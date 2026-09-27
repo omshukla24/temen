@@ -42,8 +42,8 @@ export function IconButton({ glyph, label, onPress, tone = 'plain', color, size 
 }
 
 const useStyles = makeStyles((c) => ({
-  base: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  veil: { backgroundColor: c.veil, borderWidth: 1, borderColor: c.hairline },
+  base: { width: 44, height: 44, borderRadius: 2, alignItems: 'center', justifyContent: 'center' },
+  veil: { backgroundColor: c.veil, borderWidth: 1.5, borderColor: c.ink },
   solid: { backgroundColor: c.ink },
   center: { alignItems: 'center', justifyContent: 'center' },
   dot: { position: 'absolute', top: -2, right: -3, width: 7, height: 7, borderRadius: 4, backgroundColor: c.laterite, borderWidth: 1, borderColor: c.ground },

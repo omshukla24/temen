@@ -28,7 +28,7 @@ export interface CoreSliverProps {
 
 /**
  * One drilled place in a list: a thin sliver of its strata, the locality in the
- * serif with the town in mono beneath, the headline, and when it was cored.
+ * stencil with the town in mono beneath, the headline, and when it was cored.
  */
 export const CoreSliver = memo(function CoreSliver({ core, onPress, onLongPress, onMore, selecting = false, selected = false }: CoreSliverProps) {
   const { c } = useTheme();
@@ -59,7 +59,7 @@ export const CoreSliver = memo(function CoreSliver({ core, onPress, onLongPress,
               <T kind="title" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.title}>
                 {label.title}
               </T>
-              {core.saved ? <Glyph name="saved" size={14} color={c.lateriteText} /> : null}
+              {core.saved ? <Glyph name="saved" size={14} color={c.accentText} /> : null}
               <T kind="mono" numberOfLines={1} style={styles.small}>
                 {date}
               </T>
@@ -92,7 +92,7 @@ function CheckMark({ on }: { on: boolean }) {
     <Animated.View entering={FadeIn.duration(motion.dur.fade)} style={[styles.check, on && styles.checkOn]}>
       {on ? (
         <Animated.View entering={ZoomIn.duration(motion.dur.micro)}>
-          <Glyph name="check" size={14} color={c.onLaterite} weight={2.2} />
+          <Glyph name="check" size={14} color={c.onAccent} weight={2.2} />
         </Animated.View>
       ) : null}
     </Animated.View>
@@ -106,18 +106,18 @@ const useStyles = makeStyles((c) => ({
   inner: { flexDirection: 'row', alignItems: 'center', gap: space.lg, paddingRight: space.sm },
   text: { flex: 1, minWidth: 0, gap: 2 },
   top: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  title: { flex: 1, minWidth: 0, fontSize: 24, lineHeight: 29 },
+  title: { flex: 1, minWidth: 0, fontSize: 27, lineHeight: 30 },
   // small mono sets its own tracking (the role's is sized for 10.5 pt)
   small: { fontSize: 9.5, lineHeight: 14, letterSpacing: 1.4 },
   headline: { marginTop: 2 },
   check: {
     width: 26,
     height: 26,
-    borderRadius: 13,
+    borderRadius: 2,
     borderWidth: 1.5,
-    borderColor: c.dark ? c.inkMuted : c.ink,
+    borderColor: c.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkOn: { backgroundColor: c.laterite, borderColor: c.laterite },
+  checkOn: { backgroundColor: c.accent },
 }));

@@ -134,5 +134,7 @@
   "kit.shoot": "Take photo",
   "kit.stay": "Photos stay on this phone and go into the PDF report with their coordinates and time.",
   "stratum.hint": "Shows the numbers behind this reading",
-  "stratum.hintSealed": "Opens the unlock options"
+  "stratum.hintSealed": "Opens the unlock options",
+  "stratum.noReading": "No reading · pull to re-core",
+  "stratum.notModelled": "Not modelled here"
 }

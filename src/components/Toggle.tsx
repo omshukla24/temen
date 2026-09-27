@@ -15,7 +15,7 @@ const W = 46;
 const H = 28;
 const KNOB = 22;
 
-/** An on/off switch in the palette: laterite when on, a quiet line when off. */
+/** An on/off switch: survey yellow with an ink knob when on, a quiet line when off. */
 export function Toggle({ value, onValueChange, label, disabled }: { value: boolean; onValueChange: (v: boolean) => void; label: string; disabled?: boolean }) {
   const { c } = useTheme();
   const styles = useStyles();
@@ -25,9 +25,9 @@ export function Toggle({ value, onValueChange, label, disabled }: { value: boole
     p.value = reduced ? withTiming(value ? 1 : 0, { duration: 0 }) : withSpring(value ? 1 : 0, motion.spring.press);
   }, [value, reduced, p]);
   const off = c.line;
-  const on = c.laterite;
+  const on = c.accent;
   const track = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(p.value, [0, 1], [off, on]) }));
-  const knob = useAnimatedStyle(() => ({ transform: [{ translateX: 3 + p.value * (W - KNOB - 6) }] }));
+  const knob = useAnimatedStyle(() => ({ transform: [{ translateX: 3 + p.value * (W - KNOB - 3) }] }));
   return (
     <Pressable
       onPress={() => {
@@ -49,7 +49,7 @@ export function Toggle({ value, onValueChange, label, disabled }: { value: boole
 }
 
 const useStyles = makeStyles((c) => ({
-  track: { width: W, height: H, borderRadius: H / 2, justifyContent: 'center' },
-  knob: { width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: c.paper, borderWidth: 1, borderColor: c.hairline },
+  track: { width: W, height: H, borderRadius: 2, justifyContent: 'center', borderWidth: 1.5, borderColor: c.ink },
+  knob: { width: KNOB - 4, height: KNOB - 4, borderRadius: 1, backgroundColor: c.ink },
   disabled: { opacity: 0.45 },
 }));
