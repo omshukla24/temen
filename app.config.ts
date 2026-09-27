@@ -1,8 +1,8 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-// Design lock v3 (src/theme/palettes.ts): the app opens on aquifer in every light,
-// with the core and its levelling staff; survey yellow marks notifications.
-const AQUIFER = '#0C1719';
+// Design lock v4 (src/theme/palettes.ts): the app opens on cyanotype Prussian blue
+// in every light, with the core and its levelling staff; survey yellow marks notifications.
+const PRUSSIAN = '#133F70';
 const YELLOW = '#F2BE22';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
@@ -15,7 +15,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   scheme: 'temen',
   // The app themes itself (dawn/day/dusk/night); 'automatic' lets Settings → System follow the phone.
   userInterfaceStyle: 'automatic',
-  backgroundColor: AQUIFER,
+  backgroundColor: PRUSSIAN,
   ios: {
     bundleIdentifier: 'com.urizen.temen',
     supportsTablet: false,
@@ -24,7 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: 'com.urizen.temen',
     versionCode: 2,
     adaptiveIcon: {
-      backgroundColor: AQUIFER,
+      backgroundColor: PRUSSIAN,
       foregroundImage: './assets/images/android-icon-foreground.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
@@ -36,10 +36,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        backgroundColor: AQUIFER,
+        backgroundColor: PRUSSIAN,
         image: './assets/images/splash-icon.png',
         imageWidth: 200,
-        dark: { backgroundColor: AQUIFER, image: './assets/images/splash-icon.png' },
+        dark: { backgroundColor: PRUSSIAN, image: './assets/images/splash-icon.png' },
       },
     ],
     '@maplibre/maplibre-react-native',
