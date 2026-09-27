@@ -7,13 +7,17 @@
   "onboard.p2Title": "दस्तख़त से पहले जाँचें।",
   "onboard.p2Body": "अपना GPS इस्तेमाल करें, जगह खोजें, या WhatsApp पिन शेयर करें।",
   "onboard.p3Body": "हर रीडिंग अपना स्रोत, अपने साल और जो वह नहीं देख सकती, बताती है।",
-  "onboard.locTitle": "जहाँ खड़े हैं, वहाँ की ज़मीन जाँचें।",
-  "onboard.locBody": "Temen आपकी लोकेशन तभी पढ़ता है जब आप कहते हैं।",
-  "onboard.locAllow": "लोकेशन की अनुमति दें",
+  "onboard.locTitle": "पहले कहाँ कोर करें?",
+  "onboard.locBody": "Temen अपने आप कभी कोर नहीं करता। जहाँ खड़े हैं वहाँ से शुरू करें, मैप पर पिन लगाएँ, या कोई जगह खोजें।",
   "onboard.locLater": "अभी नहीं",
   "onboard.page": "पेज {n} / {total}",
   "onboard.bandWater": "पानी",
   "onboard.bandGround": "ज़मीन",
   "onboard.bandRain": "बारिश",
-  "onboard.p3Title": "अपनी सीमाओं के बारे में ईमानदार।"
+  "onboard.p3Title": "अपनी सीमाओं के बारे में ईमानदार।",
+  "onboard.startGps": "जहाँ खड़ा हूँ, वहाँ कोर करें",
+  "onboard.startPin": "पिन लगाएँ",
+  "onboard.startSearch": "खोजें",
+  "onboard.startDenied": "लोकेशन बंद है। पिन लगाएँ या खोजें।",
+  "onboard.startSlow": "अभी GPS नहीं मिला। बाहर जाएँ, या पिन लगाएँ या खोजें।"
 }
