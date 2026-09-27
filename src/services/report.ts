@@ -14,9 +14,9 @@ import type { SiteKit } from './sitekit';
 /* eslint-disable @typescript-eslint/no-require-imports */
 const FONTS = {
   stencil: require('@expo-google-fonts/big-shoulders-stencil/800ExtraBold/BigShouldersStencil_800ExtraBold.ttf'),
-  stencilAlt: require('@expo-google-fonts/big-shoulders-stencil/600SemiBold/BigShouldersStencil_600SemiBold.ttf'),
   body: require('@expo-google-fonts/geologica/400Regular/Geologica_400Regular.ttf'),
   bodySemi: require('@expo-google-fonts/geologica/600SemiBold/Geologica_600SemiBold.ttf'),
+  bodyBold: require('@expo-google-fonts/geologica/700Bold/Geologica_700Bold.ttf'),
   mono: require('@expo-google-fonts/martian-mono/400Regular/MartianMono_400Regular.ttf'),
 };
 /* eslint-enable @typescript-eslint/no-require-imports */
@@ -24,9 +24,9 @@ const FONTS = {
 async function fontFaces(): Promise<string> {
   const faces: [string, number, number | string, 'normal' | 'italic'][] = [
     ['Stencil', FONTS.stencil, 800, 'normal'],
-    ['Stencil', FONTS.stencilAlt, 600, 'normal'],
     ['Body', FONTS.body, 400, 'normal'],
     ['Body', FONTS.bodySemi, 600, 'normal'],
+    ['Body', FONTS.bodyBold, 700, 'normal'],
     ['Mono', FONTS.mono, 400, 'normal'],
   ];
   const css: string[] = [];
