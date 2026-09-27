@@ -3,7 +3,7 @@ import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshControl, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Linking, RefreshControl, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Extrapolation,
   FadeIn,
@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatHemisphere, formatMetres } from 'ground-memory';
 
+import { ActionChips, type ActionChip } from '@/components/ActionChips';
 import { Button } from '@/components/Button';
 import { Glyph, type GlyphName } from '@/components/Glyph';
 import { Hairline } from '@/components/Hairline';
@@ -33,11 +34,12 @@ import { Sheet } from '@/components/Sheet';
 import { CantSeeBand, StratumBand } from '@/components/Stratum';
 import { T } from '@/components/T';
 import { toast } from '@/components/Toast';
+import { useShareCard } from '@/features/card/useShareCard';
 import { spokenText, useSpeech } from '@/features/check/speech';
 import { useCheck } from '@/features/check/useCheck';
 import { useContours, useWaterMask } from '@/features/check/useGroundLayers';
 import { placeLabel } from '@/features/placeLabel';
-import { mapsLink, shareMessage } from '@/features/places/share';
+import { directionsLink, mapsLink, shareMessage } from '@/features/places/share';
 import { useT } from '@/i18n';
 import { MAP_ATTRIBUTION } from '@/services/map';
 import { CorePull } from '@/setpieces/corepull/CorePull';
@@ -78,6 +80,7 @@ function Check({ params }: { params: CheckParams }) {
   const cores = useCores();
   const saved = !!report && cores.find((x) => x.id === report.id)?.saved;
   const voice = useSpeech(report?.id ?? null);
+  const card = useShareCard();
 
   const headerH = insets.top + 64;
   // the map is the top of the page: it scrolls away with the core, receding a little slower than the text
@@ -110,6 +113,7 @@ function Check({ params }: { params: CheckParams }) {
   const [sealUp, setSealUp] = useState(false);
   const [menu, setMenu] = useState(false);
   const [sources, setSources] = useState(false);
+  const [asking, setAsking] = useState(false);
   const pulling = check.phase === 'done' && !pulled && (risen || !mask) && !reduced;
   const share = useMemo(() => (mask ? centreShare(mask) : { pct: 0, gone: false }), [mask]);
 
@@ -202,6 +206,7 @@ function Check({ params }: { params: CheckParams }) {
     { key: 'tm', glyph: 'clock', label: t('check.timeMachine'), onPress: () => router.push({ pathname: '/timelapse/[id]', params: { id: report?.id ?? 'new', lat: String(lat), lon: String(lon) } }) },
     { key: 'kit', glyph: 'camera', label: t('check.siteKit'), onPress: () => report && router.push({ pathname: '/site-kit/[id]', params: { id: report.id } }) },
     { key: 'pdf', glyph: 'report', label: t('check.report'), locked: !full, onPress: () => (full ? report && router.push({ pathname: '/report/[id]', params: { id: report.id } }) : openPaywall()) },
+    { key: 'card', glyph: 'card', label: t('places.share'), onPress: () => report && card.share(report.id) },
     { key: 'save', glyph: saved ? 'saved' : 'save', label: saved ? t('check.saved') : t('check.save'), on: !!saved, onPress: onSave },
   ];
 
@@ -213,6 +218,44 @@ function Check({ params }: { params: CheckParams }) {
     } catch {
       toast(t('places.shareFail'));
     }
+  };
+  const copyCoords = async () => {
+    setMenu(false);
+    await Clipboard.setStringAsync(`${lat.toFixed(6)}, ${lon.toFixed(6)}`);
+    toast(t('check.copied'), 'check');
+  };
+  const openMaps = () => {
+    setMenu(false);
+    WebBrowser.openBrowserAsync(mapsLink(lat, lon));
+  };
+  const directions = () => {
+    setMenu(false);
+    Linking.openURL(directionsLink(lat, lon)).catch(() => WebBrowser.openBrowserAsync(directionsLink(lat, lon)));
+  };
+  const compareWith = () => report && router.navigate({ pathname: '/places', params: { pick: report.id } });
+
+  // Everything you can do with this core, in view under its headline.
+  const quick: ActionChip[] = report
+    ? [
+        { key: 'card', glyph: 'card', label: t('card.shareShort'), primary: true, busy: card.busy, onPress: () => card.share(report.id) },
+        { key: 'text', glyph: 'share', label: t('check.shareText'), onPress: shareCore },
+        { key: 'copy', glyph: 'paste', label: t('check.copy'), onPress: copyCoords },
+        { key: 'maps', glyph: 'globe', label: t('check.maps'), onPress: openMaps },
+        { key: 'dir', glyph: 'directions', label: t('check.directions'), onPress: directions },
+        { key: 'recore', glyph: 'refresh', label: t('check.recore'), onPress: check.recore },
+        { key: 'compare', glyph: 'tray', label: t('places.compare'), onPress: compareWith },
+        { key: 'delete', glyph: 'trash', label: t('check.delete'), danger: true, onPress: () => setAsking(true) },
+      ]
+    : [];
+  const deleteCore = () => {
+    if (!report) return;
+    setAsking(false);
+    voice.stop();
+    reports.remove(report.id);
+    toast(t('places.deletedToast'), 'trash');
+    haptic.warn();
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
   };
 
   const realGround = !!(contours && contours.length);
@@ -328,6 +371,10 @@ function Check({ params }: { params: CheckParams }) {
                   </T>
                 </Animated.View>
 
+                <Animated.View entering={FadeInDown.delay(motion.stagger).duration(motion.dur.ui)}>
+                  <ActionChips items={quick} bleed={space.gutter} />
+                </Animated.View>
+
                 {report.flags.relief ? (
                   <View style={styles.relief}>
                     <Glyph name="wave" color={c.onLaterite} size={18} />
@@ -430,29 +477,23 @@ function Check({ params }: { params: CheckParams }) {
       {/* ⋯ : everything that isn't the reading itself */}
       <Sheet visible={menu} onClose={() => setMenu(false)} title={label.title}>
         <View>
-          <ListRow glyph="share" title={t('places.share')} chevron={false} onPress={shareCore} />
-          <Hairline />
           <ListRow
-            glyph="paste"
-            title={t('check.copyCoords')}
-            subtitle={formatHemisphere(lat, lon, 6)}
-            chevron={false}
-            onPress={async () => {
-              await Clipboard.setStringAsync(`${lat.toFixed(6)}, ${lon.toFixed(6)}`);
-              setMenu(false);
-              toast(t('check.copied'), 'check');
-            }}
-          />
-          <Hairline />
-          <ListRow
-            glyph="globe"
-            title={t('check.openMaps')}
+            glyph="card"
+            title={t('card.share')}
             chevron={false}
             onPress={() => {
               setMenu(false);
-              WebBrowser.openBrowserAsync(mapsLink(lat, lon));
+              if (report) card.share(report.id);
             }}
           />
+          <Hairline />
+          <ListRow glyph="share" title={t('check.shareTextLong')} chevron={false} onPress={shareCore} />
+          <Hairline />
+          <ListRow glyph="paste" title={t('check.copyCoords')} subtitle={formatHemisphere(lat, lon, 6)} chevron={false} onPress={copyCoords} />
+          <Hairline />
+          <ListRow glyph="globe" title={t('check.openMaps')} chevron={false} onPress={openMaps} />
+          <Hairline />
+          <ListRow glyph="directions" title={t('check.getDirections')} chevron={false} onPress={directions} />
           <Hairline />
           <ListRow
             glyph="refresh"
@@ -472,6 +513,26 @@ function Check({ params }: { params: CheckParams }) {
               setTimeout(() => setSources(true), motion.dur.exit + 40);
             }}
           />
+          <Hairline />
+          <ListRow
+            glyph="trash"
+            title={t('check.deleteThis')}
+            tone="danger"
+            chevron={false}
+            onPress={() => {
+              setMenu(false);
+              setTimeout(() => setAsking(true), motion.dur.exit + 40);
+            }}
+          />
+        </View>
+      </Sheet>
+
+      <Sheet visible={asking} onClose={() => setAsking(false)}>
+        <View style={styles.gapMd}>
+          <T kind="title">{t('check.deleteAsk')}</T>
+          <T kind="small">{t('places.deleteBody')}</T>
+          <Button label={t('places.deleteYes')} variant="danger" glyph="trash" onPress={deleteCore} />
+          <Button label={t('common.cancel')} variant="quiet" onPress={() => setAsking(false)} />
         </View>
       </Sheet>
 

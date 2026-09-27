@@ -12,5 +12,15 @@
   "card.making": "Drawing the card…",
   "card.dialog": "Send this card",
   "card.fail": "Couldn't make the card. Try again.",
-  "card.missing": "This core isn't on this phone any more."
+  "card.missing": "This core isn't on this phone any more.",
+  "check.shareText": "Text",
+  "check.copy": "Copy",
+  "check.maps": "Maps",
+  "check.directions": "Directions",
+  "check.getDirections": "Directions to this spot",
+  "check.compareWith": "Compare with…",
+  "check.delete": "Delete",
+  "check.deleteThis": "Delete this check",
+  "check.deleteAsk": "Delete this check?",
+  "check.shareTextLong": "Share as text"
 }

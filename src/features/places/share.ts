@@ -5,6 +5,11 @@ export function mapsLink(lat: number, lon: number): string {
   return `https://maps.google.com/?q=${lat.toFixed(6)},${lon.toFixed(6)}`;
 }
 
+/** Google Maps directions to the spot (Maps URLs, `api=1`): opens the Maps app when it's installed. */
+export function directionsLink(lat: number, lon: number): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat.toFixed(6)},${lon.toFixed(6)}`;
+}
+
 /**
  * The text a shared core carries: where it is, what the ground remembers,
  * the coordinates and a link that opens the spot.
