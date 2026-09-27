@@ -88,7 +88,9 @@ const fail = (e: unknown, fallback: string): AuthResult => ({
 /** Step 1 of email sign-in: the server mails a one-time code. */
 export async function sendEmailCode(email: string): Promise<AuthResult> {
   if (!supabase) return { ok: false, message: 'Accounts are not set up in this build.' };
-  const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
+  // The email carries a code ({{ .Token }}) and, with the default template, a link;
+  // the link comes back to temen://auth-callback on this phone and signs in too.
+  const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true, emailRedirectTo: AUTH_REDIRECT } });
   return error ? fail(error, 'Could not send the code.') : { ok: true };
 }
 

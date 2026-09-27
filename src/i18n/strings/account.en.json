@@ -31,7 +31,7 @@
   "signin.sendCode": "Email me a code",
   "signin.badEmail": "That doesn't look like an email address.",
   "signin.codeTitle": "Enter the code",
-  "signin.codeSent": "We sent a code to {email}. It may take a minute; check spam too.",
+  "signin.codeSent": "We emailed {email}. Type the code, or open the email on this phone and tap the link. It may take a minute; check spam too.",
   "signin.codeLabel": "Sign-in code",
   "signin.verify": "Sign in",
   "signin.resend": "Send a new code",

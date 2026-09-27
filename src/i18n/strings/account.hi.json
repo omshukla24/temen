@@ -31,7 +31,7 @@
   "signin.sendCode": "मुझे कोड ईमेल करें",
   "signin.badEmail": "यह ईमेल पता नहीं लगता।",
   "signin.codeTitle": "कोड डालें",
-  "signin.codeSent": "हमने {email} पर कोड भेजा है। एक मिनट लग सकता है; स्पैम भी देखें।",
+  "signin.codeSent": "हमने {email} पर ईमेल भेजा है। कोड डालें, या इसी फ़ोन पर ईमेल खोलकर लिंक दबाएँ। एक मिनट लग सकता है; स्पैम भी देखें।",
   "signin.codeLabel": "साइन-इन कोड",
   "signin.verify": "साइन इन",
   "signin.resend": "नया कोड भेजें",
