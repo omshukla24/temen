@@ -61,6 +61,9 @@ async function cached<T>(cache: ReadingCache | undefined, key: string, ttl: numb
   return value;
 }
 
+/** Floor for the tile-based readings (water, water edge, ground). */
+export const TILE_TIMEOUT_MS = 15000;
+
 /**
  * Drills one core: every source in parallel, each with its own timeout, so one
  * slow API never blocks the rest. A failed source becomes an error stratum.
@@ -68,15 +71,18 @@ async function cached<T>(cache: ReadingCache | undefined, key: string, ttl: numb
 export async function checkGround(at: LatLon, deps: Deps, opts: CheckOptions = {}): Promise<GroundReport> {
   const { lat, lon } = at;
   const t = deps.timeoutMs ?? 8000;
+  // Tile readings fetch up to nine 256 px PNGs while the map loads the same
+  // tiles; on mobile data 8 s is too tight for them.
+  const tt = Math.max(t, TILE_TIMEOUT_MS);
   const tiles = opts.tileCache ?? new TileCache();
   const rc = opts.readingCache;
   const now = deps.now();
   const headers = deps.userAgent ? { 'User-Agent': deps.userAgent } : undefined;
 
   const jobs = {
-    water: () => settle(() => sampleWindow(lat, lon, deps.fetchTile, 4, tiles), t, 'Water'),
-    edge: () => settle(() => waterEdgeDistance(lat, lon, deps.fetchTile, 600, tiles), t, 'Water edge'),
-    bowl: () => settle(() => bowlCheck(lat, lon, deps.fetchTile, 400, 16, tiles), t, 'Ground'),
+    water: () => settle(() => sampleWindow(lat, lon, deps.fetchTile, 4, tiles), tt, 'Water'),
+    edge: () => settle(() => waterEdgeDistance(lat, lon, deps.fetchTile, 600, tiles), tt, 'Water edge'),
+    bowl: () => settle(() => bowlCheck(lat, lon, deps.fetchTile, 400, 16, tiles), tt, 'Ground'),
     // 45 years of daily rain is a big response; give it more room.
     rain: () =>
       settle(
