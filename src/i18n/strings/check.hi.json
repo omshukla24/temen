@@ -12,5 +12,15 @@
   "card.making": "कार्ड बन रहा है…",
   "card.dialog": "यह कार्ड भेजें",
   "card.fail": "कार्ड नहीं बन सका। फिर कोशिश करें।",
-  "card.missing": "यह कोर अब इस फ़ोन पर नहीं है।"
+  "card.missing": "यह कोर अब इस फ़ोन पर नहीं है।",
+  "check.shareText": "टेक्स्ट",
+  "check.copy": "कॉपी",
+  "check.maps": "मैप्स",
+  "check.directions": "रास्ता",
+  "check.getDirections": "इस जगह तक का रास्ता",
+  "check.compareWith": "तुलना करें…",
+  "check.delete": "हटाएँ",
+  "check.deleteThis": "यह जाँच हटाएँ",
+  "check.deleteAsk": "यह जाँच हटाएँ?",
+  "check.shareTextLong": "टेक्स्ट के रूप में भेजें"
 }

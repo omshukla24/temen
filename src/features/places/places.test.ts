@@ -2,7 +2,7 @@ import type { CoreSummary } from '@/state/reports';
 
 import { ago } from './ago';
 import { matches, normalise, visibleCores } from './filter';
-import { mapsLink, shareMessage } from './share';
+import { directionsLink, mapsLink, shareMessage } from './share';
 
 function core(id: string, over: Partial<CoreSummary> = {}): CoreSummary {
   return {
@@ -88,6 +88,10 @@ describe('places filter', () => {
 describe('share', () => {
   it('links the spot to 6 decimals', () => {
     expect(mapsLink(12.9442, 80.2292)).toBe('https://maps.google.com/?q=12.944200,80.229200');
+  });
+
+  it('asks Google Maps for directions to the spot', () => {
+    expect(directionsLink(28.486083, 77.512026)).toBe('https://www.google.com/maps/dir/?api=1&destination=28.486083,77.512026');
   });
 
   it('carries the place, headline, coordinates and link', () => {
