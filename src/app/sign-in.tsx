@@ -15,7 +15,8 @@ import { sendEmailCode, signInWithGoogle, useAccount, verifyEmailCode } from '@/
 import { cleanCode, isCode, isEmail } from '@/state/syncRules';
 import { haptic, makeStyles, motion, space, useTheme } from '@/theme';
 
-const RESEND_S = 45;
+// matches Supabase → SMTP Settings → Minimum interval per user
+const RESEND_S = 60;
 
 /** Sign in with Google or a one-time email code. Optional: everything works signed out. */
 export default function SignIn() {
