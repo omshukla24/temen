@@ -19,8 +19,26 @@ export interface ForecastReading {
   next24hMm: number;
   peakHourMm: number;
   heavy: boolean;
-  hourly: { time: string; mm: number }[];
+  /** Each forecast step in the window: `hours` is 1 near term, 6 further out (its mm cover all six). */
+  hourly: { time: string; mm: number; hours: 1 | 6 }[];
   updatedAt: string | null;
+}
+
+/**
+ * The next 24 h as 24 hourly amounts for a rain strip: six-hour blocks are
+ * spread evenly over their hours. Hour 0 starts at `now`.
+ */
+export function hourlyStrip(f: ForecastReading, now: Date): number[] {
+  const out = new Array<number>(24).fill(0);
+  const start = now.getTime();
+  for (const step of f.hourly) {
+    const t = Date.parse(step.time);
+    for (let k = 0; k < step.hours; k++) {
+      const i = Math.floor((t + k * 3600000 - start) / 3600000);
+      if (i >= 0 && i < 24) out[i] += step.mm / step.hours;
+    }
+  }
+  return out.map((x) => Math.round(x * 100) / 100);
 }
 
 /**
@@ -35,7 +53,7 @@ export function parseForecast(json: unknown, now: Date): ForecastReading {
   let covered = start - 3600 * 1000; // allow the step that is already running
   let total = 0;
   let peak = 0;
-  const hourly: { time: string; mm: number }[] = [];
+  const hourly: ForecastReading['hourly'] = [];
   for (const step of ts) {
     const time = get(step, 'time');
     if (typeof time !== 'string') continue;
@@ -46,14 +64,14 @@ export function parseForecast(json: unknown, now: Date): ForecastReading {
     if (typeof one === 'number') {
       total += one;
       peak = Math.max(peak, one);
-      hourly.push({ time, mm: one });
+      hourly.push({ time, mm: one, hours: 1 });
       covered = t + 3600 * 1000;
     } else if (typeof six === 'number') {
       // clip the last block to the 24 h window
       const hours = Math.min(6, (end - t) / 3600000);
       total += six * (hours / 6);
       peak = Math.max(peak, six / 6);
-      hourly.push({ time, mm: six });
+      hourly.push({ time, mm: six, hours: 6 });
       covered = t + 6 * 3600 * 1000;
     }
   }
