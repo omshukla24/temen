@@ -9,6 +9,8 @@ import {
   TextAlign,
   vec,
   type SkParagraph,
+  type SkParagraphStyle,
+  type SkTextStyle,
   type SkTypefaceFontProvider,
 } from '@shopify/react-native-skia';
 import type { ReactElement } from 'react';
@@ -52,17 +54,13 @@ interface Style {
 }
 
 function para(fonts: SkTypefaceFontProvider, text: string, width: number, s: Style): SkParagraph {
-  const b = Skia.ParagraphBuilder.Make(
-    { maxLines: s.maxLines, ellipsis: s.maxLines ? '…' : undefined, textAlign: s.align === 'right' ? TextAlign.Right : TextAlign.Left },
-    fonts,
-  );
-  b.pushStyle({
-    fontFamilies: [CARD_FONTS[s.family]],
-    fontSize: s.size,
-    color: Skia.Color(s.color),
-    letterSpacing: (s.track ?? 0) * s.size,
-    heightMultiplier: s.lh,
-  });
+  // Native Skia reads every key it is given, so optional ones are left out rather than set to undefined.
+  const style: SkParagraphStyle = { textAlign: s.align === 'right' ? TextAlign.Right : TextAlign.Left };
+  if (s.maxLines) Object.assign(style, { maxLines: s.maxLines, ellipsis: '…' });
+  const ts: SkTextStyle = { fontFamilies: [CARD_FONTS[s.family]], fontSize: s.size, color: Skia.Color(s.color), letterSpacing: (s.track ?? 0) * s.size };
+  if (s.lh) ts.heightMultiplier = s.lh;
+  const b = Skia.ParagraphBuilder.Make(style, fonts);
+  b.pushStyle(ts);
   b.addText(text);
   b.pop();
   const p = b.build();

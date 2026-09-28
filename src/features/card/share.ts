@@ -1,4 +1,4 @@
-import { drawAsImage, ImageFormat, loadData, Skia, type SkTypefaceFontProvider } from '@shopify/react-native-skia';
+import { drawAsImageFromPicture, drawAsPicture, ImageFormat, loadData, Skia, type SkTypefaceFontProvider } from '@shopify/react-native-skia';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
@@ -46,7 +46,9 @@ export async function shareCard(
   opts: { full: boolean; freeStrata: number; translate?: (s: string) => string; dialogTitle?: string },
 ): Promise<void> {
   const provider = await cardFonts();
-  const image = await drawAsImage(cardElement(cardModel(report, trail, opts), provider), CARD);
+  // recorded with explicit bounds, then drawn at the card's size
+  const picture = await drawAsPicture(cardElement(cardModel(report, trail, opts), provider), { x: 0, y: 0, ...CARD });
+  const image = drawAsImageFromPicture(picture, CARD);
   if (!image) throw new Error('Could not draw the card');
   const bytes = image.encodeToBytes(ImageFormat.PNG, 100);
   const place = (report.placeName ?? 'core').replace(/[^\w-]+/g, '-').replace(/-+/g, '-').slice(0, 40);
