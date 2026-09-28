@@ -62,6 +62,23 @@ jest.mock('expo-location', () => ({
   reverseGeocodeAsync: async () => [],
   Accuracy: { Balanced: 3, High: 4 },
 }));
+jest.mock('expo-notifications', () => ({
+  setNotificationHandler: jest.fn(),
+  setNotificationChannelAsync: jest.fn(),
+  getPermissionsAsync: async () => ({ granted: true }),
+  requestPermissionsAsync: async () => ({ granted: true }),
+  scheduleNotificationAsync: jest.fn(),
+  AndroidImportance: { HIGH: 4 },
+}));
+jest.mock('expo-task-manager', () => ({
+  defineTask: jest.fn(),
+  isTaskRegisteredAsync: async () => false,
+}));
+jest.mock('expo-background-task', () => ({
+  registerTaskAsync: async () => {},
+  unregisterTaskAsync: async () => {},
+  BackgroundTaskResult: { Success: 1, Failed: 2 },
+}));
 jest.mock('react-native-purchases', () => ({ __esModule: true, default: { configure: jest.fn(), getOfferings: async () => ({ current: null }), getCustomerInfo: async () => ({ entitlements: { active: {} }, nonSubscriptionTransactions: [] }), addCustomerInfoUpdateListener: jest.fn(), setLogLevel: jest.fn() }, LOG_LEVEL: {} }));
 jest.mock('react-native-purchases-ui', () => ({ __esModule: true, default: {} }));
 jest.mock('react-native-purchases-store-galaxy', () => ({ GALAXY_BILLING_MODE: {} }));
