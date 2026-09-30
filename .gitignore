@@ -45,9 +45,3 @@ coverage/
 Thumbs.db
 .idea/
 .vscode/
-
-# local tooling and notes
-CLAUDE.md
-AGENTS.md
-.claude/
-handoff/
