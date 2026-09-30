@@ -140,7 +140,13 @@ function parseUrl(raw: string): ParsedLocation | null {
     const q = parsed.searchParams.get('q') ?? parsed.searchParams.get('query');
     if (q && /maps|geo/i.test(parsed.hostname + parsed.pathname)) return { kind: 'query', text: safeDecode(q) };
     const placeName = parsed.pathname.match(/\/maps\/(?:place|search)\/([^/@]+)/);
-    if (placeName) return { kind: 'query', text: safeDecode(placeName[1]) };
+    if (placeName) {
+      // a shared dropped pin resolves to /maps/search/LAT,+LON: that is the pin, not a name
+      const pr = pairIn(placeName[1]);
+      const pin = pr && point(pr.lat, pr.lon, 'google-search');
+      if (pin) return pin;
+      return { kind: 'query', text: safeDecode(placeName[1]) };
+    }
   }
   return null;
 }

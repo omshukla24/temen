@@ -36,6 +36,13 @@ describe('parseLocation', () => {
     expect(pt('https://www.google.com/maps/dir/?api=1&destination=17.4239%2C78.4738').lat).toBeCloseTo(17.4239, 6);
   });
 
+  it('reads the pin a shared dropped-pin link resolves to', () => {
+    const p = pt('https://www.google.com/maps/search/12.952870,+80.207060?entry=tts&g_ep=EgoyMDI2MDkyOC4wIKXMDSoASAFQAw%3D%3D');
+    expect(p.lat).toBeCloseTo(12.95287, 6);
+    expect(p.lon).toBeCloseTo(80.20706, 6);
+    expect(pt('https://www.google.com/maps/search/-33.8568,151.2153').lon).toBeCloseTo(151.2153, 6);
+  });
+
   it('reads geo: URIs, including the q= form with a label', () => {
     expect(pt('geo:12.9442,80.2292').lat).toBeCloseTo(12.9442, 6);
     expect(pt('geo:12.9442,80.2292;u=35?z=17').lon).toBeCloseTo(80.2292, 6);
