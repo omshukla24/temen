@@ -4,6 +4,7 @@ import {
   TERRARIUM_ZOOM,
   TileCache,
   lonLatToGlobalPx,
+  lonLatToGlobalPxNear,
   metersPerPixel,
   readRegion,
   type Region,
@@ -46,13 +47,15 @@ function sample(region: Region, gx: number, gy: number): number {
   return h00 * (1 - tx) * (1 - ty) + h10 * tx * (1 - ty) + h01 * (1 - tx) * ty + h11 * tx * ty;
 }
 
+/** Pixel rectangle around the points, kept continuous across ±180° next to the first one. */
 function boundsRegion(points: { lat: number; lon: number }[], z: number) {
+  const anchor = lonLatToGlobalPx(points[0].lat, points[0].lon, z).gx;
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
   for (const p of points) {
-    const { gx, gy } = lonLatToGlobalPx(p.lat, p.lon, z);
+    const { gx, gy } = lonLatToGlobalPxNear(p.lat, p.lon, z, anchor);
     minX = Math.min(minX, gx);
     minY = Math.min(minY, gy);
     maxX = Math.max(maxX, gx);
@@ -115,8 +118,9 @@ export async function bowlCheck(
   const ringPts = Array.from({ length: n }, (_, i) => destination({ lat, lon }, (360 / n) * i, ringM));
   const b = boundsRegion([{ lat, lon }, ...ringPts], z);
   const region = await readRegion({ template: TERRARIUM_URL, z, ...b }, fetchTile, cache);
+  const pinGx = lonLatToGlobalPx(lat, lon, z).gx;
   const at = (p: { lat: number; lon: number }) => {
-    const { gx, gy } = lonLatToGlobalPx(p.lat, p.lon, z);
+    const { gx, gy } = lonLatToGlobalPxNear(p.lat, p.lon, z, pinGx);
     return sample(region, gx, gy);
   };
   const elevationM = at({ lat, lon });

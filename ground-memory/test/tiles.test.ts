@@ -2,6 +2,7 @@ import {
   TileCache,
   globalPxToLonLat,
   lonLatToGlobalPx,
+  lonLatToGlobalPxNear,
   lonLatToTile,
   metersPerPixel,
   readRegion,
@@ -64,6 +65,13 @@ describe('readRegion', () => {
     expect(region.rgba[(3 * 4 + 0) * 4 + 3]).toBe(0); // bottom rows: tile 0/1 missing → transparent
     expect(region.missingTiles).toBe(2);
     expect(seen.sort()).toEqual(['t/1/0/1', 't/1/1/1']);
+  });
+
+  it('keeps points either side of ±180° next to each other', () => {
+    // z1: the world is 512 px wide
+    expect(lonLatToGlobalPxNear(0, -179.9, 1, 511.9).gx).toBeCloseTo(512 + (0.1 / 360) * 512, 9);
+    expect(lonLatToGlobalPxNear(0, 179.9, 1, 0.1).gx).toBeCloseTo(-(0.1 / 360) * 512, 9);
+    expect(lonLatToGlobalPxNear(10, 80, 1, 300).gx).toBeCloseTo(lonLatToGlobalPx(10, 80, 1).gx, 9);
   });
 
   it('wraps x across the antimeridian', async () => {

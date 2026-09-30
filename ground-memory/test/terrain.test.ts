@@ -1,5 +1,6 @@
 import { fixtureFetchTile } from './fixture-fetch';
 import { bowlCheck, bowlHeadline, decodeTerrarium, elevationAt, elevationGrid, formatMetres } from '../src/terrain';
+import { TERRARIUM_URL, TERRARIUM_ZOOM, TileCache, lonLatToTile, tileUrl } from '../src/tiles';
 
 describe('terrarium decoding', () => {
   it('decodes sea level and a known height', () => {
@@ -18,6 +19,33 @@ describe('bowlCheck', () => {
     expect(b.ringMedianM).toBeGreaterThan(1);
     expect(b.depthM).toBeGreaterThanOrEqual(1.5);
     expect(bowlHeadline(b).headline).toBe('Sits in a bowl');
+  });
+
+  it('reads a ring that crosses the date line from the tiles either side of it', async () => {
+    // Wrangel Island, ~360 m west of 180°: the eastern ring points fall in tile x = 0
+    const [lat, lon, z] = [71.2, 179.99, TERRARIUM_ZOOM];
+    const last = 2 ** z - 1;
+    const { y } = lonLatToTile(lat, lon, z);
+    const flat = (m: number) => {
+      const v = m + 32768; // terrarium: R·256 + G − 32768
+      const rgba = new Uint8Array(256 * 256 * 4);
+      for (let i = 0; i < rgba.length; i += 4) rgba.set([v >> 8, v & 255, 0, 255], i);
+      return { w: 256, h: 256, rgba };
+    };
+    const cache = new TileCache(64);
+    for (const ty of [y - 1, y, y + 1]) {
+      await cache.get(tileUrl(TERRARIUM_URL, z, last, ty), async () => flat(5));
+      await cache.get(tileUrl(TERRARIUM_URL, z, 0, ty), async () => flat(20));
+    }
+    const fetchTile = jest.fn(async (url: string): Promise<ArrayBuffer | null> => {
+      throw new Error(`asked for a tile off the ring: ${url}`);
+    });
+    const b = await bowlCheck(lat, lon, fetchTile, 400, 16, cache);
+    expect(fetchTile).not.toHaveBeenCalled();
+    expect(b.elevationM).toBe(5);
+    expect(b.ringCount).toBe(16);
+    expect(Math.max(...b.ring)).toBe(20); // east of 180°
+    expect(Math.min(...b.ring)).toBe(5); // west of it
   });
 
   it('reads a hilltop as a rise', async () => {

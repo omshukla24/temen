@@ -29,6 +29,17 @@ export function lonLatToGlobalPx(lat: number, lon: number, z: number): { gx: num
   return { gx, gy };
 }
 
+/**
+ * lonLatToGlobalPx with x moved by whole worlds to lie within half a world of
+ * `nearGx`, so points either side of ±180° share one continuous rectangle
+ * (readRegion wraps it back onto real tiles).
+ */
+export function lonLatToGlobalPxNear(lat: number, lon: number, z: number, nearGx: number): { gx: number; gy: number } {
+  const { gx, gy } = lonLatToGlobalPx(lat, lon, z);
+  const world = TILE_SIZE * 2 ** z;
+  return { gx: gx - Math.round((gx - nearGx) / world) * world, gy };
+}
+
 export function globalPxToLonLat(gx: number, gy: number, z: number): { lat: number; lon: number } {
   const n = TILE_SIZE * 2 ** z;
   const lon = (gx / n) * 360 - 180;
