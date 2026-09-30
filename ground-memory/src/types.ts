@@ -44,7 +44,8 @@ export type StratumKey =
   | 'cantSee'
   | 'egg';
 
-export type StratumStatus = 'ok' | 'error' | 'empty';
+/** pending: a slow source still on its way; a later report fills it in. */
+export type StratumStatus = 'ok' | 'error' | 'empty' | 'pending';
 
 /** Each stratum type has its own hatch in the Core. */
 export type Hatch = 'water' | 'lostWater' | 'ground' | 'rain' | 'quakes' | 'soil' | 'cantSee' | 'egg';

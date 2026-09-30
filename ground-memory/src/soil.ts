@@ -40,6 +40,9 @@ export interface SoilReading {
 /** SoilGrids models no soil under built-up ground, water or bare rock. */
 export const SOIL_MASKED = 'SoilGrids: no data here (water, rock or city core)';
 
+/** Soil still on its way: the core was sealed before SoilGrids answered. */
+export const SOIL_PENDING = 'SoilGrids: still reading';
+
 /** How far a masked point looks for the nearest modelled soil. */
 export const SOIL_SEARCH_M = 10_000;
 
@@ -48,14 +51,18 @@ const GRID_CELLS = 2 * Math.round(SOIL_SEARCH_M / 250) + 1;
 
 const EPSG_4326 = 'http://www.opengis.net/def/crs/EPSG/0/4326';
 
+// Silt is not asked for: SoilGrids' three fractions sum to 1000 g/kg (±1), so
+// it is what clay and sand leave. The WCS answers requests roughly one at a
+// time, so every grid left out is time saved.
 const GRID_LAYERS = [
   ['clay', '0-5cm'],
   ['sand', '0-5cm'],
-  ['silt', '0-5cm'],
   ['clay', '15-30cm'],
   ['sand', '15-30cm'],
-  ['silt', '15-30cm'],
 ] as const;
+
+/** Pause before asking again for a grid that failed. */
+export const SOIL_RETRY_MS = 300;
 
 /**
  * Latitudes SoilGrids covers: the edges of its map, found by asking the WCS,
@@ -148,24 +155,30 @@ export function parseSoil(json: unknown): SoilReading {
   return soilReading(texture('0-5cm'), texture('15-30cm'));
 }
 
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** One grid; a failed request is asked once more, a missing grid (404) is not. */
 async function fetchGrid(fetchTile: FetchTile, url: string): Promise<Grid16> {
-  const buf = await fetchTile(url);
+  const buf = await fetchTile(url).catch(async () => {
+    await pause(SOIL_RETRY_MS);
+    return fetchTile(url);
+  });
   if (!buf) throw new Error('SoilGrids: no grid for this area');
   return decodeGeoTiff16(buf);
 }
 
-/** Texture of one grid cell, or null where the WCS wrote no soil (0 or below). */
-function cellTexture(clay: Grid16, sand: Grid16, silt: Grid16, i: number): Texture | null {
+/** Texture of one grid cell, or null where the WCS wrote no soil (0 or below). Silt is the rest. */
+function cellTexture(clay: Grid16, sand: Grid16, i: number): Texture | null {
   const c = clay.values[i];
   const s = sand.values[i];
-  const t = silt.values[i];
-  if (c < 0 || s < 0 || t < 0 || c + s + t === 0) return null;
+  if (c < 0 || s < 0 || c + s === 0) return null;
+  const t = Math.max(0, 1000 - c - s);
   return { clay: c / FACTOR.clay, sand: s / FACTOR.sand, silt: t / FACTOR.silt };
 }
 
 type CellSoil = { top: Texture | null; sub: Texture | null };
 
-/** All six layers over one box. */
+/** All four layers over one box. */
 interface SoilPatch {
   /** Shape and placement, shared by every layer. */
   grid: Grid16;
@@ -174,11 +187,11 @@ interface SoilPatch {
 
 async function loadPatch(box: SoilGridBox, fetchTile: FetchTile): Promise<SoilPatch> {
   const layers = await Promise.all(GRID_LAYERS.map(([property, depth]) => fetchGrid(fetchTile, soilGridUrl(property, depth, box))));
-  const [clayTop, sandTop, siltTop, claySub, sandSub, siltSub] = layers;
+  const [clayTop, sandTop, claySub, sandSub] = layers;
   if (layers.some((g) => g.w !== clayTop.w || g.h !== clayTop.h)) throw new Error('SoilGrids: layer grids do not line up');
   return {
     grid: clayTop,
-    cell: (i) => ({ top: cellTexture(clayTop, sandTop, siltTop, i), sub: cellTexture(claySub, sandSub, siltSub, i) }),
+    cell: (i) => ({ top: cellTexture(clayTop, sandTop, i), sub: cellTexture(claySub, sandSub, i) }),
   };
 }
 
@@ -212,8 +225,8 @@ function nearestCell(patches: SoilPatch[], pin: LatLon): (CellSoil & { at: LatLo
 }
 
 /**
- * Soil at a point, read from SoilGrids' WCS: one grid per layer over the
- * search window (soilGridBoxes), fetched together. The pin's own cell when it
+ * Soil at a point, read from SoilGrids' WCS: a clay and a sand grid at each
+ * depth over the search window (soilGridBoxes), fetched together. The pin's own cell when it
  * is modelled; if it is masked (a city block, a lake), the nearest modelled
  * cell, marked `nearby`. Network errors are not hidden: they reject so the
  * stratum can say it could not be read.

@@ -28,7 +28,7 @@ function band(s: Stratum): string {
   const reading =
     s.status === 'ok'
       ? `<span class="reading">${esc(s.reading)}</span><span class="mono">${esc(s.unit)}</span>`
-      : `<span class="stamp mono ink">${s.status === 'error' ? 'NO READING' : 'NOT MODELLED'}</span>`;
+      : `<span class="stamp mono ink">${{ error: 'NO READING', pending: 'READING', empty: 'NOT MODELLED' }[s.status]}</span>`;
   // the column is a stretched block, so it runs the stratum's full height however long the facts are
   return `
   <div class="band" style="min-height:${h}px">

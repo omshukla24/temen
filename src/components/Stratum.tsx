@@ -108,6 +108,12 @@ export function StratumBand({
                   run={animate}
                   style={isEgg ? { color: c.crimsonEgg } : undefined}
                 />
+              ) : s.status === 'pending' ? (
+                <View style={[styles.stamp, styles.stampPending]}>
+                  <T kind="mono" color={c.accentText} style={styles.stampText}>
+                    {t('stratum.reading')}
+                  </T>
+                </View>
               ) : s.status !== 'ok' ? (
                 <View style={[styles.stamp, s.status === 'error' && styles.stampError]}>
                   <T kind="mono" color={s.status === 'error' ? c.lateriteText : c.ink} style={styles.stampText}>
@@ -217,6 +223,7 @@ const useStyles = makeStyles((c) => ({
   body: { flex: 1, paddingVertical: space.md, paddingLeft: space.lg, gap: 4, justifyContent: 'flex-start' },
   stamp: { borderWidth: 1.5, borderColor: c.ink, borderStyle: 'dashed', paddingHorizontal: space.sm, paddingVertical: 4, marginVertical: 6 },
   stampError: { borderColor: c.lateriteText },
+  stampPending: { borderColor: c.accentText },
   stampText: { letterSpacing: 2 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   readingRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm, flexWrap: 'wrap' },

@@ -37,12 +37,29 @@ export const readingCache: ReadingCache = {
   },
 };
 
-export function drill(
+/** Cores sealed with a layer still on its way in this session, by id; a saved one waits for it instead of giving up. */
+export const lateCores = new Set<string>();
+
+const hasPending = (r: GroundReport) => r.strata.some((s) => s.status === 'pending');
+
+/** Drills one core. With onLate, slow soil comes later as the whole core again, same id. */
+export async function drill(
   at: { lat: number; lon: number },
   placeName: string | null,
   onProgress?: (p: Progress) => void,
+  onLate?: (report: GroundReport) => void,
 ): Promise<GroundReport> {
-  return checkGround(at, deps, { placeName, tileCache: tiles, readingCache, onProgress });
+  let landed = false;
+  const late = onLate
+    ? (r: GroundReport) => {
+        landed = true;
+        lateCores.delete(r.id);
+        onLate(r);
+      }
+    : undefined;
+  const report = await checkGround(at, deps, { placeName, tileCache: tiles, readingCache, onProgress, onLate: late });
+  if (late && !landed && hasPending(report)) lateCores.add(report.id);
+  return report;
 }
 
 export const forecast = (at: { lat: number; lon: number }) => checkForecast(at, deps);

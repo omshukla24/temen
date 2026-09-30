@@ -3,7 +3,7 @@ import { forecastUrl, parseForecast, type ForecastReading } from './forecast';
 import { parseQuakeCount, parseQuakeTop, quakeCountUrl, quakeReading, quakeTopUrl } from './quakes';
 import { parseRain, rainUrl } from './rain';
 import { parseRelief, reliefUrl, type ReliefReading } from './relief';
-import { soilNear } from './soil';
+import { SOIL_PENDING, soilNear, type SoilReading } from './soil';
 import { bowlCheck } from './terrain';
 import { TileCache } from './tiles';
 import type { Deps, GroundReport, LatLon } from './types';
@@ -36,7 +36,22 @@ export interface CheckOptions {
   onProgress?: (p: Progress) => void;
   /** Also look for an active flood nearby (Relief mode). Default true. */
   relief?: boolean;
+  /**
+   * Seal the core without waiting on slow soil. Soil gets soilGraceMs after
+   * every other source; if it is still out, the report comes back with soil
+   * pending and this gets the whole report (same id) once soil lands or fails.
+   */
+  onLate?: (report: GroundReport) => void;
+  /** How long soil may trail the other sources before the core is sealed without it. */
+  soilGraceMs?: number;
+  /** Soil's own timeout when onLate is set. */
+  soilLateTimeoutMs?: number;
 }
+
+/** Default soilGraceMs. */
+export const SOIL_GRACE_MS = 2500;
+/** Default soilLateTimeoutMs: soil no longer holds the core, so it can take its time. */
+export const SOIL_LATE_TIMEOUT_MS = 45000;
 
 const DAY = 86400000;
 
@@ -61,12 +76,51 @@ async function cached<T>(cache: ReadingCache | undefined, key: string, ttl: numb
   return value;
 }
 
+/** Soil fetches in flight, by cache key, so two checks of one spot share one set of grids. */
+const soilInFlight = new Map<string, Promise<SoilReading>>();
+
+/**
+ * One soil fetch per spot at a time. The entry goes when the fetch settles,
+ * or after `ms` if it hangs, so a stuck fetch never holds later checks.
+ */
+function sharedSoil(key: string, ms: number, fn: () => Promise<SoilReading>): Promise<SoilReading> {
+  const hit = soilInFlight.get(key);
+  if (hit) return hit;
+  const p = fn();
+  soilInFlight.set(key, p);
+  const drop = () => {
+    clearTimeout(timer);
+    if (soilInFlight.get(key) === p) soilInFlight.delete(key);
+  };
+  const timer = setTimeout(drop, ms);
+  p.then(drop, drop);
+  return p;
+}
+
+/** p's value if it settles within ms, else null. The timer never outlives p. */
+function within<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(null), ms);
+    p.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
+}
+
 /** Floor for the tile-based readings (water, water edge, ground). */
 export const TILE_TIMEOUT_MS = 15000;
 
 /**
  * Drills one core: every source in parallel, each with its own timeout, so one
  * slow API never blocks the rest. A failed source becomes an error stratum.
+ * With onLate, slow soil is sealed as pending and delivered later.
  */
 export async function checkGround(at: LatLon, deps: Deps, opts: CheckOptions = {}): Promise<GroundReport> {
   const { lat, lon } = at;
@@ -78,6 +132,11 @@ export async function checkGround(at: LatLon, deps: Deps, opts: CheckOptions = {
   const rc = opts.readingCache;
   const now = deps.now();
   const headers = deps.userAgent ? { 'User-Agent': deps.userAgent } : undefined;
+  const onLate = opts.onLate;
+  // four grids at once over mobile data, so soil gets more room too; with
+  // onLate it no longer holds the core, so it gets all the room it needs
+  const soilMs = onLate ? (opts.soilLateTimeoutMs ?? SOIL_LATE_TIMEOUT_MS) : t * 2;
+  const soilKey = `soil:${lat.toFixed(3)},${lon.toFixed(3)}`;
 
   const jobs = {
     water: () => settle(() => sampleWindow(lat, lon, deps.fetchTile, 4, tiles), tt, 'Water'),
@@ -106,11 +165,10 @@ export async function checkGround(at: LatLon, deps: Deps, opts: CheckOptions = {
         t,
         'Quakes',
       ),
-    // six grids at once over mobile data, so soil gets more room too
     soil: () =>
       settle(
-        () => cached(rc, `soil:${lat.toFixed(3)},${lon.toFixed(3)}`, 180 * DAY, () => soilNear(lat, lon, deps.fetchTile)),
-        t * 2,
+        () => sharedSoil(soilKey, soilMs, () => cached(rc, soilKey, 180 * DAY, () => soilNear(lat, lon, deps.fetchTile))),
+        soilMs,
         'Soil',
       ),
     relief: () =>
@@ -124,20 +182,38 @@ export async function checkGround(at: LatLon, deps: Deps, opts: CheckOptions = {
       ),
   };
 
-  const keys = (Object.keys(jobs) as (keyof typeof jobs)[]).filter((k) => k !== 'relief' || opts.relief !== false);
+  type Key = keyof typeof jobs;
+  type Result = readonly [Key, Settled<unknown>];
+  const keys = (Object.keys(jobs) as Key[]).filter((k) => k !== 'relief' || opts.relief !== false);
   let done = 0;
+  // once the core is sealed, a late source reports through onLate only
+  let sealed = false;
   opts.onProgress?.({ done, total: keys.length, fraction: 0, stage: 'sounding', last: null });
-  const results = await Promise.all(
-    keys.map(async (k) => {
-      const r = await jobs[k]();
-      done += 1;
-      const fraction = done / keys.length;
-      opts.onProgress?.({ done, total: keys.length, fraction, stage: stageFor(fraction), last: k });
-      return [k, r] as const;
-    }),
-  );
-  const readings = Object.fromEntries(results) as unknown as Readings;
-  return buildReport({ lat, lon, placeName: opts.placeName ?? null, now, readings });
+  const run = async (k: Key): Promise<Result> => {
+    const r = await jobs[k]();
+    done += 1;
+    const fraction = done / keys.length;
+    if (!sealed) opts.onProgress?.({ done, total: keys.length, fraction, stage: stageFor(fraction), last: k });
+    return [k, r];
+  };
+  const build = (results: Result[]) =>
+    buildReport({ lat, lon, placeName: opts.placeName ?? null, now, readings: Object.fromEntries(results) as unknown as Readings });
+
+  if (!onLate) return build(await Promise.all(keys.map(run)));
+
+  const soil = run('soil');
+  const rest = await Promise.all(keys.filter((k) => k !== 'soil').map(run));
+  const early = await within(soil, opts.soilGraceMs ?? SOIL_GRACE_MS);
+  if (early) return build([...rest, early]);
+  sealed = true;
+  soil.then((late) => {
+    try {
+      onLate(build([...rest, late]));
+    } catch {
+      // a broken callback must never become an unhandled rejection
+    }
+  });
+  return build([...rest, ['soil', { ok: false, error: SOIL_PENDING, ms: 0 }]]);
 }
 
 /** Next-24 h rain for Monsoon Watch. */

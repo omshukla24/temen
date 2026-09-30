@@ -2,7 +2,7 @@ import { formatMetres, TERRAIN_SOURCE, bowlHeadline, type BowlReading } from './
 import { QUAKE_SOURCE, type QuakeReading } from './quakes';
 import { RAIN_RULES, RAIN_SOURCE, type RainReading } from './rain';
 import type { ReliefReading } from './relief';
-import { SOIL_MASKED, SOIL_SEARCH_M, SOIL_SOURCE, type SoilReading } from './soil';
+import { SOIL_MASKED, SOIL_PENDING, SOIL_SEARCH_M, SOIL_SOURCE, type SoilReading } from './soil';
 import type { GroundFlags, GroundReport, SourceRef, Stratum } from './types';
 import { hashId, prettyDate, type Settled } from './util';
 import { WATER_SOURCE, bufferText, pct, waterHeadline, type WaterEdge, type WaterSample } from './water';
@@ -179,6 +179,14 @@ export function quakeStratum(r: Settled<QuakeReading>): Stratum {
 }
 
 export function soilStratum(r: Settled<SoilReading>): Stratum {
+  if (!r.ok && r.error === SOIL_PENDING) {
+    return {
+      index: 5, key: 'soil', title: 'Soil', reading: '…', value: null, unit: 'reading',
+      headline: 'Still reading the soil',
+      detail: 'SoilGrids is slow to answer right now. This layer fills in by itself when it arrives.',
+      confidence: 'low', significance: 0.25, status: 'pending', source: SOIL_SOURCE, hatch: 'soil', flag: null, facts: [],
+    };
+  }
   if (!r.ok && r.error === SOIL_MASKED) {
     return {
       index: 5, key: 'soil', title: 'Soil', reading: '—', value: null, unit: 'not modelled',
@@ -346,6 +354,20 @@ export function buildReport({ lat, lon, placeName, now, readings }: BuildInput):
     teaser: teaserFor(readings, flags),
     version: REPORT_VERSION,
   };
+}
+
+/** What a saved core says for a layer that never came in. */
+export const STALE_DETAIL = 'Soil had not come in when this core was saved. Pull down to re-core.';
+
+/**
+ * A saved core reopened after the app closed before its late layer landed:
+ * every pending stratum becomes an error stratum, so it never reads forever.
+ */
+export function settleStale(report: GroundReport): GroundReport {
+  const strata = report.strata.map((s) =>
+    s.status === 'pending' ? { ...errorStratum(s.index, s.key, s.title, s.source, s.hatch, ''), detail: STALE_DETAIL } : s,
+  );
+  return { ...report, strata };
 }
 
 /** Plain-language summary for the spoken verdict and share text. */

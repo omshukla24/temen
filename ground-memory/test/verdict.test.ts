@@ -2,10 +2,10 @@ import { fixtureFetchTile } from './fixture-fetch';
 import { soilGrids, twoYears, usgsQuery } from './synthetic';
 import { parseQuakeTop, quakeReading } from '../src/quakes';
 import { parseRain } from '../src/rain';
-import { SOIL_MASKED, parseSoil } from '../src/soil';
+import { SOIL_MASKED, SOIL_PENDING, SOIL_SOURCE, parseSoil } from '../src/soil';
 import { bowlCheck } from '../src/terrain';
 import { settle, type Settled } from '../src/util';
-import { CANT_SEE_ALWAYS, buildReport, questionsFor, summarise, type Readings } from '../src/verdict';
+import { CANT_SEE_ALWAYS, STALE_DETAIL, buildReport, questionsFor, settleStale, summarise, type Readings } from '../src/verdict';
 import { sampleWindow, waterEdgeDistance } from '../src/water';
 
 const ok = <T,>(value: T): Settled<T> => ({ ok: true, value, ms: 1 });
@@ -54,6 +54,42 @@ describe('buildReport', () => {
     expect(soil.status).toBe('empty');
     expect(soil.headline).toBe('No soil modelled here');
     expect(soil.detail).toMatch(/built-up ground/);
+  });
+
+  it('marks soil still on its way as pending, and counts it as not read', async () => {
+    const heavy = parseSoil(soilGrids({ clay: [{ label: '15-30cm', mean: 452 }], sand: [{ label: '15-30cm', mean: 210 }], silt: [{ label: '15-30cm', mean: 338 }] }));
+    const base = await readingsAt(12.95287, 80.20706);
+    const r = buildReport({ lat: 12.95287, lon: 80.20706, placeName: null, now, readings: { ...base, soil: fail(SOIL_PENDING) } });
+    const soil = r.strata.find((s) => s.key === 'soil')!;
+    expect(soil).toEqual({
+      index: 5, key: 'soil', title: 'Soil', reading: '…', value: null, unit: 'reading',
+      headline: 'Still reading the soil',
+      detail: 'SoilGrids is slow to answer right now. This layer fills in by itself when it arrives.',
+      confidence: 'low', significance: 0.25, status: 'pending', source: SOIL_SOURCE, hatch: 'soil', flag: null, facts: [],
+    });
+    expect(r.flags.clayHeavy).toBe(false);
+    expect(r.cantSee.some((x) => x.includes('soil'))).toBe(false);
+    expect(summarise(r)).not.toMatch(/Soil:/);
+    // the same place once soil lands
+    const landed = buildReport({ lat: 12.95287, lon: 80.20706, placeName: null, now, readings: { ...base, soil: ok(heavy) } });
+    expect(landed.id).toBe(r.id);
+    expect(landed.flags.clayHeavy).toBe(true);
+  });
+
+  it('settles a pending stratum on a saved core into an error, leaving the rest alone', async () => {
+    const readings = { ...(await readingsAt(12.95287, 80.20706)), soil: fail(SOIL_PENDING) };
+    const r = buildReport({ lat: 12.95287, lon: 80.20706, placeName: 'Kuberan Nagar', now, readings });
+    const stale = settleStale(r);
+    const soil = stale.strata.find((s) => s.key === 'soil')!;
+    expect(soil).toMatchObject({ index: 5, key: 'soil', status: 'error', headline: 'The drill hit bedrock', reading: '—', hatch: 'soil', source: SOIL_SOURCE });
+    expect(soil.detail).toBe(STALE_DETAIL);
+    expect(STALE_DETAIL).toBe('Soil had not come in when this core was saved. Pull down to re-core.');
+    expect(stale.strata.filter((s) => s.key !== 'soil')).toEqual(r.strata.filter((s) => s.key !== 'soil'));
+    expect({ ...stale, strata: [] }).toEqual({ ...r, strata: [] });
+    // a copy: the saved core itself is untouched
+    expect(r.strata.find((s) => s.key === 'soil')!.status).toBe('pending');
+    expect(stale).not.toBe(r);
+    expect(settleStale(stale)).toEqual(stale);
   });
 
   it('names where a borrowed soil reading comes from', async () => {

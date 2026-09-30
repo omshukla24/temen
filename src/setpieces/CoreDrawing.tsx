@@ -23,6 +23,7 @@ export interface CoreColors {
 
 const PRINT: CoreColors = { ink: color.ink, inkMuted: color.inkMuted, paper: color.paper, mark: color.accent, fills };
 
+/** A band's fill: laterite where the source failed; a pending band keeps its own hatch's colour. */
 export function bandColor(b: Band, f: Fills = fills): string {
   if (b.status === 'error') return f.error;
   return f[(b.hatch as StrataKey) in f ? (b.hatch as StrataKey) : 'ground'];

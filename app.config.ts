@@ -9,7 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Temen',
   slug: 'temen',
-  version: '1.1.0',
+  version: '1.1.1',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'temen',
@@ -22,7 +22,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: 'com.urizen.temen',
-    versionCode: 2,
+    versionCode: 3,
     adaptiveIcon: {
       backgroundColor: AQUIFER,
       foregroundImage: './assets/images/android-icon-foreground.png',

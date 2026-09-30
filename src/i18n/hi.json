@@ -137,6 +137,7 @@
   "stratum.hintSealed": "अनलॉक के विकल्प खोलता है",
   "stratum.noReading": "रीडिंग नहीं · दोबारा जाँचने के लिए खींचें",
   "stratum.notModelled": "यहाँ मॉडल नहीं",
+  "stratum.reading": "अभी पढ़ रहे हैं…",
   "watch.dry": "अगले 24 घंटे में बारिश का अनुमान नहीं",
   "watch.lookAhead": "यह आगे देखता है, पीछे नहीं: जो बारिश हो चुकी वह यहाँ नहीं गिनी जाती।",
   "watch.checked": "{time} पर जाँचा",

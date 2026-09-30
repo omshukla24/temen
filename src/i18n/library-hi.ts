@@ -29,6 +29,7 @@ export const LIBRARY_HI: Record<string, string> = {
   'The records here are quiet': 'यहाँ के रिकॉर्ड शांत हैं',
   'The drill hit bedrock': 'ड्रिल चट्टान से टकराई',
   'No soil modelled here': 'यहाँ मिट्टी का मॉडल नहीं',
+  'Still reading the soil': 'मिट्टी अभी पढ़ी जा रही है',
   "What this can't see": 'यह क्या नहीं देख सकता',
   Water: 'पानी',
   Ground: 'ज़मीन',

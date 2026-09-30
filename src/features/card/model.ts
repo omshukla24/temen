@@ -9,7 +9,10 @@ export interface CardRow {
   reading: string;
   unit: string;
   headline: string;
-  /** ok = a reading; error = the source didn't answer this time; empty = nothing modelled here. */
+  /**
+   * ok = a reading; error = the source didn't answer this time (or, pending,
+   * hadn't yet); empty = nothing modelled here.
+   */
   state: 'ok' | 'sealed' | 'error' | 'empty';
 }
 
@@ -57,7 +60,7 @@ export function cardModel(
   const strata = report.strata.filter((s) => s.key !== 'cantSee' && s.key !== 'egg');
   const rows: CardRow[] = strata.map((s, i) => {
     const state: CardRow['state'] =
-      !opts.full && i >= opts.freeStrata ? 'sealed' : s.status === 'error' ? 'error' : s.status !== 'ok' || s.value === null ? 'empty' : 'ok';
+      !opts.full && i >= opts.freeStrata ? 'sealed' : s.status === 'error' || s.status === 'pending' ? 'error' : s.status !== 'ok' || s.value === null ? 'empty' : 'ok';
     const shown = state === 'ok';
     return {
       index: String(s.index).padStart(2, '0'),

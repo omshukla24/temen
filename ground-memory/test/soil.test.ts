@@ -2,6 +2,7 @@ import { distanceM } from '../src/geo';
 import {
   SOIL_LATS,
   SOIL_MASKED,
+  SOIL_RETRY_MS,
   SOIL_SEARCH_M,
   parseSoil,
   soilGridBoxes,
@@ -117,13 +118,12 @@ describe('soil', () => {
       });
     const EAST = cell(4, 2); // 0.02° east ≈ 1.95 km
     const NORTH = cell(2, 0); // 0.02° north ≈ 2.22 km
+    // silt is what clay and sand leave of 1000 g/kg: 440 and 439 at EAST, 300 at NORTH
     const layers: Record<string, ArrayBuffer> = {
       'clay 0-5cm': grid({ [EAST]: 250, [NORTH]: 100 }),
       'sand 0-5cm': grid({ [EAST]: 310, [NORTH]: 600 }),
-      'silt 0-5cm': grid({ [EAST]: 440, [NORTH]: 300 }),
       'clay 15-30cm': grid({ [EAST]: 261, [NORTH]: 100 }),
       'sand 15-30cm': grid({ [EAST]: 300, [NORTH]: 600 }),
-      'silt 15-30cm': grid({ [EAST]: 439, [NORTH]: 300 }),
     };
     const gridsFrom = (source: Record<string, ArrayBuffer>) =>
       jest.fn(async (url: string) => {
@@ -134,13 +134,14 @@ describe('soil', () => {
 
     it('reads the pin’s own cell when it is modelled', async () => {
       const PIN = cell(2, 2);
-      const own = { ...layers, 'clay 15-30cm': grid({ [PIN]: 452, [EAST]: 261 }), 'sand 15-30cm': grid({ [PIN]: 210 }), 'silt 15-30cm': grid({ [PIN]: 338 }) };
+      const own = { ...layers, 'clay 15-30cm': grid({ [PIN]: 452, [EAST]: 261 }), 'sand 15-30cm': grid({ [PIN]: 210 }) };
       const fetchTile = gridsFrom(own);
       const r = await soilNear(pin.lat, pin.lon, fetchTile);
       expect(r.nearby).toBeUndefined();
       expect(r.sub!.clay).toBeCloseTo(45.2, 5);
+      expect(r.sub!.silt).toBeCloseTo(33.8, 5);
       expect(r.clayHeavy).toBe(true);
-      expect(fetchTile).toHaveBeenCalledTimes(6);
+      expect(fetchTile).toHaveBeenCalledTimes(4);
     });
 
     it('borrows the nearest modelled cell when the pin’s own cell is built over', async () => {
@@ -152,11 +153,33 @@ describe('soil', () => {
       expect(r.top).toEqual({ clay: 25, sand: 31, silt: 44 });
       expect(r.sub!.clay).toBeCloseTo(26.1, 5);
       expect(r.texture).toBe('Loam');
-      expect(fetchTile).toHaveBeenCalledTimes(6);
+      expect(fetchTile).toHaveBeenCalledTimes(4);
+    });
+
+    it('asks for clay and sand only, and takes silt as the rest of 1000 g/kg', async () => {
+      const fetchTile = gridsFrom(layers);
+      await soilNear(pin.lat, pin.lon, fetchTile);
+      const asked = fetchTile.mock.calls.map(([url]) => url.match(/COVERAGEID=(\w+)_([\d-]+cm)_mean/)!.slice(1).join(' '));
+      expect(asked.sort()).toEqual(['clay 0-5cm', 'clay 15-30cm', 'sand 0-5cm', 'sand 15-30cm']);
+    });
+
+    it('never gives silt below zero, and skips cells the WCS wrote as negative', async () => {
+      const PIN = cell(2, 2);
+      // clay + sand a little over 1000 from rounding; a negative clay is no soil
+      const odd = {
+        'clay 0-5cm': grid({ [PIN]: 501, [EAST]: -1 }),
+        'sand 0-5cm': grid({ [PIN]: 500, [EAST]: 400 }),
+        'clay 15-30cm': grid({ [EAST]: -1 }),
+        'sand 15-30cm': grid({ [EAST]: 400 }),
+      };
+      const r = await soilNear(pin.lat, pin.lon, gridsFrom(odd));
+      expect(r.nearby).toBeUndefined();
+      expect(r.top).toEqual({ clay: 50.1, sand: 50, silt: 0 });
+      expect(r.sub).toBeNull();
     });
 
     it('counts a cell modelled at only one depth', async () => {
-      const topOnly = { ...layers, 'clay 15-30cm': grid({}), 'sand 15-30cm': grid({}), 'silt 15-30cm': grid({}) };
+      const topOnly = { ...layers, 'clay 15-30cm': grid({}), 'sand 15-30cm': grid({}) };
       const r = await soilNear(pin.lat, pin.lon, gridsFrom(topOnly));
       expect(r.sub).toBeNull();
       expect(r.top).toEqual({ clay: 25, sand: 31, silt: 44 });
@@ -186,7 +209,7 @@ describe('soil', () => {
       const soil = { [Math.floor(eastBox.rows / 2) * eastBox.cols + 5]: 300 };
       const fetchTile = jest.fn(async (url: string) => (url.includes('SUBSET=long(-180.') ? patch(eastBox, soil) : patch(westBox, {})));
       const r = await soilNear(at.lat, at.lon, fetchTile);
-      expect(fetchTile).toHaveBeenCalledTimes(12);
+      expect(fetchTile).toHaveBeenCalledTimes(8);
       expect(r.nearby!.direction).toBe('E');
       expect(r.nearby!.distanceM).toBeGreaterThan(2000);
       expect(r.nearby!.distanceM).toBeLessThan(3000);
@@ -203,7 +226,30 @@ describe('soil', () => {
         throw new Error('maps.isric.org answered 502');
       });
       await expect(soilNear(pin.lat, pin.lon, failing)).rejects.toThrow('502');
-      await expect(soilNear(pin.lat, pin.lon, jest.fn(async () => null))).rejects.toThrow(/no grid/);
+      // each of the four grids is asked twice, never more
+      await new Promise((resolve) => setTimeout(resolve, SOIL_RETRY_MS + 100));
+      expect(failing).toHaveBeenCalledTimes(8);
+    });
+
+    it('asks once more for a grid that failed, and reads it when it comes', async () => {
+      const ok = gridsFrom(layers);
+      let failed = false;
+      const fetchTile = jest.fn(async (url: string) => {
+        if (!failed && url.includes('COVERAGEID=clay_0-5cm')) {
+          failed = true;
+          throw new Error('maps.isric.org answered 502');
+        }
+        return ok(url);
+      });
+      const r = await soilNear(pin.lat, pin.lon, fetchTile);
+      expect(r.top).toEqual({ clay: 25, sand: 31, silt: 44 });
+      expect(fetchTile).toHaveBeenCalledTimes(5);
+    });
+
+    it('does not ask again for a grid the server does not have (404)', async () => {
+      const missing = jest.fn(async () => null);
+      await expect(soilNear(pin.lat, pin.lon, missing)).rejects.toThrow(/no grid/);
+      expect(missing).toHaveBeenCalledTimes(4);
     });
   });
 

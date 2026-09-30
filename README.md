@@ -111,7 +111,7 @@ flowchart LR
     REPORT --> APP["Temen app<br/>Skia drawings, PDF, share card"]
 ```
 
-- **[`ground-memory/`](ground-memory)** does the analysis. It's a small TypeScript library with no React Native imports: tile maths, PNG decoding, the JRC palette, the bowl check, the rain, quake and soil parsers, the verdict and the question rules. It runs the same in Node, in the tests and in the app. A source that fails or times out becomes an error stratum instead of holding up the rest.
+- **[`ground-memory/`](ground-memory)** does the analysis. It's a small TypeScript library with no React Native imports: tile maths, PNG decoding, the JRC palette, the bowl check, the rain, quake and soil parsers, the verdict and the question rules. It runs the same in Node, in the tests and in the app. A source that fails or times out becomes an error stratum instead of holding up the rest. Soil (SoilGrids, often the slowest) gets a short grace after the others; if it is still out, the core opens with soil marked "still reading" and fills it in when it lands (`onLate`).
 - **The app** is Expo SDK 57 (React Native 0.86, New Architecture) with expo-router and TypeScript. Maps are MapLibre React Native v11 on OpenFreeMap, place names come from Photon, and cores are kept offline in SQLite kv-store. Accounts are Supabase, and purchases are RevenueCat.
 - **The drawings** are React Native Skia and Reanimated 4:
   - **The Rising:** an SkSL shader over the JRC mask. Every 30 m pixel the satellites saw as water fills with caustics as a water table sweeps up; water that is gone keeps a dotted lake-memory, and *NOW* drains it back to today.

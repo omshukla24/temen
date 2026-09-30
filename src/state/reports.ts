@@ -62,6 +62,20 @@ export const reports = {
     });
     emit({ kind: 'put', id: report.id });
   },
+  /**
+   * Rewrites a core already on this phone (a layer that came in late) where it
+   * stands in the list, keeping its saved flag. Unlike put() it never merges,
+   * so a late layer can't push out a newer core of the same place. False, and
+   * nothing written, when the core is gone (deleted or merged away). Watchers
+   * hear of it once the report is on disk, so they can read it back.
+   */
+  update(report: GroundReport, trail: string[]): boolean {
+    if (!index.get().some((c) => c.id === report.id)) return false;
+    const written = writeJson(KEYS.report(report.id), { report, trail } satisfies StoredReport);
+    index.set((list) => list.map((c) => (c.id === report.id ? summaryOf(report, trail, c.saved) : c)));
+    written.then(() => emit({ kind: 'put', id: report.id }));
+    return true;
+  },
   get(id: string): StoredReport | null {
     return readJson<StoredReport | null>(KEYS.report(id), null);
   },

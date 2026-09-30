@@ -41,13 +41,13 @@ Everything platform-specific is injected (`fetchJson`, `fetchTile`, `now`), so t
 | `contours` | smoothed d3-contour lines as unit-square SVG paths |
 | `rain` | NASA POWER daily rain: wettest days, IMD heavy (≥ 64.5 mm) and extreme (≥ 204.5 mm) days per year |
 | `quakes` | USGS count and strongest M4.5+ events within 300 km |
-| `soil` | SoilGrids clay/sand/silt → USDA texture, heavy-clay flag; `soilNear` borrows the nearest modelled soil when the point is built over or water |
+| `soil` | SoilGrids clay/sand/silt → USDA texture, heavy-clay flag; `soilNear` reads four WCS grids (clay and sand at two depths; silt is the rest of 1000 g/kg) and borrows the nearest modelled soil when the point is built over or water |
 | `forecast` | MET Norway next-24 h rain (needs a User-Agent); `hourlyStrip` lays it out hour by hour |
 | `relief` | GDACS active floods within 100 km |
 | `timelapse` | Google Earth Timelapse embed and viewer URLs |
 | `parse-location` | WhatsApp / Google / Apple / OSM links, `geo:` URIs, DMS, decimal pairs, plus codes, short links to resolve |
 | `verdict` | readings → a `GroundReport`: strata, flags, questions, what it can't see, a teaser |
-| `check` | `checkGround`: every source in parallel, each with its own timeout, progress callbacks, an optional reading cache |
+| `check` | `checkGround`: every source in parallel, each with its own timeout, progress callbacks, an optional reading cache; with `onLate`, slow soil no longer holds the core: it comes back marked pending and `onLate` gets the whole core (same id) when soil lands |
 
 ## Rules
 

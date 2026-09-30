@@ -137,6 +137,7 @@
   "stratum.hintSealed": "Opens the unlock options",
   "stratum.noReading": "No reading · pull to re-core",
   "stratum.notModelled": "Not modelled here",
+  "stratum.reading": "Still reading…",
   "watch.dry": "No rain forecast for the next 24 h",
   "watch.lookAhead": "Looks ahead, not back: rain that already fell is not counted here.",
   "watch.checked": "Checked {time}",

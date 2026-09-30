@@ -1,5 +1,5 @@
 import { checkGround, checkForecast, checkRelief, stageFor, type Progress, type ReadingCache } from '../src/check';
-import type { Deps } from '../src/types';
+import type { Deps, GroundReport } from '../src/types';
 import { fixtureFetchTile } from './fixture-fetch';
 import { gdacs, geoTiff16, metNo, twoYears, usgsCount, usgsQuery } from './synthetic';
 
@@ -36,6 +36,35 @@ function fakeTile(overrides: { hang?: RegExp } = {}): Deps['fetchTile'] {
     return geoTiff16({ w: 1, h: 1, west: PIN.lon - 0.005, north: PIN.lat + 0.005, dLon: 0.01, dLat: 0.01, values: [SOIL_G_KG[soil[1]]] });
   };
 }
+
+/**
+ * fakeTile whose soil grids wait for open() (and then fail, if asked to).
+ * Records every soil request.
+ */
+function gatedSoil({ fail = false } = {}) {
+  let open!: () => void;
+  const gate = new Promise<void>((resolve) => (open = resolve));
+  const calls: string[] = [];
+  const tile = fakeTile();
+  const fetchTile: Deps['fetchTile'] = async (url) => {
+    if (!url.includes('maps.isric.org')) return tile(url);
+    calls.push(url);
+    await gate;
+    if (fail) throw new Error('maps.isric.org answered 502');
+    return tile(url);
+  };
+  return { fetchTile, open, calls };
+}
+
+/** An onLate that can be awaited. */
+function lateCatcher() {
+  let got!: (r: GroundReport) => void;
+  const report = new Promise<GroundReport>((resolve) => (got = resolve));
+  return { onLate: jest.fn((r: GroundReport) => got(r)), report };
+}
+
+const soilOf = (r: GroundReport) => r.strata.find((s) => s.key === 'soil')!;
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const deps = (fetchJson: Deps['fetchJson'], timeoutMs = 2000, fetchTile = fakeTile()): Deps => ({
   fetchJson,
@@ -83,6 +112,119 @@ describe('checkGround', () => {
     const second = fakeJson();
     await checkGround({ lat: 12.9442, lon: 80.2292 }, deps(second.fetchJson), { readingCache: cache, relief: false });
     expect(second.calls).toEqual([]);
+  });
+
+  describe('with onLate', () => {
+    it('seals the core without slow soil, then delivers the whole core with the same id', async () => {
+      const { fetchJson } = fakeJson();
+      const soil = gatedSoil();
+      const late = lateCatcher();
+      const seen: Progress[] = [];
+      const r = await checkGround(PIN, deps(fetchJson, 2000, soil.fetchTile), {
+        onLate: late.onLate,
+        soilGraceMs: 20,
+        onProgress: (p) => seen.push(p),
+      });
+      expect(soilOf(r)).toMatchObject({ status: 'pending', reading: '…', headline: 'Still reading the soil' });
+      const others = r.strata.filter((s) => s.key !== 'soil');
+      expect(others.every((s) => s.status !== 'error' && s.status !== 'pending')).toBe(true);
+      expect(r.flags.clayHeavy).toBe(false);
+      expect(r.cantSee.some((x) => x.includes('soil'))).toBe(false);
+      expect(late.onLate).not.toHaveBeenCalled();
+      const progressAtSeal = seen.length;
+
+      soil.open();
+      const after = await late.report;
+      expect(late.onLate).toHaveBeenCalledTimes(1);
+      expect(after.id).toBe(r.id);
+      expect(after.createdAt).toBe(r.createdAt);
+      expect(soilOf(after)).toMatchObject({ status: 'ok', reading: '32%' });
+      expect(after.strata.find((s) => s.key === 'water')).toEqual(r.strata.find((s) => s.key === 'water'));
+      expect(after.cantSee.some((x) => x.includes('soil'))).toBe(true);
+      // the loader is gone by now: no progress after the core was sealed
+      expect(seen).toHaveLength(progressAtSeal);
+    });
+
+    it('delivers a soil error late when slow soil finally fails', async () => {
+      const { fetchJson } = fakeJson();
+      const soil = gatedSoil({ fail: true });
+      const late = lateCatcher();
+      const r = await checkGround(PIN, deps(fetchJson, 2000, soil.fetchTile), { onLate: late.onLate, soilGraceMs: 20 });
+      expect(soilOf(r).status).toBe('pending');
+      soil.open();
+      const after = await late.report;
+      expect(late.onLate).toHaveBeenCalledTimes(1);
+      expect(after.id).toBe(r.id);
+      expect(soilOf(after)).toMatchObject({ status: 'error', headline: 'The drill hit bedrock' });
+      expect(soilOf(after).detail).toMatch(/502/);
+    });
+
+    it('delivers a timeout late when soil never answers', async () => {
+      const { fetchJson } = fakeJson();
+      const late = lateCatcher();
+      const r = await checkGround(PIN, deps(fetchJson, 2000, fakeTile({ hang: /maps\.isric\.org/ })), {
+        onLate: late.onLate,
+        soilGraceMs: 20,
+        soilLateTimeoutMs: 300,
+      });
+      expect(soilOf(r).status).toBe('pending');
+      const after = await late.report;
+      expect(soilOf(after).status).toBe('error');
+      expect(soilOf(after).detail).toMatch(/longer than/);
+    });
+
+    it('waits for soil that lands within the grace, and never calls onLate', async () => {
+      const { fetchJson } = fakeJson();
+      const late = lateCatcher();
+      const r = await checkGround(PIN, deps(fetchJson), { onLate: late.onLate });
+      expect(soilOf(r)).toMatchObject({ status: 'ok', reading: '32%' });
+      await wait(50);
+      expect(late.onLate).not.toHaveBeenCalled();
+    });
+
+    it('shrugs off an onLate that throws', async () => {
+      const { fetchJson } = fakeJson();
+      const soil = gatedSoil();
+      let called = 0;
+      const onLate = () => {
+        called += 1;
+        throw new Error('broken screen');
+      };
+      await checkGround(PIN, deps(fetchJson, 2000, soil.fetchTile), { onLate, soilGraceMs: 20 });
+      soil.open();
+      await wait(50);
+      expect(called).toBe(1);
+    });
+  });
+
+  it('shares one set of soil grids between two checks of the same spot', async () => {
+    const { fetchJson } = fakeJson();
+    const soil = gatedSoil();
+    const a = lateCatcher();
+    const b = lateCatcher();
+    const [ra, rb] = await Promise.all([
+      checkGround(PIN, deps(fetchJson, 2000, soil.fetchTile), { onLate: a.onLate, soilGraceMs: 20 }),
+      checkGround(PIN, deps(fetchJson, 2000, soil.fetchTile), { onLate: b.onLate, soilGraceMs: 20 }),
+    ]);
+    expect(soilOf(ra).status).toBe('pending');
+    expect(soilOf(rb).status).toBe('pending');
+    expect(soil.calls).toHaveLength(4);
+    soil.open();
+    const [la, lb] = await Promise.all([a.report, b.report]);
+    expect(soilOf(la).status).toBe('ok');
+    expect(soilOf(lb).status).toBe('ok');
+    expect(soil.calls).toHaveLength(4);
+  });
+
+  it('does not let a hung soil fetch hold later checks of the same spot', async () => {
+    const { fetchJson } = fakeJson();
+    const hung = await checkGround(PIN, deps(fetchJson, 300, fakeTile({ hang: /maps\.isric\.org/ })));
+    expect(soilOf(hung).status).toBe('error');
+    const soil = gatedSoil();
+    soil.open();
+    const r = await checkGround(PIN, deps(fetchJson, 2000, soil.fetchTile));
+    expect(soilOf(r).status).toBe('ok');
+    expect(soil.calls).toHaveLength(4);
   });
 
   it('maps fractions to loader words', () => {
