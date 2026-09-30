@@ -3,6 +3,7 @@ export * from './util';
 export * from './geo';
 export * from './tiles';
 export * from './png';
+export * from './tiff';
 export * from './water';
 export * from './terrain';
 export * from './rain';

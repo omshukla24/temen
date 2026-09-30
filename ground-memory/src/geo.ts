@@ -27,6 +27,23 @@ export function destination(from: LatLon, bearingDeg: number, distance: number):
   return { lat: deg(φ2), lon: ((deg(λ2) + 540) % 360) - 180 };
 }
 
+/** Initial great-circle bearing from `from` to `to`, 0–360 (0 = north). */
+export function bearingDeg(from: LatLon, to: LatLon): number {
+  const φ1 = rad(from.lat);
+  const φ2 = rad(to.lat);
+  const Δλ = rad(to.lon - from.lon);
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return (deg(Math.atan2(y, x)) + 360) % 360;
+}
+
+const COMPASS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
+
+/** Nearest of the eight compass points to a bearing. */
+export function compassPoint(bearing: number): (typeof COMPASS)[number] {
+  return COMPASS[Math.round((((bearing % 360) + 360) % 360) / 45) % 8];
+}
+
 /** Rounds to a grid so nearby checks share a cache entry. */
 export function roundTo(value: number, step: number): number {
   return Math.round(value / step) * step;

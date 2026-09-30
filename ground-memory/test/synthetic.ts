@@ -59,6 +59,60 @@ export function soilGrids(layers: Record<string, Depth[]>) {
   };
 }
 
+export interface GeoTiffSpec {
+  w: number;
+  h: number;
+  west: number;
+  north: number;
+  dLon: number;
+  dLat: number;
+  /** Row-major, top row first. */
+  values: number[];
+  bigEndian?: boolean;
+}
+
+/** One-band int16 GeoTIFF, uncompressed, one strip: the shape SoilGrids' WCS returns with TILING=false. */
+export function geoTiff16(s: GeoTiffSpec): ArrayBuffer {
+  const le = !s.bigEndian;
+  const entries: [tag: number, type: number, count: number, value: number][] = [
+    [256, 3, 1, s.w],
+    [257, 3, 1, s.h],
+    [258, 3, 1, 16],
+    [259, 3, 1, 1],
+    [273, 4, 1, 0], // strip offset, set below
+    [277, 3, 1, 1],
+    [278, 3, 1, s.h],
+    [279, 4, 1, s.w * s.h * 2],
+    [339, 3, 1, 2],
+    [33550, 12, 3, 0], // pixel scale offset, set below
+    [33922, 12, 6, 0], // tiepoint offset, set below
+  ];
+  const scaleAt = 8 + 2 + entries.length * 12 + 4;
+  const tieAt = scaleAt + 3 * 8;
+  const dataAt = tieAt + 6 * 8;
+  entries[4][3] = dataAt;
+  entries[9][3] = scaleAt;
+  entries[10][3] = tieAt;
+  const buf = new ArrayBuffer(dataAt + s.w * s.h * 2);
+  const dv = new DataView(buf);
+  dv.setUint16(0, le ? 0x4949 : 0x4d4d);
+  dv.setUint16(2, 42, le);
+  dv.setUint32(4, 8, le);
+  dv.setUint16(8, entries.length, le);
+  entries.forEach(([tag, type, count, value], i) => {
+    const e = 10 + i * 12;
+    dv.setUint16(e, tag, le);
+    dv.setUint16(e + 2, type, le);
+    dv.setUint32(e + 4, count, le);
+    if (type === 3) dv.setUint16(e + 8, value, le);
+    else dv.setUint32(e + 8, value, le);
+  });
+  [s.dLon, s.dLat, 0].forEach((v, i) => dv.setFloat64(scaleAt + i * 8, v, le));
+  [0, 0, 0, s.west, s.north, 0].forEach((v, i) => dv.setFloat64(tieAt + i * 8, v, le));
+  s.values.forEach((v, i) => dv.setInt16(dataAt + i * 2, v, le));
+  return buf;
+}
+
 export function metNo(start: Date, oneHours: number[], sixHours: number[]) {
   const timeseries: unknown[] = [];
   let t = start.getTime();

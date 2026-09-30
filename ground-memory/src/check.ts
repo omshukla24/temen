@@ -106,10 +106,10 @@ export async function checkGround(at: LatLon, deps: Deps, opts: CheckOptions = {
         t,
         'Quakes',
       ),
-    // a masked point probes its neighbours one by one, so soil gets more room too
+    // six grids at once over mobile data, so soil gets more room too
     soil: () =>
       settle(
-        () => cached(rc, `soil:${lat.toFixed(3)},${lon.toFixed(3)}`, 180 * DAY, () => soilNear(lat, lon, deps.fetchJson, { headers })),
+        () => cached(rc, `soil:${lat.toFixed(3)},${lon.toFixed(3)}`, 180 * DAY, () => soilNear(lat, lon, deps.fetchTile)),
         t * 2,
         'Soil',
       ),

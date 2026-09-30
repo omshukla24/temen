@@ -48,7 +48,7 @@ Satellites have been photographing that ground since 1984. Temen reads what they
 | Time machine | Google Earth Timelapse | 1984–2022 | 30 m | CC BY 4.0 |
 | Map | OpenFreeMap (OpenMapTiles, OpenStreetMap) | — | — | ODbL / attribution |
 
-SoilGrids models no soil under buildings, so for a built-over pin Temen borrows the nearest modelled soil 1–2.5 km away and says where it came from.
+SoilGrids models no soil under buildings, so for a built-over pin Temen borrows the nearest modelled soil within 10 km and says where it came from.
 
 None of the data needs an API key, and there is no AI model anywhere in the pipeline. Every reading is plain arithmetic on public records, and the tests pin it to real places.
 

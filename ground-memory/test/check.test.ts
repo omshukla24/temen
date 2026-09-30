@@ -1,7 +1,7 @@
 import { checkGround, checkForecast, checkRelief, stageFor, type Progress, type ReadingCache } from '../src/check';
 import type { Deps } from '../src/types';
 import { fixtureFetchTile } from './fixture-fetch';
-import { gdacs, metNo, soilGrids, twoYears, usgsCount, usgsQuery } from './synthetic';
+import { gdacs, geoTiff16, metNo, twoYears, usgsCount, usgsQuery } from './synthetic';
 
 const now = new Date('2026-09-26T06:00:00Z');
 
@@ -14,13 +14,6 @@ function fakeJson(overrides: { hang?: RegExp; fail?: RegExp } = {}) {
     if (url.includes('power.larc')) return twoYears({ '20021201': 140 });
     if (url.includes('earthquake.usgs.gov') && url.includes('/count?')) return usgsCount(12);
     if (url.includes('earthquake.usgs.gov')) return usgsQuery([{ mag: 5.2, lon: 80.5, lat: 13.5, depth: 10, time: 0, place: 'Test' }]);
-    if (url.includes('rest.isric.org')) {
-      return soilGrids({
-        clay: [{ label: '0-5cm', mean: 300 }, { label: '15-30cm', mean: 320 }],
-        sand: [{ label: '0-5cm', mean: 400 }, { label: '15-30cm', mean: 380 }],
-        silt: [{ label: '0-5cm', mean: 300 }, { label: '15-30cm', mean: 300 }],
-      });
-    }
     if (url.includes('gdacs')) return gdacs([]);
     if (url.includes('met.no')) {
       if (init?.headers?.['User-Agent'] !== 'Temen/test') throw new Error('403 no UA');
@@ -31,9 +24,22 @@ function fakeJson(overrides: { hang?: RegExp; fail?: RegExp } = {}) {
   return { fetchJson, calls };
 }
 
-const deps = (fetchJson: Deps['fetchJson'], timeoutMs = 2000): Deps => ({
+const PIN = { lat: 12.9442, lon: 80.2292 };
+const SOIL_G_KG: Record<string, number> = { clay: 320, sand: 380, silt: 300 };
+
+/** Recorded map tiles, plus a one-cell SoilGrids grid over PIN for each soil layer. */
+function fakeTile(overrides: { hang?: RegExp } = {}): Deps['fetchTile'] {
+  return async (url) => {
+    if (overrides.hang?.test(url)) return new Promise(() => {});
+    const soil = url.match(/COVERAGEID=(clay|sand|silt)_/);
+    if (!soil) return fixtureFetchTile(url);
+    return geoTiff16({ w: 1, h: 1, west: PIN.lon - 0.005, north: PIN.lat + 0.005, dLon: 0.01, dLat: 0.01, values: [SOIL_G_KG[soil[1]]] });
+  };
+}
+
+const deps = (fetchJson: Deps['fetchJson'], timeoutMs = 2000, fetchTile = fakeTile()): Deps => ({
   fetchJson,
-  fetchTile: fixtureFetchTile,
+  fetchTile,
   now: () => now,
   timeoutMs,
   userAgent: 'Temen/test',
@@ -53,9 +59,9 @@ describe('checkGround', () => {
   });
 
   it('times out one slow source without holding the rest', async () => {
-    const { fetchJson } = fakeJson({ hang: /soilgrids/ });
+    const { fetchJson } = fakeJson();
     const start = Date.now();
-    const r = await checkGround({ lat: 12.9442, lon: 80.2292 }, deps(fetchJson, 300));
+    const r = await checkGround(PIN, deps(fetchJson, 300, fakeTile({ hang: /maps\.isric\.org/ })));
     expect(Date.now() - start).toBeLessThan(3000);
     const soil = r.strata.find((s) => s.key === 'soil')!;
     expect(soil.status).toBe('error');

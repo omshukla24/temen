@@ -2,7 +2,7 @@ import { formatMetres, TERRAIN_SOURCE, bowlHeadline, type BowlReading } from './
 import { QUAKE_SOURCE, type QuakeReading } from './quakes';
 import { RAIN_RULES, RAIN_SOURCE, type RainReading } from './rain';
 import type { ReliefReading } from './relief';
-import { SOIL_MASKED, SOIL_SOURCE, type SoilReading } from './soil';
+import { SOIL_MASKED, SOIL_SEARCH_M, SOIL_SOURCE, type SoilReading } from './soil';
 import type { GroundFlags, GroundReport, SourceRef, Stratum } from './types';
 import { hashId, prettyDate, type Settled } from './util';
 import { WATER_SOURCE, bufferText, pct, waterHeadline, type WaterEdge, type WaterSample } from './water';
@@ -184,7 +184,7 @@ export function soilStratum(r: Settled<SoilReading>): Stratum {
       index: 5, key: 'soil', title: 'Soil', reading: '—', value: null, unit: 'not modelled',
       headline: 'No soil modelled here',
       detail:
-        'SoilGrids leaves out built-up ground, water and bare rock, and found no modelled soil within 2.5 km of this point. Ask for the soil test done for the foundation design.',
+        `SoilGrids leaves out built-up ground, water and bare rock, and found no modelled soil within ${SOIL_SEARCH_M / 1000} km of this point. Ask for the soil test done for the foundation design.`,
       confidence: 'low', significance: 0.25, status: 'empty', source: SOIL_SOURCE, hatch: 'soil', flag: null, facts: [],
     };
   }

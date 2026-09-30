@@ -1,5 +1,6 @@
-import { destination } from './geo';
-import type { FetchJson, SourceRef } from './types';
+import { bearingDeg, compassPoint, destination, distanceM } from './geo';
+import { decodeGeoTiff16, type Grid16 } from './tiff';
+import type { FetchTile, SourceRef } from './types';
 import { get } from './util';
 
 export const SOIL_SOURCE: SourceRef = {
@@ -12,6 +13,7 @@ export const SOIL_SOURCE: SourceRef = {
 
 export const SOIL_RULES = { clayHeavy: 40 } as const;
 
+/** REST point query (2–14 s an answer); checks read soilGridUrl grids, this records fixtures. */
 export function soilUrl(lat: number, lon: number): string {
   return (
     `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon.toFixed(4)}&lat=${lat.toFixed(4)}` +
@@ -38,22 +40,50 @@ export interface SoilReading {
 /** SoilGrids models no soil under built-up ground, water or bare rock. */
 export const SOIL_MASKED = 'SoilGrids: no data here (water, rock or city core)';
 
+/** How far a masked point looks for the nearest modelled soil. */
+export const SOIL_SEARCH_M = 10_000;
+
+// cells of ~250 m, SoilGrids' own resolution, with the pin on the centre cell
+const GRID_CELLS = 2 * Math.round(SOIL_SEARCH_M / 250) + 1;
+
+const EPSG_4326 = 'http://www.opengis.net/def/crs/EPSG/0/4326';
+
+const GRID_LAYERS = [
+  ['clay', '0-5cm'],
+  ['sand', '0-5cm'],
+  ['silt', '0-5cm'],
+  ['clay', '15-30cm'],
+  ['sand', '15-30cm'],
+  ['silt', '15-30cm'],
+] as const;
+
 /**
- * Where to look when the point is masked, nearest first. Probed one at a time
- * and only until one answers, to stay inside ISRIC's fair use.
+ * One SoilGrids layer as a grid reaching SOIL_SEARCH_M each way from the
+ * point (WCS GetCoverage, uncompressed int16 GeoTIFF). A grid answers in under
+ * a second, where a REST point query takes 2–14 s.
  */
-export const SOIL_PROBES: readonly { bearing: number; m: number; direction: string }[] = [
-  { bearing: 0, m: 1000, direction: 'N' },
-  { bearing: 90, m: 1000, direction: 'E' },
-  { bearing: 180, m: 1000, direction: 'S' },
-  { bearing: 270, m: 1000, direction: 'W' },
-  { bearing: 45, m: 2500, direction: 'NE' },
-  { bearing: 135, m: 2500, direction: 'SE' },
-  { bearing: 225, m: 2500, direction: 'SW' },
-  { bearing: 315, m: 2500, direction: 'NW' },
-];
+export function soilGridUrl(property: string, depth: string, lat: number, lon: number): string {
+  const at = { lat, lon };
+  const north = destination(at, 0, SOIL_SEARCH_M).lat;
+  const south = destination(at, 180, SOIL_SEARCH_M).lat;
+  const east = destination(at, 90, SOIL_SEARCH_M).lon;
+  const west = destination(at, 270, SOIL_SEARCH_M).lon;
+  return (
+    `https://maps.isric.org/mapserv?map=/map/${property}.map&SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCoverage` +
+    `&COVERAGEID=${property}_${depth}_mean&FORMAT=image/tiff&GEOTIFF:COMPRESSION=None&GEOTIFF:TILING=false` +
+    `&SUBSET=long(${west.toFixed(5)},${east.toFixed(5)})&SUBSET=lat(${south.toFixed(5)},${north.toFixed(5)})` +
+    `&SUBSETTINGCRS=${EPSG_4326}&OUTPUTCRS=${EPSG_4326}&SCALESIZE=long(${GRID_CELLS}),lat(${GRID_CELLS})`
+  );
+}
 
 const FACTOR: Record<string, number> = { clay: 10, sand: 10, silt: 10 }; // g/kg → %
+
+function soilReading(top: Texture | null, sub: Texture | null): SoilReading {
+  const ref = sub ?? top;
+  if (!ref) throw new Error(SOIL_MASKED);
+  const clayPct = Math.max(top?.clay ?? 0, sub?.clay ?? 0);
+  return { top, sub, texture: usdaTexture(ref), clayHeavy: clayPct >= SOIL_RULES.clayHeavy, clayPct };
+}
 
 /** properties.layers[{ name, unit_measure.d_factor, depths[{ label, values.mean }] }] */
 export function parseSoil(json: unknown): SoilReading {
@@ -77,37 +107,70 @@ export function parseSoil(json: unknown): SoilReading {
     if (clay === null || sand === null || silt === null) return null;
     return { clay, sand, silt };
   };
-  const top = texture('0-5cm');
-  const sub = texture('15-30cm');
-  const ref = sub ?? top;
-  if (!ref) throw new Error(SOIL_MASKED);
-  const clayPct = Math.max(top?.clay ?? 0, sub?.clay ?? 0);
-  return { top, sub, texture: usdaTexture(ref), clayHeavy: clayPct >= SOIL_RULES.clayHeavy, clayPct };
+  return soilReading(texture('0-5cm'), texture('15-30cm'));
 }
 
-const masked = (e: unknown) => e instanceof Error && e.message === SOIL_MASKED;
+async function fetchGrid(fetchTile: FetchTile, url: string): Promise<Grid16> {
+  const buf = await fetchTile(url);
+  if (!buf) throw new Error('SoilGrids: no grid for this area');
+  return decodeGeoTiff16(buf);
+}
+
+/** Texture of one grid cell, or null where the WCS wrote no soil (0 or below). */
+function cellTexture(clay: Grid16, sand: Grid16, silt: Grid16, i: number): Texture | null {
+  const c = clay.values[i];
+  const s = sand.values[i];
+  const t = silt.values[i];
+  if (c < 0 || s < 0 || t < 0 || c + s + t === 0) return null;
+  return { clay: c / FACTOR.clay, sand: s / FACTOR.sand, silt: t / FACTOR.silt };
+}
+
+interface SoilGrids {
+  /** clay, sand, silt at 0–5 cm, then at 15–30 cm; all the same shape. */
+  layers: Grid16[];
+  cell(i: number): { top: Texture | null; sub: Texture | null };
+}
+
+async function loadGrids(lat: number, lon: number, fetchTile: FetchTile): Promise<SoilGrids> {
+  const layers = await Promise.all(GRID_LAYERS.map(([property, depth]) => fetchGrid(fetchTile, soilGridUrl(property, depth, lat, lon))));
+  const [clayTop, sandTop, siltTop, claySub, sandSub, siltSub] = layers;
+  if (layers.some((g) => g.w !== clayTop.w || g.h !== clayTop.h)) throw new Error('SoilGrids: layer grids do not line up');
+  return {
+    layers,
+    cell: (i) => ({ top: cellTexture(clayTop, sandTop, siltTop, i), sub: cellTexture(claySub, sandSub, siltSub, i) }),
+  };
+}
 
 /**
- * Soil at a point; if the point is masked (a city block, a lake), the nearest
- * modelled soil on SOIL_PROBES, marked `nearby`. Network errors are not
- * hidden: they reject so the stratum can say it could not be read.
+ * Soil at a point, read from SoilGrids' WCS: one grid per layer reaching
+ * SOIL_SEARCH_M each way, fetched together. The pin's own cell when it is
+ * modelled; if it is masked (a city block, a lake), the nearest modelled cell,
+ * marked `nearby`. Network errors are not hidden: they reject so the stratum
+ * can say it could not be read.
  */
-export async function soilNear(lat: number, lon: number, fetchJson: FetchJson, init?: { headers?: Record<string, string> }): Promise<SoilReading> {
-  try {
-    return parseSoil(await fetchJson(soilUrl(lat, lon), init));
-  } catch (e) {
-    if (!masked(e)) throw e;
+export async function soilNear(lat: number, lon: number, fetchTile: FetchTile): Promise<SoilReading> {
+  const grids = await loadGrids(lat, lon, fetchTile);
+  const { w, h, west, north, dLon, dLat } = grids.layers[0];
+  const ownX = Math.floor((lon - west) / dLon);
+  const ownY = Math.floor((north - lat) / dLat);
+  if (ownX >= 0 && ownX < w && ownY >= 0 && ownY < h) {
+    const own = grids.cell(ownY * w + ownX);
+    if (own.top || own.sub) return soilReading(own.top, own.sub);
   }
-  for (const p of SOIL_PROBES) {
-    const at = destination({ lat, lon }, p.bearing, p.m);
-    try {
-      const r = parseSoil(await fetchJson(soilUrl(at.lat, at.lon), init));
-      return { ...r, nearby: { distanceM: p.m, direction: p.direction } };
-    } catch (e) {
-      if (!masked(e)) throw e;
+  const pin = { lat, lon };
+  let best: { d: number; at: { lat: number; lon: number }; top: Texture | null; sub: Texture | null } | null = null;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const { top, sub } = grids.cell(y * w + x);
+      if (!top && !sub) continue;
+      const at = { lat: north - (y + 0.5) * dLat, lon: west + (x + 0.5) * dLon };
+      const d = distanceM(pin, at);
+      if (d <= SOIL_SEARCH_M && (!best || d < best.d)) best = { d, at, top, sub };
     }
   }
-  throw new Error(SOIL_MASKED);
+  if (!best) throw new Error(SOIL_MASKED);
+  const nearby = { distanceM: Math.round(best.d), direction: compassPoint(bearingDeg(pin, best.at)) };
+  return { ...soilReading(best.top, best.sub), nearby };
 }
 
 /** USDA soil texture triangle (NRCS rules). Inputs in %, normalised to 100. */
