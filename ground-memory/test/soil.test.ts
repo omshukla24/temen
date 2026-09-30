@@ -1,5 +1,16 @@
 import { distanceM } from '../src/geo';
-import { SOIL_MASKED, SOIL_SEARCH_M, parseSoil, soilGridUrl, soilNear, soilUrl, usdaTexture } from '../src/soil';
+import {
+  SOIL_LATS,
+  SOIL_MASKED,
+  SOIL_SEARCH_M,
+  parseSoil,
+  soilGridBoxes,
+  soilGridUrl,
+  soilNear,
+  soilUrl,
+  usdaTexture,
+  type SoilGridBox,
+} from '../src/soil';
 import { geoTiff16, soilGrids } from './synthetic';
 
 describe('soil', () => {
@@ -31,16 +42,61 @@ describe('soil', () => {
 
   it('asks the SoilGrids WCS for one uncompressed grid reaching SOIL_SEARCH_M each way', () => {
     const at = { lat: 40.7128, lon: -74.006 };
-    const u = soilGridUrl('clay', '15-30cm', at.lat, at.lon);
+    const boxes = soilGridBoxes(at.lat, at.lon);
+    expect(boxes).toHaveLength(1);
+    expect(boxes[0]).toMatchObject({ cols: 81, rows: 81 });
+    const u = soilGridUrl('clay', '15-30cm', boxes[0]);
     expect(u).toContain(
       'https://maps.isric.org/mapserv?map=/map/clay.map&SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCoverage&COVERAGEID=clay_15-30cm_mean',
     );
     expect(u).toContain('&GEOTIFF:COMPRESSION=None&GEOTIFF:TILING=false');
+    expect(u).toContain('&SCALESIZE=long(81),lat(81)');
     const [west, east] = u.match(/SUBSET=long\(([-\d.]+),([-\d.]+)\)/)!.slice(1).map(Number);
     const [south, north] = u.match(/SUBSET=lat\(([-\d.]+),([-\d.]+)\)/)!.slice(1).map(Number);
     for (const edge of [{ ...at, lat: north }, { ...at, lat: south }, { ...at, lon: east }, { ...at, lon: west }]) {
       expect(distanceM(at, edge)).toBeCloseTo(SOIL_SEARCH_M, -2);
     }
+  });
+
+  describe('soilGridBoxes at the edges of the map', () => {
+    it.each([
+      ['west of it', 179.99],
+      ['east of it', -179.99],
+    ])('cuts the window in two at the date line (pin just %s)', (_, lon) => {
+      // the WCS refuses a box whose west edge lies east of its east edge
+      const boxes = soilGridBoxes(-16.85, lon);
+      expect(boxes).toHaveLength(2);
+      const [a, b] = boxes;
+      expect(a).toMatchObject({ east: 180 });
+      expect(b).toMatchObject({ west: -180 });
+      for (const box of boxes) {
+        expect(box.west).toBeLessThan(box.east);
+        expect(box.rows).toBe(81);
+      }
+      expect(a.cols + b.cols).toBeGreaterThanOrEqual(80);
+      expect(a.cols + b.cols).toBeLessThanOrEqual(82);
+      const [whole] = soilGridBoxes(-16.85, 0);
+      expect(a.east - a.west + (b.east - b.west)).toBeCloseTo(whole.east - whole.west, 6);
+    });
+
+    it('trims the window to the latitudes SoilGrids covers', () => {
+      const [north] = soilGridBoxes(82.7, 20);
+      expect(north.north).toBe(SOIL_LATS.north);
+      expect(north.rows).toBeLessThan(81);
+      expect(north.rows).toBeGreaterThan(40);
+      const [south] = soilGridBoxes(-55.95, -67.3);
+      expect(south.south).toBe(SOIL_LATS.south);
+      expect(south.rows).toBeLessThan(81);
+    });
+
+    it.each([
+      ['Antarctica', -80, 0],
+      ['the South Pole', -89.99, 10],
+      ['the Arctic Ocean', 85, 0],
+      ['the North Pole', 90, 0],
+    ])('asks for nothing over %s, which SoilGrids does not cover', (_, lat, lon) => {
+      expect(soilGridBoxes(lat, lon)).toEqual([]);
+    });
   });
 
   describe('soilNear', () => {
@@ -111,6 +167,35 @@ describe('soil', () => {
       // 0.1° cells: the only modelled cell, in the corner, is ~29 km away
       const far = Object.fromEntries(Object.keys(layers).map((k) => [k, grid({ [cell(0, 0)]: 300 }, 0.1)]));
       await expect(soilNear(pin.lat, pin.lon, gridsFrom(far))).rejects.toThrow(SOIL_MASKED);
+    });
+
+    it('searches both halves of a window cut at the date line', async () => {
+      const at = { lat: -16.85, lon: 179.99 };
+      const [westBox, eastBox] = soilGridBoxes(at.lat, at.lon);
+      const patch = (box: SoilGridBox, cells: Record<number, number>) =>
+        geoTiff16({
+          w: box.cols,
+          h: box.rows,
+          west: box.west,
+          north: box.north,
+          dLon: (box.east - box.west) / box.cols,
+          dLat: (box.north - box.south) / box.rows,
+          values: Array.from({ length: box.cols * box.rows }, (_, i) => cells[i] ?? 0),
+        });
+      // only soil: 6 cells into the half east of the date line, on the pin's row (~2.4 km E)
+      const soil = { [Math.floor(eastBox.rows / 2) * eastBox.cols + 5]: 300 };
+      const fetchTile = jest.fn(async (url: string) => (url.includes('SUBSET=long(-180.') ? patch(eastBox, soil) : patch(westBox, {})));
+      const r = await soilNear(at.lat, at.lon, fetchTile);
+      expect(fetchTile).toHaveBeenCalledTimes(12);
+      expect(r.nearby!.direction).toBe('E');
+      expect(r.nearby!.distanceM).toBeGreaterThan(2000);
+      expect(r.nearby!.distanceM).toBeLessThan(3000);
+    });
+
+    it('says no soil is modelled where SoilGrids has no data at all, without asking', async () => {
+      const fetchTile = jest.fn(async () => null);
+      await expect(soilNear(-80, 0, fetchTile)).rejects.toThrow(SOIL_MASKED);
+      expect(fetchTile).not.toHaveBeenCalled();
     });
 
     it('does not hide a failed grid behind a neighbour', async () => {

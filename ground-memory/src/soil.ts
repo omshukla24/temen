@@ -1,6 +1,6 @@
 import { bearingDeg, compassPoint, destination, distanceM } from './geo';
 import { decodeGeoTiff16, type Grid16 } from './tiff';
-import type { FetchTile, SourceRef } from './types';
+import type { FetchTile, LatLon, SourceRef } from './types';
 import { get } from './util';
 
 export const SOIL_SOURCE: SourceRef = {
@@ -58,21 +58,59 @@ const GRID_LAYERS = [
 ] as const;
 
 /**
- * One SoilGrids layer as a grid reaching SOIL_SEARCH_M each way from the
- * point (WCS GetCoverage, uncompressed int16 GeoTIFF). A grid answers in under
- * a second, where a REST point query takes 2–14 s.
+ * Latitudes SoilGrids covers: the edges of its map, found by asking the WCS,
+ * rounded inwards. A request wholly outside them is refused (ExtentError).
  */
-export function soilGridUrl(property: string, depth: string, lat: number, lon: number): string {
+export const SOIL_LATS = { south: -55.977, north: 82.719 } as const;
+
+/** One WCS request's window, in degrees, and how many ~250 m cells to cut it into. */
+export interface SoilGridBox {
+  west: number;
+  east: number;
+  south: number;
+  north: number;
+  cols: number;
+  rows: number;
+}
+
+/**
+ * The search window around a point: normally one box reaching SOIL_SEARCH_M
+ * each way with the pin on its centre cell. Cut in two at ±180° (the WCS
+ * refuses a box whose west edge lies east of its east edge), trimmed to
+ * SOIL_LATS, and empty where none of it is covered.
+ */
+export function soilGridBoxes(lat: number, lon: number): SoilGridBox[] {
   const at = { lat, lon };
   const north = destination(at, 0, SOIL_SEARCH_M).lat;
   const south = destination(at, 180, SOIL_SEARCH_M).lat;
-  const east = destination(at, 90, SOIL_SEARCH_M).lon;
-  const west = destination(at, 270, SOIL_SEARCH_M).lon;
+  const rowDeg = (north - south) / GRID_CELLS;
+  const s = Math.max(south, SOIL_LATS.south);
+  const n = Math.min(north, SOIL_LATS.north);
+  if (!(n - s >= rowDeg / 2)) return [];
+  const rows = Math.round((n - s) / rowDeg);
+  // eastward reach in degrees, unwrapped so the window can run past ±180°
+  const half = ((destination(at, 90, SOIL_SEARCH_M).lon - lon + 540) % 360) - 180;
+  const colDeg = (2 * half) / GRID_CELLS;
+  const west = lon - half;
+  const east = lon + half;
+  const spans: [number, number][] =
+    west < -180 ? [[west + 360, 180], [-180, east]] : east > 180 ? [[west, 180], [-180, east - 360]] : [[west, east]];
+  return spans
+    .filter(([w, e]) => e - w >= colDeg / 2)
+    .map(([w, e]) => ({ west: w, east: e, south: s, north: n, cols: Math.round((e - w) / colDeg), rows }));
+}
+
+/**
+ * One SoilGrids layer over one box (WCS GetCoverage, uncompressed int16
+ * GeoTIFF). A grid answers in under a second, where a REST point query takes
+ * 2–14 s.
+ */
+export function soilGridUrl(property: string, depth: string, box: SoilGridBox): string {
   return (
     `https://maps.isric.org/mapserv?map=/map/${property}.map&SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCoverage` +
     `&COVERAGEID=${property}_${depth}_mean&FORMAT=image/tiff&GEOTIFF:COMPRESSION=None&GEOTIFF:TILING=false` +
-    `&SUBSET=long(${west.toFixed(5)},${east.toFixed(5)})&SUBSET=lat(${south.toFixed(5)},${north.toFixed(5)})` +
-    `&SUBSETTINGCRS=${EPSG_4326}&OUTPUTCRS=${EPSG_4326}&SCALESIZE=long(${GRID_CELLS}),lat(${GRID_CELLS})`
+    `&SUBSET=long(${box.west.toFixed(5)},${box.east.toFixed(5)})&SUBSET=lat(${box.south.toFixed(5)},${box.north.toFixed(5)})` +
+    `&SUBSETTINGCRS=${EPSG_4326}&OUTPUTCRS=${EPSG_4326}&SCALESIZE=long(${box.cols}),lat(${box.rows})`
   );
 }
 
@@ -125,49 +163,67 @@ function cellTexture(clay: Grid16, sand: Grid16, silt: Grid16, i: number): Textu
   return { clay: c / FACTOR.clay, sand: s / FACTOR.sand, silt: t / FACTOR.silt };
 }
 
-interface SoilGrids {
-  /** clay, sand, silt at 0–5 cm, then at 15–30 cm; all the same shape. */
-  layers: Grid16[];
-  cell(i: number): { top: Texture | null; sub: Texture | null };
+type CellSoil = { top: Texture | null; sub: Texture | null };
+
+/** All six layers over one box. */
+interface SoilPatch {
+  /** Shape and placement, shared by every layer. */
+  grid: Grid16;
+  cell(i: number): CellSoil;
 }
 
-async function loadGrids(lat: number, lon: number, fetchTile: FetchTile): Promise<SoilGrids> {
-  const layers = await Promise.all(GRID_LAYERS.map(([property, depth]) => fetchGrid(fetchTile, soilGridUrl(property, depth, lat, lon))));
+async function loadPatch(box: SoilGridBox, fetchTile: FetchTile): Promise<SoilPatch> {
+  const layers = await Promise.all(GRID_LAYERS.map(([property, depth]) => fetchGrid(fetchTile, soilGridUrl(property, depth, box))));
   const [clayTop, sandTop, siltTop, claySub, sandSub, siltSub] = layers;
   if (layers.some((g) => g.w !== clayTop.w || g.h !== clayTop.h)) throw new Error('SoilGrids: layer grids do not line up');
   return {
-    layers,
+    grid: clayTop,
     cell: (i) => ({ top: cellTexture(clayTop, sandTop, siltTop, i), sub: cellTexture(claySub, sandSub, siltSub, i) }),
   };
 }
 
-/**
- * Soil at a point, read from SoilGrids' WCS: one grid per layer reaching
- * SOIL_SEARCH_M each way, fetched together. The pin's own cell when it is
- * modelled; if it is masked (a city block, a lake), the nearest modelled cell,
- * marked `nearby`. Network errors are not hidden: they reject so the stratum
- * can say it could not be read.
- */
-export async function soilNear(lat: number, lon: number, fetchTile: FetchTile): Promise<SoilReading> {
-  const grids = await loadGrids(lat, lon, fetchTile);
-  const { w, h, west, north, dLon, dLat } = grids.layers[0];
-  const ownX = Math.floor((lon - west) / dLon);
-  const ownY = Math.floor((north - lat) / dLat);
-  if (ownX >= 0 && ownX < w && ownY >= 0 && ownY < h) {
-    const own = grids.cell(ownY * w + ownX);
-    if (own.top || own.sub) return soilReading(own.top, own.sub);
+/** The cell the pin stands on, if it is modelled. */
+function ownCell(patches: SoilPatch[], pin: LatLon): CellSoil | null {
+  for (const { grid: g, cell } of patches) {
+    const x = Math.floor((pin.lon - g.west) / g.dLon);
+    const y = Math.floor((g.north - pin.lat) / g.dLat);
+    if (x < 0 || x >= g.w || y < 0 || y >= g.h) continue;
+    const c = cell(y * g.w + x);
+    if (c.top || c.sub) return c;
   }
-  const pin = { lat, lon };
-  let best: { d: number; at: { lat: number; lon: number }; top: Texture | null; sub: Texture | null } | null = null;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const { top, sub } = grids.cell(y * w + x);
-      if (!top && !sub) continue;
-      const at = { lat: north - (y + 0.5) * dLat, lon: west + (x + 0.5) * dLon };
-      const d = distanceM(pin, at);
-      if (d <= SOIL_SEARCH_M && (!best || d < best.d)) best = { d, at, top, sub };
+  return null;
+}
+
+/** The nearest modelled cell within SOIL_SEARCH_M, across every patch. */
+function nearestCell(patches: SoilPatch[], pin: LatLon): (CellSoil & { at: LatLon; d: number }) | null {
+  let best: (CellSoil & { at: LatLon; d: number }) | null = null;
+  for (const { grid: g, cell } of patches) {
+    for (let y = 0; y < g.h; y++) {
+      for (let x = 0; x < g.w; x++) {
+        const c = cell(y * g.w + x);
+        if (!c.top && !c.sub) continue;
+        const at = { lat: g.north - (y + 0.5) * g.dLat, lon: g.west + (x + 0.5) * g.dLon };
+        const d = distanceM(pin, at);
+        if (d <= SOIL_SEARCH_M && (!best || d < best.d)) best = { ...c, at, d };
+      }
     }
   }
+  return best;
+}
+
+/**
+ * Soil at a point, read from SoilGrids' WCS: one grid per layer over the
+ * search window (soilGridBoxes), fetched together. The pin's own cell when it
+ * is modelled; if it is masked (a city block, a lake), the nearest modelled
+ * cell, marked `nearby`. Network errors are not hidden: they reject so the
+ * stratum can say it could not be read.
+ */
+export async function soilNear(lat: number, lon: number, fetchTile: FetchTile): Promise<SoilReading> {
+  const pin = { lat, lon };
+  const patches = await Promise.all(soilGridBoxes(lat, lon).map((box) => loadPatch(box, fetchTile)));
+  const own = ownCell(patches, pin);
+  if (own) return soilReading(own.top, own.sub);
+  const best = nearestCell(patches, pin);
   if (!best) throw new Error(SOIL_MASKED);
   const nearby = { distanceM: Math.round(best.d), direction: compassPoint(bearingDeg(pin, best.at)) };
   return { ...soilReading(best.top, best.sub), nearby };
