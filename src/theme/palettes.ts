@@ -1,4 +1,4 @@
-// Design lock v3 "Field Instrument" (DESIGN.md §0). TEMEN is a survey
+// "Field Instrument": TEMEN is a survey
 // instrument for the ground: chalk paper by day, aquifer dark by night,
 // survey-yellow instrument marks, earth and water for the strata. The paper
 // still follows the sun (dawn, day, dusk, night). Every text pairing passes

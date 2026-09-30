@@ -36,7 +36,7 @@ export const font = {
   mono: 'MartianMono_400Regular',
 } as const;
 
-// Scale in pt (DESIGN.md §0). The stencil is condensed, so it runs larger.
+// Scale in pt. The stencil is condensed, so it runs larger.
 export const size = {
   hero: 72,
   displayXl: 56,

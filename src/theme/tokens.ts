@@ -1,4 +1,4 @@
-// Design lock v3 "Field Instrument" (DESIGN.md §0). On screen, colours come
+// "Field Instrument" tokens. On screen, colours come
 // from the live palette (`useTheme()`, src/theme/palettes.ts). This fixed day
 // palette is for print (the PDF report) and other places with no React tree.
 export const color = {

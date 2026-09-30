@@ -46,7 +46,7 @@ export type StratumKey =
 
 export type StratumStatus = 'ok' | 'error' | 'empty';
 
-/** Each stratum type has its own hatch in the Core (DESIGN.md). */
+/** Each stratum type has its own hatch in the Core. */
 export type Hatch = 'water' | 'lostWater' | 'ground' | 'rain' | 'quakes' | 'soil' | 'cantSee' | 'egg';
 
 export interface Fact {

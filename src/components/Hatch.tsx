@@ -7,7 +7,7 @@ import type { Hatch as HatchKind } from 'ground-memory';
 import { color } from '@/theme';
 
 /**
- * Each stratum type has its own hatch (DESIGN.md): water = wave lines,
+ * Each stratum type has its own hatch: water = wave lines,
  * lost water = dotted lake-memory, ground = contour lines, rain = short
  * vertical ticks, quakes = a jagged line, soil = stipple.
  */

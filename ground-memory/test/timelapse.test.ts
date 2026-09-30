@@ -1,7 +1,7 @@
 import { frameCount, timelapseEmbedUrl, timelapseViewerUrl, yearToFrame } from '../src/timelapse';
 
 describe('timelapse', () => {
-  it('builds the embed URL from the handoff spec', () => {
+  it('builds the Timelapse player embed URL', () => {
     expect(timelapseEmbedUrl(12.9442, 80.2292)).toBe(
       'https://earthengine.google.com/iframes/timelapse_player_embed.html#v=12.94420,80.22920,13,latLng&t=0.03&ps=25&bt=19840101&et=20221231&startDwell=0&endDwell=0',
     );

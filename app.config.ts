@@ -1,6 +1,6 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-// Design lock v3 (src/theme/palettes.ts): the app opens on aquifer in every light,
+// Colours from src/theme/palettes.ts: the app opens on aquifer in every light,
 // with the core and its levelling staff; survey yellow marks notifications.
 const AQUIFER = '#0C1719';
 const YELLOW = '#F2BE22';

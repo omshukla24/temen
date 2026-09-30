@@ -2,7 +2,7 @@ import { formatHemisphere, parseLocation, type ParsedLocation } from 'ground-mem
 
 import type { CoreSummary } from '@/state/reports';
 
-/** "Temen-ni-gru" in any spacing: the easter egg (DESIGN.md). */
+/** "Temen-ni-gru" in any spacing: the easter egg. */
 export const EGG = /temen[\s-]*ni[\s-]*gru/i;
 
 /** Where the egg drills when the phone has no fix yet. */

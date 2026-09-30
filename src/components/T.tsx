@@ -10,7 +10,7 @@ export interface TProps extends TextProps {
 }
 
 /**
- * Text in a type role from the design lock, in the live palette's ink (muted
+ * Text in a type role (src/theme/type.ts), in the live palette's ink (muted
  * for small print and mono). Large display text caps font scaling so layouts hold.
  */
 export function T({ kind = 'body', color, align, italic, style, maxFontSizeMultiplier, ...rest }: TProps) {
