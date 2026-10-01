@@ -16,6 +16,9 @@ Before you buy or rent anywhere on Earth, see what that ground has been through:
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT licence"/></a>
 </p>
 
+<p align="center"><b><a href="https://github.com/omshukla24/temen/releases/latest">Download the Android APK</a></b><br/>
+<sub>A RevenueCat Test Store build: every paywall opens a test purchase dialog, so no real money is involved.</sub></p>
+
 ---
 
 Share a location pin from WhatsApp or Google Maps, or stand on the plot and tap *Core this ground*. About ten seconds later you get a **core**: a column of strata read from today back to 1984. Each one names its source, years and resolution and carries a confidence mark. The last one is always *What this can't see*.
